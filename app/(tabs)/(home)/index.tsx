@@ -1,0 +1,635 @@
+import React, { useEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, Flag, HelpCircle } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Colors from '@/constants/colors';
+import { useApp } from '@/contexts/AppContext';
+import { quebecAlerts, type AlertItem } from '@/mocks/scans';
+import ScanCard from '@/components/ScanCard';
+
+function AlertCard({ alert, language }: { alert: AlertItem; language: string }) {
+  const title = language === 'fr' ? alert.titleFr : alert.titleEn;
+  const desc = language === 'fr' ? alert.descFr : alert.descEn;
+  const isHigh = alert.severity === 'high';
+
+  return (
+    <View style={alertStyles.card}>
+      <View style={alertStyles.cardHeader}>
+        <View style={[alertStyles.severityBadge, isHigh ? alertStyles.severityHigh : alertStyles.severityMedium]}>
+          {isHigh ? <AlertTriangle size={11} color={Colors.danger} /> : <Bell size={11} color={Colors.warning} />}
+          <Text style={[alertStyles.severityText, isHigh ? alertStyles.severityTextHigh : alertStyles.severityTextMedium]}>
+            {isHigh ? 'Urgente' : 'Attention'}
+          </Text>
+        </View>
+        <Text style={alertStyles.date}>{alert.date}</Text>
+      </View>
+      <Text style={alertStyles.title} numberOfLines={2}>{title}</Text>
+      <Text style={alertStyles.desc} numberOfLines={3}>{desc}</Text>
+    </View>
+  );
+}
+
+const alertStyles = StyleSheet.create({
+  card: {
+    width: 260,
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 14,
+    padding: 16,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cardHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  severityBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  severityHigh: {
+    backgroundColor: Colors.dangerMuted,
+  },
+  severityMedium: {
+    backgroundColor: Colors.warningMuted,
+  },
+  severityText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+  },
+  severityTextHigh: {
+    color: Colors.danger,
+  },
+  severityTextMedium: {
+    color: Colors.warning,
+  },
+  date: {
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    lineHeight: 19,
+  },
+  desc: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+  },
+});
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const { t, language, country, scans, showPaymentSuccess, setShowPaymentSuccess, user, remainingCredits, canScan, canChat } = useApp();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const bannerAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
+
+  useEffect(() => {
+    if (showPaymentSuccess) {
+      Animated.sequence([
+        Animated.timing(bannerAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.delay(4000),
+        Animated.timing(bannerAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start(() => setShowPaymentSuccess(false));
+    }
+  }, [showPaymentSuccess, bannerAnim, setShowPaymentSuccess]);
+
+  const recentScans = scans.slice(0, 3);
+  const topAlerts = useMemo(() => quebecAlerts.slice(0, 4), []);
+
+  return (
+    <View style={styles.root}>
+      <LinearGradient
+        colors={['#0F172A', '#162032', '#0F172A']}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScrollView 
+          style={styles.scroll} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {showPaymentSuccess && (
+            <Animated.View style={[styles.successBanner, { opacity: bannerAnim }]}>
+              <Text style={styles.successText}>{t('paymentSuccess')}</Text>
+            </Animated.View>
+          )}
+
+          <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+            <View style={styles.logoRow}>
+              <View style={styles.logoCircle}>
+                <Shield size={28} color={Colors.accent} />
+              </View>
+              <View>
+                <Text style={styles.appName}>{t('appName')}</Text>
+                <Text style={styles.slogan}>{t('slogan')}</Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          <Animated.View style={[styles.heroCard, { transform: [{ scale: pulseAnim }] }]}>
+            <LinearGradient
+              colors={['rgba(34,197,94,0.12)', 'rgba(34,197,94,0.03)']}
+              style={styles.heroGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Shield size={48} color={Colors.accent} />
+              <Text style={styles.heroTitle}>{t('protectedBy')}</Text>
+              <TouchableOpacity
+                style={styles.heroButton}
+                onPress={() => router.push('/scan' as any)}
+                activeOpacity={0.8}
+                testID="scan-now-btn"
+              >
+                <Camera size={20} color={Colors.background} />
+                <Text style={styles.heroButtonText}>{t('scanNow')}</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Animated.View>
+
+          {!user.isPremium && (
+            <View style={styles.creditsBanner}>
+              <View style={styles.creditsBannerLeft}>
+                <Shield size={18} color={remainingCredits > 0 ? Colors.accent : Colors.danger} />
+                <Text style={[styles.creditsBannerText, remainingCredits === 0 && styles.creditsBannerTextUsed]}>
+                  {remainingCredits}/3 {t('creditsRemaining')}
+                </Text>
+              </View>
+              <View style={styles.creditDots}>
+                {[0, 1, 2].map(i => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.creditDot,
+                      i < (typeof remainingCredits === 'number' ? remainingCredits : 0)
+                        ? styles.creditDotActive
+                        : styles.creditDotUsed,
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+
+          {user.isPremium && (
+            <View style={styles.premiumBannerRow}>
+              <Crown size={16} color="#FFD700" />
+              <Text style={styles.premiumBannerText}>{t('unlimitedAccess')}</Text>
+            </View>
+          )}
+
+          <Text style={styles.sectionTitle}>{t('quickActions')}</Text>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity
+              style={[styles.actionCard, !canScan && styles.actionCardLocked]}
+              onPress={() => router.push('/scan' as any)}
+              activeOpacity={0.7}
+              testID="action-scan"
+            >
+              {!canScan && <Lock size={12} color={Colors.danger} style={styles.lockIcon} />}
+              <View style={[styles.actionIcon, { backgroundColor: canScan ? Colors.accentMuted : Colors.dangerMuted }]}>
+                <Camera size={22} color={canScan ? Colors.accent : Colors.danger} />
+              </View>
+              <Text style={styles.actionLabel}>{t('scanImage')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/url-analyze' as any)}
+              activeOpacity={0.7}
+              testID="action-url"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: Colors.infoMuted }]}>
+                <Link size={22} color={Colors.info} />
+              </View>
+              <Text style={styles.actionLabel}>{t('analyzeUrl')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, !canChat && styles.actionCardLocked]}
+              onPress={() => router.push('/chat' as any)}
+              activeOpacity={0.7}
+              testID="action-chat"
+            >
+              {!canChat && <Lock size={12} color={Colors.danger} style={styles.lockIcon} />}
+              <View style={[styles.actionIcon, { backgroundColor: canChat ? 'rgba(168,85,247,0.15)' : Colors.dangerMuted }]}>
+                <MessageCircle size={22} color={canChat ? '#A855F7' : Colors.danger} />
+              </View>
+              <Text style={styles.actionLabel}>{t('chatWithCyrus')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.quickToolsRow}>
+            <TouchableOpacity
+              style={styles.quickToolCard}
+              onPress={() => router.push('/quiz' as any)}
+              activeOpacity={0.7}
+              testID="action-quiz"
+            >
+              <View style={[styles.quickToolIcon, { backgroundColor: 'rgba(168,85,247,0.12)' }]}>
+                <HelpCircle size={20} color="#A855F7" />
+              </View>
+              <View style={styles.quickToolInfo}>
+                <Text style={styles.quickToolTitle}>{t('quizTitle')}</Text>
+                <Text style={styles.quickToolSub}>{t('quizSubtitle')}</Text>
+              </View>
+              <ChevronRight size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickToolCard}
+              onPress={() => router.push('/report-scam' as any)}
+              activeOpacity={0.7}
+              testID="action-report"
+            >
+              <View style={[styles.quickToolIcon, { backgroundColor: Colors.dangerMuted }]}>
+                <Flag size={20} color={Colors.danger} />
+              </View>
+              <View style={styles.quickToolInfo}>
+                <Text style={styles.quickToolTitle}>{t('reportScam')}</Text>
+                <Text style={styles.quickToolSub}>{t('reportScamDesc')}</Text>
+              </View>
+              <ChevronRight size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <Bell size={16} color={Colors.danger} />
+              <Text style={styles.sectionTitle}>{t('alertesQuebec')}</Text>
+            </View>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.alertsScroll}
+          >
+            {topAlerts.map((alert) => (
+              <AlertCard key={alert.id} alert={alert} language={language} />
+            ))}
+          </ScrollView>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('trendingScams')}</Text>
+            <AlertTriangle size={16} color={Colors.warning} />
+          </View>
+          <View style={styles.scamsCard}>
+            {(country === 'CA' ? (language === 'fr' ? [
+              'Faux messages Desjardins - "Activité suspecte sur votre compte"',
+              'Arnaque Postes Canada - "Votre colis est en attente de frais"',
+              'Fraude Hydro-Québec - "Votre compte sera suspendu"',
+            ] : [
+              'Fake Desjardins messages - "Suspicious activity on your account"',
+              'Canada Post scam - "Your package is pending fees"',
+              'Hydro-Québec fraud - "Your account will be suspended"',
+            ]) : country === 'FR' ? (language === 'fr' ? [
+              'Arnaque au CPF (Compte Personnel de Formation)',
+              'Faux conseillers bancaires par téléphone',
+              'Arnaque à la vignette Crit\'Air',
+            ] : [
+              'CPF scam (Personal Training Account)',
+              'Fake bank advisors by phone',
+              'Crit\'Air sticker scam',
+            ]) : (language === 'fr' ? [
+              'Arnaque IRS par téléphone',
+              'Fraude aux cartes cadeaux',
+              'Arnaque romance sur les apps de rencontre',
+            ] : [
+              'IRS phone scam',
+              'Gift card fraud',
+              'Romance scam on dating apps',
+            ])).map((scam, idx, arr) => (
+              <View key={idx} style={[styles.scamItem, idx < arr.length - 1 && styles.scamBorder]}>
+                <AlertTriangle size={14} color={Colors.danger} />
+                <Text style={styles.scamText}>{scam}</Text>
+              </View>
+            ))}
+          </View>
+
+          {recentScans.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('recentScans')}</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/history' as any)}>
+                  <Text style={styles.viewAll}>{t('viewAll')}</Text>
+                </TouchableOpacity>
+              </View>
+              {recentScans.map((scan) => (
+                <ScanCard
+                  key={scan.id}
+                  scan={scan}
+                  onPress={() => router.push({ pathname: '/result' as any, params: { scanId: scan.id } })}
+                />
+              ))}
+            </>
+          )}
+
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  safe: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  successBanner: {
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  successText: {
+    color: Colors.background,
+    fontWeight: '700' as const,
+    fontSize: 14,
+    textAlign: 'center' as const,
+  },
+  header: {
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  logoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: Colors.accentMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appName: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  slogan: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 1,
+  },
+  heroCard: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden' as const,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.2)',
+  },
+  heroGradient: {
+    padding: 28,
+    alignItems: 'center',
+    gap: 12,
+  },
+  heroTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+    textAlign: 'center' as const,
+  },
+  heroButton: {
+    backgroundColor: Colors.accent,
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    gap: 8,
+    marginTop: 4,
+  },
+  heroButtonText: {
+    color: Colors.background,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  viewAll: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.accent,
+  },
+  actionsGrid: {
+    flexDirection: 'row' as const,
+    gap: 10,
+    marginBottom: 16,
+  },
+  actionCard: {
+    flex: 1,
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+    textAlign: 'center' as const,
+  },
+  quickToolsRow: {
+    gap: 10,
+    marginBottom: 24,
+  },
+  quickToolCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  quickToolIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickToolInfo: {
+    flex: 1,
+  },
+  quickToolTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+  },
+  quickToolSub: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  alertsScroll: {
+    paddingBottom: 4,
+    marginBottom: 24,
+  },
+  scamsCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  scamItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    padding: 14,
+    gap: 10,
+  },
+  scamBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  scamText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  bottomSpace: {
+    height: 20,
+  },
+  creditsBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  creditsBannerLeft: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 8,
+  },
+  creditsBannerText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+  },
+  creditsBannerTextUsed: {
+    color: Colors.danger,
+  },
+  creditDots: {
+    flexDirection: 'row' as const,
+    gap: 5,
+  },
+  creditDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  creditDotActive: {
+    backgroundColor: Colors.accent,
+  },
+  creditDotUsed: {
+    backgroundColor: Colors.border,
+  },
+  premiumBannerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,215,0,0.08)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.15)',
+  },
+  premiumBannerText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#FFD700',
+  },
+  actionCardLocked: {
+    opacity: 0.7,
+    borderColor: 'rgba(239,68,68,0.2)',
+  },
+  lockIcon: {
+    position: 'absolute' as const,
+    top: 8,
+    right: 8,
+  },
+});
