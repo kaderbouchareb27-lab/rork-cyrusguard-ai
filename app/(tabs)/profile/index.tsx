@@ -160,10 +160,13 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           <View style={styles.addressSection}>
-            <MapPin size={14} color={Colors.textMuted} />
-            <Text style={styles.addressText}>
-              CyrusGuard AI{"\n"}1055 Rue Lucien-L'Allier, Unit #1036{"\n"}Montreal, QC H3G 3C4
-            </Text>
+            <MapPin size={14} color={Colors.textMuted} style={{ marginTop: 2 }} />
+            <View>
+              <Text style={styles.addressName}>CyrusGuard AI</Text>
+              <Text style={styles.addressText}>1055 Rue Lucien-L'Allier</Text>
+              <Text style={styles.addressText}>Unit #1036</Text>
+              <Text style={styles.addressText}>Montreal, QC H3G 3C4</Text>
+            </View>
           </View>
 
           <View style={styles.bottomSpace} />
@@ -327,6 +330,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+  },
+  addressName: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+    textAlign: 'center' as const,
+    marginBottom: 2,
   },
   addressText: {
     fontSize: 11,
