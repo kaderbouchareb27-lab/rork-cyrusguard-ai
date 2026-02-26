@@ -125,28 +125,31 @@ export interface UrlAnalysisResult {
   verdictEmoji: string;
   isOnlineStore: boolean;
   reputation: {
-    trustScore: number;
-    positiveReviews: number;
-    negativeReviews: number;
+    trustScore: number | null;
+    positiveReviews: number | null;
+    negativeReviews: number | null;
     summary: string;
     summaryEn: string;
     reviews: UrlReview[];
-  };
+    dataAvailable: boolean;
+  } | null;
   complaints: {
     total: number;
     items: UrlComplaint[];
     summary: string;
     summaryEn: string;
-  };
+    dataAvailable: boolean;
+  } | null;
   business: {
     name: string;
-    registered: boolean;
+    registered: boolean | null;
     hasContact: boolean;
     address: string;
     phone: string;
     summary: string;
     summaryEn: string;
-  };
+    dataAvailable: boolean;
+  } | null;
   onlineStore: {
     realisticPrices: boolean;
     returnPolicy: boolean;
@@ -323,97 +326,112 @@ export async function analyzeUrl(url: string, language: string): Promise<UrlAnal
 
   const systemPrompt = `${CYRUS_SYSTEM_PROMPT}
 
-You are performing a DEEP, COMPREHENSIVE analysis of a URL. Go far beyond simple scam detection.
-Analyze the website's reliability, reputation, business legitimacy, complaints history, and if it's an online store, analyze pricing and policies.
+You are performing a DEEP, COMPREHENSIVE analysis of a URL.
 
-Use your knowledge of known websites, brands, scam patterns, and consumer protection databases.
+=== CRITICAL ANTI-HALLUCINATION RULES ===
+You MUST NEVER invent, fabricate, estimate, or hallucinate ANY data.
+If you do not have CONFIRMED, VERIFIABLE information about something, you MUST indicate it is unavailable.
+A false accusation against a legitimate site is as dangerous as missing a real scam.
+
+ELEMENTS YOU CAN VERIFY WITH CERTAINTY (analyze these):
+- SSL certificate: check if URL starts with https://
+- Domain structure: check for suspicious patterns (misspellings, weird TLDs, excessive subdomains, typosquatting)
+- Whether the site is a well-known, established brand or not
+- Presence of standard pages (privacy policy, terms, legal mentions) — ONLY if you actually know the site
+- Redirects: suspicious redirect patterns in the URL itself
+
+ELEMENTS YOU MUST NEVER FABRICATE:
+- Trustpilot ratings or scores (unless you are 100% certain the site has a Trustpilot profile and you know the real rating)
+- Google Reviews ratings or counts
+- BBB ratings or complaints
+- Complaints to Bureau de la concurrence, Office de la protection du consommateur, Centre antifraude du Canada
+- Percentage of positive/negative reviews without a real source
+- Business registration status (unless you are certain)
+- Physical addresses or phone numbers you don't actually know
+- Domain age (unless you are certain — otherwise say "Inconnu" / "Unknown")
+
+WHEN DATA IS NOT AVAILABLE:
+- Set "dataAvailable": false in reputation, complaints, and business sections
+- Set trustScore to null, positiveReviews to null, negativeReviews to null
+- Set reviews to empty array []
+- Set complaints total to 0 and items to empty array []
+- Write in summary: "Aucune donnée vérifiable disponible" / "No verifiable data available"
+- For business registered: use null if unknown
+- NEVER invent a score, rating, or complaint count
+
+SCORING RULES (score must reflect ONLY what you can verify):
+- Well-known, established, legitimate domains (google.com, amazon.ca, desjardins.com, etc.) = 75-90
+- Known sites with verified real complaints = 50-74 (adjust based on severity)
+- Unknown sites with no suspicious technical indicators = 50-60 (neutral, not penalized for being unknown)
+- Unknown sites with some suspicious indicators (new-looking domain, weird TLD) = 30-49
+- Clearly suspicious patterns (typosquatting, impersonation, phishing indicators) = 10-30
+- Known scam/phishing sites = 0-10
+
+IMPORTANT: An unknown site is NOT automatically dangerous. Do NOT lower the score just because you have no data.
+Lack of data = neutral, not negative. Only lower the score for ACTUAL red flags.
+
+VerdictEmoji rules:
+- ✅ for score >= 65 (Site fiable / Reliable site)
+- ⚠️ for score 35-64 (À utiliser avec prudence / Use with caution)  
+- 🚨 for score < 35 (Site dangereux / Dangerous site)
 
 You MUST respond with a valid JSON object and NOTHING else. No markdown, no code blocks, just pure JSON.
 
 The JSON must have this exact structure:
 {
-  "score": <number 0-100, where 100 is most trustworthy>,
-  "ssl": <boolean - does the URL use HTTPS>,
-  "domainAge": "<estimated age string, e.g. '5+ years' or 'Less than 1 year' or 'Unknown'>",
-  "legalMentions": <boolean>,
-  "privacyPolicy": <boolean>,
-  "termsOfService": <boolean>,
-  "physicalAddress": <boolean>,
-  "redirects": <number of suspected redirects>,
-  "verdict": "<French verdict - clear and detailed>",
-  "verdictEn": "<English verdict - clear and detailed>",
-  "verdictEmoji": "<one of: ✅ or ⚠️ or 🚨>",
-  "isOnlineStore": <boolean - is this an e-commerce/shopping site>,
+  "score": <number 0-100>,
+  "ssl": <boolean>,
+  "domainAge": "<ONLY if you are certain, otherwise 'Inconnu' / 'Unknown'>",
+  "legalMentions": <boolean - ONLY true if you are certain the site has them>,
+  "privacyPolicy": <boolean - ONLY true if you are certain>,
+  "termsOfService": <boolean - ONLY true if you are certain>,
+  "physicalAddress": <boolean - ONLY true if you are certain>,
+  "redirects": <number - 0 if you cannot determine>,
+  "verdict": "<French verdict - FACTUAL, based on what you actually know>",
+  "verdictEn": "<English verdict - FACTUAL>",
+  "verdictEmoji": "<✅ or ⚠️ or 🚨>",
+  "isOnlineStore": <boolean>,
   "reputation": {
-    "trustScore": <number 0-100>,
-    "positiveReviews": <estimated percentage 0-100>,
-    "negativeReviews": <estimated percentage 0-100>,
-    "summary": "<French summary of reputation>",
-    "summaryEn": "<English summary of reputation>",
-    "reviews": [
-      {
-        "source": "<platform name e.g. Trustpilot, Google, BBB>",
-        "rating": "<rating e.g. 4.2/5 or 2.1/5>",
-        "summary": "<French short summary of reviews on this platform>",
-        "summaryEn": "<English short summary>"
-      }
-    ]
+    "dataAvailable": <boolean - true ONLY if you have REAL verified review data>,
+    "trustScore": <number or null if no real data>,
+    "positiveReviews": <number or null if no real data>,
+    "negativeReviews": <number or null if no real data>,
+    "summary": "<French - state clearly if no data is available>",
+    "summaryEn": "<English - state clearly if no data is available>",
+    "reviews": [<ONLY include reviews from platforms where you KNOW the site has a REAL profile with REAL ratings. Empty array if unknown.>]
   },
   "complaints": {
-    "total": <estimated number of complaints found>,
-    "items": [
-      {
-        "source": "<organization or platform name>",
-        "description": "<French description of complaint>",
-        "descriptionEn": "<English description>"
-      }
-    ],
-    "summary": "<French summary of complaints>",
-    "summaryEn": "<English summary of complaints>"
+    "dataAvailable": <boolean - true ONLY if you have REAL verified complaint data>,
+    "total": <number - ONLY real complaints you are certain about, 0 if unknown>,
+    "items": [<ONLY real, verified complaints. Empty array if none confirmed.>],
+    "summary": "<French - state clearly if no data is available>",
+    "summaryEn": "<English>"
   },
   "business": {
-    "name": "<business name if known, or 'Inconnu' / 'Unknown'>",
-    "registered": <boolean - is the business registered/legitimate>,
-    "hasContact": <boolean - real contact info available>,
-    "address": "<address if known or 'Non disponible' / 'Not available'>",
-    "phone": "<phone if known or 'Non disponible' / 'Not available'>",
-    "summary": "<French summary of business legitimacy>",
-    "summaryEn": "<English summary>"
+    "dataAvailable": <boolean - true ONLY if you have REAL verified business data>,
+    "name": "<ONLY if you actually know it, otherwise 'Inconnu' / 'Unknown'>",
+    "registered": <boolean or null if unknown>,
+    "hasContact": <boolean - ONLY true if you are certain>,
+    "address": "<ONLY if you actually know it, otherwise 'Non disponible' / 'Not available'>",
+    "phone": "<ONLY if you actually know it, otherwise 'Non disponible' / 'Not available'>",
+    "summary": "<French - state clearly what is known vs unknown>",
+    "summaryEn": "<English>"
   },
   "onlineStore": <null if not an online store, otherwise: {
     "realisticPrices": <boolean>,
     "returnPolicy": <boolean>,
     "securePayment": <boolean>,
-    "brandCopying": <boolean - suspected of copying known brands>,
-    "summary": "<French summary of store analysis>",
-    "summaryEn": "<English summary>"
+    "brandCopying": <boolean>,
+    "summary": "<French>",
+    "summaryEn": "<English>"
   }>,
-  "personalizedAdvice": ["<French advice 1>", "<French advice 2>", ...],
-  "personalizedAdviceEn": ["<English advice 1>", "<English advice 2>", ...]
+  "personalizedAdvice": ["<French advice based ONLY on verified facts>"],
+  "personalizedAdviceEn": ["<English advice based ONLY on verified facts>"]
 }
 
-Scoring rules:
-- Known legitimate, well-established domains (google.com, amazon.ca, etc.) = 80-95
-- Well-known but with some complaints = 60-79
-- Unknown but not suspicious = 45-65
-- Suspicious patterns (misspellings, weird TLDs, too many subdomains) = 10-35
-- Fake domains mimicking real ones (amaz0n.com, g00gle.com) = 5-20
-- Known scam sites = 0-10
-
-VerdictEmoji rules:
-- ✅ for score >= 65 (Site fiable / Reliable site)
-- ⚠️ for score 35-64 (À utiliser avec prudence / Use with caution)
-- 🚨 for score < 35 (Site dangereux / Dangerous site)
-
-For reputation, use your knowledge of the site's reviews on Trustpilot, Google Reviews, BBB, etc.
-For complaints, check knowledge of complaints on Bureau de la concurrence (Canada), Office de la protection du consommateur (Québec), Centre antifraude du Canada, BBB, Trustpilot.
-For business info, check if the company is known, registered, has real contact info.
-For online stores, check if prices are realistic, return policies exist, payment is secure, and if they copy known brands.
-
-Personalized advice should be specific to what you found. Example: "Ce site a plusieurs plaintes pour non-livraison, nous te recommandons de ne pas commander ici."
-Provide 3-5 personalized advice items based on the analysis.
-
-Be thorough and detailed. This is a comprehensive site investigation.`;
+Personalized advice should reflect what you ACTUALLY found. If you found nothing concerning, say so honestly.
+If data is unavailable, advise the user to do their own research (check Trustpilot, Google Reviews, etc.) rather than making claims.
+Provide 3-5 advice items.`;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },

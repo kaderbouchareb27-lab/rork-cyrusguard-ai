@@ -5,7 +5,7 @@ import { useRouter, Stack } from 'expo-router';
 import {
   ChevronLeft, Globe, Search, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle,
   Clock, MapPin, FileText, Star, MessageSquareWarning, Building2, ShoppingCart,
-  Lightbulb, Lock, ArrowRight, ThumbsUp, ThumbsDown, Phone, ExternalLink
+  Lightbulb, Lock, ArrowRight, ThumbsUp, ThumbsDown, Phone, ExternalLink, Info
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
@@ -117,7 +117,8 @@ export default function UrlAnalyzeScreen() {
     </View>
   );
 
-  const renderReviewBar = (positive: number, negative: number) => {
+  const renderReviewBar = (positive: number | null, negative: number | null) => {
+    if (positive === null || negative === null) return null;
     const total = positive + negative;
     const posWidth = total > 0 ? (positive / total) * 100 : 50;
     return (
@@ -139,6 +140,15 @@ export default function UrlAnalyzeScreen() {
       </View>
     );
   };
+
+  const renderNoData = () => (
+    <View style={styles.noDataRow}>
+      <Info size={14} color={Colors.textMuted} />
+      <Text style={styles.noDataText}>
+        {language === 'fr' ? 'Aucune donnée vérifiable disponible' : 'No verifiable data available'}
+      </Text>
+    </View>
+  );
 
   return (
     <View style={styles.root}>
@@ -272,20 +282,26 @@ export default function UrlAnalyzeScreen() {
                     <Text style={styles.cardTitle}>{t('reputationReviews')}</Text>
                   </View>
 
-                  <View style={styles.trustScoreRow}>
-                    <Text style={styles.trustScoreLabel}>{t('trustScore')}</Text>
-                    <View style={styles.trustScoreValue}>
-                      <Text style={[styles.trustScoreNumber, {
-                        color: result.reputation.trustScore >= 65 ? Colors.accent
-                          : result.reputation.trustScore >= 35 ? Colors.warning : Colors.danger,
-                      }]}>
-                        {result.reputation.trustScore}
-                      </Text>
-                      <Text style={styles.trustScoreMax}>/100</Text>
-                    </View>
-                  </View>
+                  {result.reputation.dataAvailable && result.reputation.trustScore !== null ? (
+                    <>
+                      <View style={styles.trustScoreRow}>
+                        <Text style={styles.trustScoreLabel}>{t('trustScore')}</Text>
+                        <View style={styles.trustScoreValue}>
+                          <Text style={[styles.trustScoreNumber, {
+                            color: result.reputation.trustScore >= 65 ? Colors.accent
+                              : result.reputation.trustScore >= 35 ? Colors.warning : Colors.danger,
+                          }]}>
+                            {result.reputation.trustScore}
+                          </Text>
+                          <Text style={styles.trustScoreMax}>/100</Text>
+                        </View>
+                      </View>
 
-                  {renderReviewBar(result.reputation.positiveReviews, result.reputation.negativeReviews)}
+                      {renderReviewBar(result.reputation.positiveReviews, result.reputation.negativeReviews)}
+                    </>
+                  ) : (
+                    renderNoData()
+                  )}
 
                   <Text style={styles.sectionSummary}>
                     {language === 'fr' ? result.reputation.summary : (result.reputation.summaryEn || result.reputation.summary)}
@@ -313,48 +329,56 @@ export default function UrlAnalyzeScreen() {
               )}
 
               {result.complaints && (
-                <View style={[styles.card, result.complaints.total > 0 && { borderLeftWidth: 3, borderLeftColor: Colors.danger }]}>
+                <View style={[styles.card, result.complaints.dataAvailable && result.complaints.total > 0 && { borderLeftWidth: 3, borderLeftColor: Colors.danger }]}>
                   <View style={styles.cardHeader}>
                     <View style={[styles.cardIconWrap, { backgroundColor: Colors.dangerMuted }]}>
                       <MessageSquareWarning size={16} color={Colors.danger} />
                     </View>
                     <Text style={styles.cardTitle}>{t('complaintsSection')}</Text>
-                    <View style={[styles.countBadge, {
-                      backgroundColor: result.complaints.total > 0 ? Colors.dangerMuted : Colors.accentMuted,
-                    }]}>
-                      <Text style={[styles.countBadgeText, {
-                        color: result.complaints.total > 0 ? Colors.danger : Colors.accent,
+                    {result.complaints.dataAvailable && (
+                      <View style={[styles.countBadge, {
+                        backgroundColor: result.complaints.total > 0 ? Colors.dangerMuted : Colors.accentMuted,
                       }]}>
-                        {result.complaints.total}
-                      </Text>
-                    </View>
+                        <Text style={[styles.countBadgeText, {
+                          color: result.complaints.total > 0 ? Colors.danger : Colors.accent,
+                        }]}>
+                          {result.complaints.total}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
-                  <Text style={styles.sectionSummary}>
-                    {language === 'fr' ? result.complaints.summary : (result.complaints.summaryEn || result.complaints.summary)}
-                  </Text>
+                  {!result.complaints.dataAvailable ? (
+                    renderNoData()
+                  ) : (
+                    <>
+                      <Text style={styles.sectionSummary}>
+                        {language === 'fr' ? result.complaints.summary : (result.complaints.summaryEn || result.complaints.summary)}
+                      </Text>
 
-                  {result.complaints.items && result.complaints.items.length > 0 && (
-                    <View style={styles.complaintsList}>
-                      {result.complaints.items.map((item, idx) => (
-                        <View key={idx} style={styles.complaintItem}>
-                          <View style={styles.complaintSource}>
-                            <View style={styles.complaintDot} />
-                            <Text style={styles.complaintSourceText}>{item.source}</Text>
-                          </View>
-                          <Text style={styles.complaintDesc}>
-                            {language === 'fr' ? item.description : (item.descriptionEn || item.description)}
-                          </Text>
+                      {result.complaints.items && result.complaints.items.length > 0 && (
+                        <View style={styles.complaintsList}>
+                          {result.complaints.items.map((item, idx) => (
+                            <View key={idx} style={styles.complaintItem}>
+                              <View style={styles.complaintSource}>
+                                <View style={styles.complaintDot} />
+                                <Text style={styles.complaintSourceText}>{item.source}</Text>
+                              </View>
+                              <Text style={styles.complaintDesc}>
+                                {language === 'fr' ? item.description : (item.descriptionEn || item.description)}
+                              </Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
-                  )}
+                      )}
 
-                  {result.complaints.total === 0 && (
-                    <View style={styles.noComplaintsRow}>
-                      <CheckCircle size={16} color={Colors.accent} />
-                      <Text style={styles.noComplaintsText}>{t('noComplaints')}</Text>
-                    </View>
+                      {result.complaints.total === 0 && (
+                        <View style={styles.noComplaintsRow}>
+                          <CheckCircle size={16} color={Colors.accent} />
+                          <Text style={styles.noComplaintsText}>{t('noComplaints')}</Text>
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               )}
@@ -368,26 +392,41 @@ export default function UrlAnalyzeScreen() {
                     <Text style={styles.cardTitle}>{t('businessDetails')}</Text>
                   </View>
 
-                  <View style={styles.businessGrid}>
-                    <View style={styles.businessRow}>
-                      <Text style={styles.businessLabel}>{t('businessName')}</Text>
-                      <Text style={styles.businessValue}>{result.business.name}</Text>
+                  {!result.business.dataAvailable ? (
+                    renderNoData()
+                  ) : (
+                    <View style={styles.businessGrid}>
+                      <View style={styles.businessRow}>
+                        <Text style={styles.businessLabel}>{t('businessName')}</Text>
+                        <Text style={styles.businessValue}>{result.business.name}</Text>
+                      </View>
+                      {result.business.registered !== null && renderCheck(t('businessRegistered'), result.business.registered)}
+                      {result.business.registered === null && (
+                        <View style={styles.checkRow}>
+                          <Info size={16} color={Colors.textMuted} />
+                          <Text style={styles.checkLabel}>{t('businessRegistered')}</Text>
+                          <View style={[styles.checkBadge, { backgroundColor: Colors.surface }]}>
+                            <Text style={[styles.checkBadgeText, { color: Colors.textMuted }]}>
+                              {language === 'fr' ? 'Inconnu' : 'Unknown'}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                      {renderCheck(t('contactInfo'), result.business.hasContact)}
+                      {result.business.address && result.business.address !== 'Non disponible' && result.business.address !== 'Not available' && (
+                        <View style={styles.businessRow}>
+                          <MapPin size={14} color={Colors.textMuted} />
+                          <Text style={styles.businessAddressText}>{result.business.address}</Text>
+                        </View>
+                      )}
+                      {result.business.phone && result.business.phone !== 'Non disponible' && result.business.phone !== 'Not available' && (
+                        <View style={styles.businessRow}>
+                          <Phone size={14} color={Colors.textMuted} />
+                          <Text style={styles.businessAddressText}>{result.business.phone}</Text>
+                        </View>
+                      )}
                     </View>
-                    {renderCheck(t('businessRegistered'), result.business.registered)}
-                    {renderCheck(t('contactInfo'), result.business.hasContact)}
-                    {result.business.address && result.business.address !== 'Non disponible' && result.business.address !== 'Not available' && (
-                      <View style={styles.businessRow}>
-                        <MapPin size={14} color={Colors.textMuted} />
-                        <Text style={styles.businessAddressText}>{result.business.address}</Text>
-                      </View>
-                    )}
-                    {result.business.phone && result.business.phone !== 'Non disponible' && result.business.phone !== 'Not available' && (
-                      <View style={styles.businessRow}>
-                        <Phone size={14} color={Colors.textMuted} />
-                        <Text style={styles.businessAddressText}>{result.business.phone}</Text>
-                      </View>
-                    )}
-                  </View>
+                  )}
 
                   <Text style={styles.sectionSummary}>
                     {language === 'fr' ? result.business.summary : (result.business.summaryEn || result.business.summary)}
@@ -575,6 +614,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const, alignItems: 'center', gap: 8, marginTop: 8,
   },
   noComplaintsText: { fontSize: 13, color: Colors.accent, fontWeight: '600' as const },
+  noDataRow: {
+    flexDirection: 'row' as const, alignItems: 'center', gap: 8,
+    backgroundColor: Colors.surface, borderRadius: 10, padding: 12, marginVertical: 6,
+  },
+  noDataText: { fontSize: 13, color: Colors.textMuted, fontStyle: 'italic' as const, flex: 1 },
   businessGrid: { gap: 0 },
   businessRow: {
     flexDirection: 'row' as const, alignItems: 'center', gap: 10,
