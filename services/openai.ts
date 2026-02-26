@@ -504,15 +504,36 @@ export async function analyzeUrl(url: string, language: string): Promise<UrlAnal
   const suspiciousKeywords = ['login', 'verify', 'secure', 'update', 'confirm', 'free', 'winner', 'prize', 'urgent', 'account-verify', 'signin'];
   const hasSuspiciousKeywords = suspiciousKeywords.some(kw => normalizedUrl.toLowerCase().includes(kw));
 
-  const knownDomains = [
-    'desjardins.com', 'td.com', 'bmo.com', 'rbc.com', 'bnc.ca', 'scotiabank.com',
-    'canada.ca', 'quebec.ca', 'gouv.qc.ca', 'gc.ca',
-    'google.com', 'apple.com', 'microsoft.com', 'amazon.ca', 'amazon.com',
-    'facebook.com', 'instagram.com', 'twitter.com', 'linkedin.com', 'tiktok.com',
-    'paypal.com', 'netflix.com', 'spotify.com', 'youtube.com', 'github.com',
-    'wikipedia.org', 'reddit.com', 'whatsapp.com',
+  const knownEcommerce = [
+    'shein.com', 'temu.com', 'amazon.com', 'amazon.ca', 'amazon.fr', 'ebay.com', 'ebay.ca',
+    'walmart.ca', 'walmart.com', 'aliexpress.com', 'wish.com', 'costco.ca', 'bestbuy.ca',
+    'etsy.com', 'asos.com', 'zara.com', 'hm.com', 'uniqlo.com', 'nike.com', 'adidas.com',
+    'ikea.com', 'wayfair.ca',
   ];
+  const knownBanks = [
+    'desjardins.com', 'td.com', 'bmo.com', 'rbc.com', 'bnc.ca', 'scotiabank.com',
+    'cibc.com', 'paypal.com', 'stripe.com', 'interac.ca', 'visa.com', 'mastercard.com',
+  ];
+  const knownGov = [
+    'canada.ca', 'quebec.ca', 'gouv.qc.ca', 'gc.ca', 'service-public.fr', 'belgique.be', 'caf.fr',
+  ];
+  const knownTech = [
+    'google.com', 'apple.com', 'microsoft.com', 'meta.com', 'facebook.com', 'instagram.com',
+    'youtube.com', 'twitter.com', 'x.com', 'linkedin.com', 'netflix.com', 'spotify.com',
+    'tiktok.com', 'github.com', 'wikipedia.org', 'reddit.com', 'whatsapp.com',
+  ];
+  const knownDomains = [...knownEcommerce, ...knownBanks, ...knownGov, ...knownTech];
   const isKnownDomain = knownDomains.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
+  const isKnownEcommerce = knownEcommerce.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
+  const isKnownBank = knownBanks.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
+  const isKnownGov = knownGov.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
+  const isKnownTech = knownTech.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
+
+  let knownSiteCategory = '';
+  if (isKnownGov) knownSiteCategory = 'government';
+  else if (isKnownBank) knownSiteCategory = 'bank/finance';
+  else if (isKnownTech) knownSiteCategory = 'tech/service';
+  else if (isKnownEcommerce) knownSiteCategory = 'e-commerce';
 
   const typosquatTargets = [
     'amazon', 'google', 'facebook', 'paypal', 'microsoft', 'apple', 'netflix',
@@ -546,7 +567,7 @@ Excessive dashes in domain: ${hasExcessiveDashes ? 'YES (SUSPICIOUS)' : 'No'}
 Digits in domain name: ${hasDigitsInDomain ? 'YES (potentially suspicious)' : 'No'}
 Suspicious TLD: ${isSuspiciousTld ? 'YES (' + parsedTld + ')' : 'No'}
 Suspicious keywords in URL: ${hasSuspiciousKeywords ? 'YES' : 'No'}
-Known/trusted domain: ${isKnownDomain ? 'YES' : 'No'}
+Known/trusted domain: ${isKnownDomain ? 'YES — category: ' + knownSiteCategory : 'No'}
 Typosquatting detected: ${typosquatSimilarTo ? 'POSSIBLE - similar to ' + typosquatSimilarTo : 'No'}
 === END STEP 1 ===
 
@@ -575,16 +596,33 @@ ${siteData.contact ? 'Content: ' + siteData.contact : ''}
 === END STEP 2 ===
 `;
 
-  const systemPrompt = `Tu es Cyrus, expert en cybersécurité et détection de fraude intégré dans CyrusGuard.
+  const systemPrompt = `Tu es Cyrus, expert en cybersécurité et détection de fraude spécialisé pour le marché francophone (Québec, France, Belgique), intégré dans CyrusGuard.
 
 You are performing a DEEP analysis of a URL. We have pre-computed structural analysis and fetched real site content for you.
 
 ${urlAnalysisSection}
 
-=== STEP 3: YOUR ANALYSIS TASK ===
-Based on the STRUCTURAL ANALYSIS (Step 1) and FETCH RESULTS (Step 2) above, analyze and score the site.
+=== STEP 3: KNOWN SITE RECOGNITION (PRIORITY) ===
+BEFORE analyzing fetch results, check if the root domain is a KNOWN site.
 
-SCORING RULES:
+If the domain is RECOGNIZED as a known site:
+- hasLegalPages: true (major sites ALL have legal pages)
+- hasPrivacyPolicy: true
+- termsOfService: true
+- hasContact: true
+- DO NOT base the score on fetch results — base it on KNOWLEDGE of the site
+- Add a note if the site has KNOWN CONTROVERSIES (e.g., Shein = quality/ethics controversies, but NOT a scam)
+
+Known site scoring:
+- Government sites: 85-95
+- Banks/Finance: 80-90
+- Major tech/services: 80-90
+- Major e-commerce (good reputation): 75-85
+- Major e-commerce (with controversies but not scam): 65-80
+
+If the domain is NOT recognized → rely on structural analysis + fetch data.
+
+=== STEP 4: SCORING FOR UNKNOWN SITES ===
 90-100: Known official domain + HTTPS + all pages verified
 75-89: Legitimate site with HTTPS + legal pages + contact info
 60-74: HTTPS + some pages present, no red flags
@@ -592,11 +630,14 @@ SCORING RULES:
 20-39: Multiple red flags (no SSL, typosquatting possible, suspicious domain)
 0-19: Clear phishing, confirmed typosquatting, obvious scam
 
-CRITICAL: An UNKNOWN site is NOT automatically dangerous.
+CRITICAL RULES:
+- An UNKNOWN site is NOT automatically dangerous
 - Unknown + HTTPS + no red flags = 50-60 (neutral)
 - Unknown + red flags = lower based on severity
-- Known trusted domain (exact match) = 80-90 automatic
+- Known trusted domain (exact match) = automatic high score per category above
 - Domain SIMILAR to known but NOT exact = ALERT typosquatting, very low score
+- FETCH FAILURE MUST NEVER lower the score. An inaccessible site = insufficient data, NOT a dangerous site
+- Modern sites (React, Angular, Vue) often return empty HTML to fetch — this means NOTHING about their legitimacy
 
 === ABSOLUTE RULES ===
 - reputation.dataAvailable = ALWAYS false (we did NOT check reviews)
@@ -608,14 +649,16 @@ CRITICAL: An UNKNOWN site is NOT automatically dangerous.
 - complaints.total = ALWAYS 0
 - complaints.items = ALWAYS empty array []
 - NEVER invent Trustpilot scores, Google reviews, or complaint data
-- If content was NOT fetched (site down), content fields = null/false but don't assume it's dangerous
+- NEVER say a known site has no legal pages just because fetch failed
+- If content was NOT fetched, content fields may be false but DON'T assume danger
 - Extract business info ONLY from fetched content (legal page, contact page, homepage)
-- If a page was NOT found, do NOT claim it exists
+- If a page was NOT found via fetch AND it's NOT a known site, report honestly
+- Be HONEST: if we don't know, say "Inconnu", not "Dangereux"
 
 VerdictEmoji rules:
-- ✅ for score >= 65
-- ⚠️ for score 35-64
-- 🚨 for score < 35
+- ✅ for score >= 65: "Site fiable" / "Reliable site"
+- ⚠️ for score 35-64: "À utiliser avec prudence" / "Use with caution"
+- 🚨 for score < 35: "Site dangereux" / "Dangerous site"
 
 You MUST respond with a valid JSON object and NOTHING else. No markdown, no code blocks, just pure JSON.
 
@@ -623,9 +666,9 @@ You MUST respond with a valid JSON object and NOTHING else. No markdown, no code
   "score": <0-100>,
   "ssl": <boolean>,
   "domainAge": "Inconnu",
-  "legalMentions": <boolean>,
-  "privacyPolicy": <boolean>,
-  "termsOfService": <boolean>,
+  "legalMentions": <boolean - true if known site OR found in fetch>,
+  "privacyPolicy": <boolean - true if known site OR found in fetch>,
+  "termsOfService": <boolean - true if known site OR found in fetch>,
   "physicalAddress": <boolean>,
   "redirects": <number>,
   "verdict": "<French verdict>",
@@ -645,12 +688,12 @@ You MUST respond with a valid JSON object and NOTHING else. No markdown, no code
     "dataAvailable": false,
     "total": 0,
     "items": [],
-    "summary": "Aucune recherche de plaintes effectuée — vérifiez le Centre antifraude du Canada.",
-    "summaryEn": "No complaint search performed — check the Canadian Anti-Fraud Centre."
+    "summary": "Vérifiez le Centre antifraude du Canada et l'Office de la protection du consommateur.",
+    "summaryEn": "Check the Canadian Anti-Fraud Centre and consumer protection agencies."
   },
   "business": {
     "dataAvailable": <boolean>,
-    "name": "<from content or 'Inconnu'>",
+    "name": "<from content, known info, or 'Inconnu'>",
     "registered": null,
     "hasContact": <boolean>,
     "address": "<from content or 'Non disponible'>",
@@ -664,7 +707,7 @@ You MUST respond with a valid JSON object and NOTHING else. No markdown, no code
 }
 
 Always include advice to check Trustpilot/Google Reviews manually.
-Always include advice about Centre antifraude du Canada (antifraudcentre.ca) if relevant.
+Always include advice about Centre antifraude du Canada (antifraudcentre.ca) and Office de la protection du consommateur.
 Provide 3-5 advice items. Both FR and EN versions.`;
 
   const messages: ChatMessage[] = [
