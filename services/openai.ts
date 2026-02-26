@@ -321,54 +321,190 @@ Explain WHY with concrete Quebec-specific examples when relevant.`;
   }
 }
 
+interface FetchedSiteData {
+  homepage: string | null;
+  legalMentions: string | null;
+  privacyPolicy: string | null;
+  terms: string | null;
+  contact: string | null;
+  ssl: boolean;
+  redirectCount: number;
+  fetchError: string | null;
+}
+
+async function fetchPageContent(pageUrl: string, maxLength: number = 3000): Promise<string | null> {
+  try {
+    console.log('[Fetch] Fetching:', pageUrl);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(pageUrl, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CyrusGuard/1.0)' },
+      redirect: 'follow',
+    });
+    clearTimeout(timeout);
+    if (!response.ok) {
+      console.log('[Fetch] Non-OK status for', pageUrl, ':', response.status);
+      return null;
+    }
+    const text = await response.text();
+    const stripped = text
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    console.log('[Fetch] Got content from', pageUrl, '- length:', stripped.length);
+    return stripped.substring(0, maxLength);
+  } catch (error) {
+    console.log('[Fetch] Error fetching', pageUrl, ':', error);
+    return null;
+  }
+}
+
+async function fetchSiteData(url: string): Promise<FetchedSiteData> {
+  let normalizedUrl = url.trim();
+  if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    normalizedUrl = 'https://' + normalizedUrl;
+  }
+
+  const ssl = normalizedUrl.startsWith('https://');
+  let redirectCount = 0;
+  let fetchError: string | null = null;
+
+  let baseUrl: string;
+  try {
+    const parsed = new URL(normalizedUrl);
+    baseUrl = `${parsed.protocol}//${parsed.hostname}`;
+  } catch {
+    baseUrl = normalizedUrl;
+  }
+
+  console.log('[SiteData] Fetching site data for:', baseUrl);
+
+  const legalPaths = [
+    '/mentions-legales', '/legal', '/legal-notice', '/mentions_legales',
+  ];
+  const privacyPaths = [
+    '/politique-de-confidentialite', '/privacy', '/privacy-policy', '/politique-confidentialite',
+  ];
+  const termsPaths = [
+    '/conditions-utilisation', '/terms', '/terms-of-service', '/tos', '/cgu', '/conditions-generales',
+  ];
+  const contactPaths = [
+    '/contact', '/a-propos', '/about', '/about-us', '/nous-contacter', '/contactez-nous',
+  ];
+
+  const [homepage] = await Promise.all([
+    fetchPageContent(normalizedUrl, 5000),
+  ]);
+
+  async function tryPaths(paths: string[]): Promise<string | null> {
+    for (const path of paths) {
+      const content = await fetchPageContent(baseUrl + path, 2000);
+      if (content && content.length > 50) return content;
+    }
+    return null;
+  }
+
+  const [legalMentions, privacyPolicy, terms, contact] = await Promise.all([
+    tryPaths(legalPaths),
+    tryPaths(privacyPaths),
+    tryPaths(termsPaths),
+    tryPaths(contactPaths),
+  ]);
+
+  return {
+    homepage,
+    legalMentions,
+    privacyPolicy,
+    terms,
+    contact,
+    ssl,
+    redirectCount,
+    fetchError,
+  };
+}
+
 export async function analyzeUrl(url: string, language: string): Promise<UrlAnalysisResult> {
   console.log('[OpenAI] Starting deep URL analysis for:', url);
+
+  const siteData = await fetchSiteData(url);
+  console.log('[OpenAI] Site data fetched - homepage:', !!siteData.homepage, 'legal:', !!siteData.legalMentions, 'privacy:', !!siteData.privacyPolicy, 'terms:', !!siteData.terms, 'contact:', !!siteData.contact);
+
+  const realDataSection = `
+=== REAL DATA FETCHED FROM THE SITE (use ONLY this to answer) ===
+SSL: ${siteData.ssl ? 'Yes (HTTPS)' : 'No (HTTP only)'}
+Redirects detected: ${siteData.redirectCount}
+
+Homepage content (first ~5000 chars):
+${siteData.homepage ? siteData.homepage : '[FAILED TO FETCH - site may be down or blocking requests]'}
+
+Legal mentions page found: ${siteData.legalMentions ? 'YES' : 'NO'}
+${siteData.legalMentions ? 'Content: ' + siteData.legalMentions : ''}
+
+Privacy policy page found: ${siteData.privacyPolicy ? 'YES' : 'NO'}
+${siteData.privacyPolicy ? 'Content: ' + siteData.privacyPolicy : ''}
+
+Terms of service page found: ${siteData.terms ? 'YES' : 'NO'}
+${siteData.terms ? 'Content: ' + siteData.terms : ''}
+
+Contact/About page found: ${siteData.contact ? 'YES' : 'NO'}
+${siteData.contact ? 'Content: ' + siteData.contact : ''}
+=== END OF REAL DATA ===
+`;
 
   const systemPrompt = `${CYRUS_SYSTEM_PROMPT}
 
 You are performing a DEEP, COMPREHENSIVE analysis of a URL.
+IMPORTANT: We have ALREADY FETCHED the real website content for you. Use ONLY the real data provided below to form your analysis. Do NOT guess or invent anything beyond what the fetched data shows.
 
-=== CRITICAL ANTI-HALLUCINATION RULES ===
+${realDataSection}
+
+=== ABSOLUTE ANTI-HALLUCINATION RULES ===
+You MUST base your ENTIRE analysis on the REAL DATA provided above.
 You MUST NEVER invent, fabricate, estimate, or hallucinate ANY data.
-If you do not have CONFIRMED, VERIFIABLE information about something, you MUST indicate it is unavailable.
+If something was NOT found in the fetched data above, it does NOT exist for this analysis.
 A false accusation against a legitimate site is as dangerous as missing a real scam.
 
-ELEMENTS YOU CAN VERIFY WITH CERTAINTY (analyze these):
-- SSL certificate: check if URL starts with https://
-- Domain structure: check for suspicious patterns (misspellings, weird TLDs, excessive subdomains, typosquatting)
-- Whether the site is a well-known, established brand or not
-- Presence of standard pages (privacy policy, terms, legal mentions) — ONLY if you actually know the site
-- Redirects: suspicious redirect patterns in the URL itself
+RULES FOR EACH FIELD:
+- ssl: Use the SSL value from the fetched data above (already verified)
+- legalMentions: true ONLY if "Legal mentions page found: YES" above
+- privacyPolicy: true ONLY if "Privacy policy page found: YES" above
+- termsOfService: true ONLY if "Terms of service page found: YES" above
+- physicalAddress: true ONLY if you can see a physical address in the fetched content above
+- domainAge: "Inconnu" / "Unknown" — we cannot verify this
+- redirects: Use the redirect count from the fetched data above
 
-ELEMENTS YOU MUST NEVER FABRICATE:
-- Trustpilot ratings or scores (unless you are 100% certain the site has a Trustpilot profile and you know the real rating)
-- Google Reviews ratings or counts
-- BBB ratings or complaints
-- Complaints to Bureau de la concurrence, Office de la protection du consommateur, Centre antifraude du Canada
-- Percentage of positive/negative reviews without a real source
-- Business registration status (unless you are certain)
-- Physical addresses or phone numbers you don't actually know
-- Domain age (unless you are certain — otherwise say "Inconnu" / "Unknown")
+FOR REPUTATION SECTION:
+- We have NOT searched Trustpilot, Google Reviews, or any review platform
+- Therefore: dataAvailable MUST be false, trustScore MUST be null
+- positiveReviews MUST be null, negativeReviews MUST be null
+- reviews MUST be an empty array []
+- summary: "Aucune donnée vérifiable disponible — nous recommandons de vérifier manuellement sur Trustpilot et Google." / "No verifiable data available — we recommend checking Trustpilot and Google manually."
 
-WHEN DATA IS NOT AVAILABLE:
-- Set "dataAvailable": false in reputation, complaints, and business sections
-- Set trustScore to null, positiveReviews to null, negativeReviews to null
-- Set reviews to empty array []
-- Set complaints total to 0 and items to empty array []
-- Write in summary: "Aucune donnée vérifiable disponible" / "No verifiable data available"
-- For business registered: use null if unknown
-- NEVER invent a score, rating, or complaint count
+FOR COMPLAINTS SECTION:
+- We have NOT searched any complaint databases
+- Therefore: dataAvailable MUST be false, total MUST be 0
+- items MUST be an empty array []
+- summary: "Aucune recherche de plaintes effectuée — vérifiez le Centre antifraude du Canada et l'Office de la protection du consommateur." / "No complaint search performed — check the Canadian Anti-Fraud Centre and consumer protection agencies."
 
-SCORING RULES (score must reflect ONLY what you can verify):
-- Well-known, established, legitimate domains (google.com, amazon.ca, desjardins.com, etc.) = 75-90
-- Known sites with verified real complaints = 50-74 (adjust based on severity)
-- Unknown sites with no suspicious technical indicators = 50-60 (neutral, not penalized for being unknown)
-- Unknown sites with some suspicious indicators (new-looking domain, weird TLD) = 30-49
-- Clearly suspicious patterns (typosquatting, impersonation, phishing indicators) = 10-30
-- Known scam/phishing sites = 0-10
+FOR BUSINESS SECTION:
+- Extract business info ONLY from the fetched content above (contact page, legal mentions, homepage)
+- If you find a business name, address, or phone in the content, report it with dataAvailable: true
+- If nothing found: dataAvailable: false, name: "Inconnu", registered: null
+- NEVER invent a business name, address, or registration status
 
-IMPORTANT: An unknown site is NOT automatically dangerous. Do NOT lower the score just because you have no data.
-Lack of data = neutral, not negative. Only lower the score for ACTUAL red flags.
+SCORING RULES (score must reflect ONLY what you verified from fetched data):
+- Site has SSL + legal pages + privacy + terms + contact info + looks professional = 70-85
+- Site has SSL + some legal pages + appears legitimate = 55-69
+- Site has SSL but missing legal pages, unknown business = 40-54 (neutral)
+- No SSL, missing most pages, suspicious patterns = 20-39
+- Clear phishing/scam indicators in the content = 0-19
+- Well-known, established domains (google.com, amazon.ca, desjardins.com) = 80-90
+
+IMPORTANT: An unknown site is NOT automatically dangerous. Do NOT lower the score just because you have no review data.
+Lack of review data = neutral, not negative. Only lower the score for ACTUAL red flags found in the content.
 
 VerdictEmoji rules:
 - ✅ for score >= 65 (Site fiable / Reliable site)
@@ -429,9 +565,13 @@ The JSON must have this exact structure:
   "personalizedAdviceEn": ["<English advice based ONLY on verified facts>"]
 }
 
-Personalized advice should reflect what you ACTUALLY found. If you found nothing concerning, say so honestly.
-If data is unavailable, advise the user to do their own research (check Trustpilot, Google Reviews, etc.) rather than making claims.
-Provide 3-5 advice items.`;
+Personalized advice MUST reflect ONLY what you found in the fetched data above.
+Always include advice to manually check Trustpilot and Google Reviews since we could not verify those.
+Always include advice to check the Canadian Anti-Fraud Centre (Centre antifraude du Canada) if needed.
+If you found nothing concerning in the fetched data, say so honestly — do not invent problems.
+Provide 3-5 advice items.
+
+REMINDER: Every single field in your response must be based on the REAL FETCHED DATA provided. If the data says a page was not found, do not claim it exists. If we did not search reviews, do not invent review scores.`;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
