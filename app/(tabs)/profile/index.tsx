@@ -55,7 +55,7 @@ export default function ProfileScreen() {
           icon: CreditCard,
           label: t('manageSubscription'),
           color: Colors.accent,
-          onPress: () => {},
+          onPress: () => router.push('/manage-subscription' as any),
         },
       ],
     },
