@@ -340,9 +340,6 @@ export default function HomeScreen() {
             <>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>{t('recentScans')}</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/history' as any)}>
-                  <Text style={styles.viewAll}>{t('viewAll')}</Text>
-                </TouchableOpacity>
               </View>
               {recentScans.map((scan) => (
                 <ScanCard
