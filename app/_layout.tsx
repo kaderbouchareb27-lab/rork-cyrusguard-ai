@@ -32,7 +32,6 @@ function RootLayoutNav() {
       <Stack.Screen name="faq-page" />
       <Stack.Screen name="about" />
       <Stack.Screen name="contact" />
-      <Stack.Screen name="report-scam" />
       <Stack.Screen name="manage-subscription" />
       <Stack.Screen name="quiz" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="+not-found" />

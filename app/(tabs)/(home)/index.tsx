@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, Flag, HelpCircle } from 'lucide-react-native';
+import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -262,22 +262,6 @@ export default function HomeScreen() {
               <View style={styles.quickToolInfo}>
                 <Text style={styles.quickToolTitle}>{t('quizTitle')}</Text>
                 <Text style={styles.quickToolSub}>{t('quizSubtitle')}</Text>
-              </View>
-              <ChevronRight size={16} color={Colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickToolCard}
-              onPress={() => router.push('/report-scam' as any)}
-              activeOpacity={0.7}
-              testID="action-report"
-            >
-              <View style={[styles.quickToolIcon, { backgroundColor: Colors.dangerMuted }]}>
-                <Flag size={20} color={Colors.danger} />
-              </View>
-              <View style={styles.quickToolInfo}>
-                <Text style={styles.quickToolTitle}>{t('reportScam')}</Text>
-                <Text style={styles.quickToolSub}>{t('reportScamDesc')}</Text>
               </View>
               <ChevronRight size={16} color={Colors.textMuted} />
             </TouchableOpacity>
