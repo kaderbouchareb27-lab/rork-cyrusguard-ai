@@ -82,10 +82,12 @@ interface ChatMessage {
   content: string | ChatMessageContent[];
 }
 
+export type ContentType = 'sms' | 'url' | 'email' | 'phone' | 'social';
+
 export interface ScanAnalysisResult {
   riskScore: number;
   riskLevel: 'low' | 'medium' | 'high';
-  sourceType: 'sms' | 'email' | 'website' | 'url';
+  sourceType: 'sms' | 'email' | 'website' | 'url' | 'phone' | 'social';
   summary: string;
   summaryEn: string;
   explanation: string;
@@ -310,13 +312,149 @@ Explain WHY with concrete Quebec-specific examples when relevant.`;
     if (!['low', 'medium', 'high'].includes(result.riskLevel)) {
       result.riskLevel = result.riskScore >= 70 ? 'high' : result.riskScore >= 40 ? 'medium' : 'low';
     }
-    if (!['sms', 'email', 'website', 'url'].includes(result.sourceType)) {
+    if (!['sms', 'email', 'website', 'url', 'phone', 'social'].includes(result.sourceType)) {
       result.sourceType = 'sms';
     }
 
     return result;
   } catch (parseError) {
     console.log('[OpenAI] JSON parse error:', parseError);
+    throw new Error('Failed to parse AI analysis response');
+  }
+}
+
+function getContentTypePrompt(contentType: ContentType, language: string): string {
+  const prompts: Record<ContentType, { fr: string; en: string }> = {
+    sms: {
+      fr: 'Analyse ce message SMS/texto pour détecter des signes de fraude ou d\'arnaque. Vérifie les liens suspects, l\'urgence artificielle, les demandes d\'informations personnelles, le typosquatting, et les patterns de phishing courants au Québec/Canada.',
+      en: 'Analyze this SMS/text message for signs of fraud or scam. Check for suspicious links, artificial urgency, personal information requests, typosquatting, and common phishing patterns in Quebec/Canada.',
+    },
+    url: {
+      fr: 'Analyse ce lien/URL pour détecter des signes de fraude. Vérifie le domaine, le protocole, les redirections possibles, le typosquatting, et les indicateurs de phishing.',
+      en: 'Analyze this link/URL for signs of fraud. Check the domain, protocol, possible redirects, typosquatting, and phishing indicators.',
+    },
+    email: {
+      fr: 'Analyse ce contenu d\'email pour détecter des signes de fraude ou de phishing. Vérifie l\'expéditeur, les liens dans le corps, l\'urgence artificielle, les pièces jointes suspectes mentionnées, et les demandes inhabituelles.',
+      en: 'Analyze this email content for signs of fraud or phishing. Check the sender, links in the body, artificial urgency, mentioned suspicious attachments, and unusual requests.',
+    },
+    phone: {
+      fr: 'Analyse cette description d\'appel téléphonique pour détecter des signes de fraude. Vérifie les tactiques d\'intimidation, les demandes de paiement par cartes prépayées ou virement, l\'usurpation d\'identité d\'organismes officiels, et les techniques de manipulation courantes.',
+      en: 'Analyze this phone call description for signs of fraud. Check for intimidation tactics, requests for payment via prepaid cards or wire transfer, impersonation of official organizations, and common manipulation techniques.',
+    },
+    social: {
+      fr: 'Analyse ce message de réseau social pour détecter des signes de fraude. Vérifie les liens suspects, les demandes d\'informations personnelles, les faux concours, les arnaques sentimentales, et les patterns de fraude sur les réseaux sociaux.',
+      en: 'Analyze this social media message for signs of fraud. Check for suspicious links, personal information requests, fake contests, romance scams, and social media fraud patterns.',
+    },
+  };
+  return prompts[contentType]?.[language === 'fr' ? 'fr' : 'en'] ?? prompts.sms.en;
+}
+
+export interface TextAnalysisInput {
+  contentType: ContentType;
+  text: string;
+  phoneNumber?: string;
+  platform?: string;
+}
+
+export async function analyzeText(input: TextAnalysisInput, language: string): Promise<ScanAnalysisResult> {
+  console.log('[OpenAI] Starting text analysis, type:', input.contentType, 'language:', language);
+
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key is not configured');
+  }
+
+  const typeInstruction = getContentTypePrompt(input.contentType, language);
+
+  let contentDescription = '';
+  switch (input.contentType) {
+    case 'sms':
+      contentDescription = `SMS/Text message content:\n"${input.text}"`;
+      break;
+    case 'url':
+      contentDescription = `URL/Link to analyze:\n${input.text}`;
+      break;
+    case 'email':
+      contentDescription = `Email content (subject + body):\n"${input.text}"`;
+      break;
+    case 'phone':
+      contentDescription = `Phone call description:\n"${input.text}"${input.phoneNumber ? `\nCaller number: ${input.phoneNumber}` : ''}`;
+      break;
+    case 'social':
+      contentDescription = `Social media message${input.platform ? ` (${input.platform})` : ''}:\n"${input.text}"`;
+      break;
+  }
+
+  const sourceTypeMap: Record<ContentType, string> = {
+    sms: 'sms',
+    url: 'url',
+    email: 'email',
+    phone: 'phone',
+    social: 'social',
+  };
+
+  const systemPrompt = `${CYRUS_SYSTEM_PROMPT}
+
+${typeInstruction}
+
+You MUST respond with a valid JSON object and NOTHING else. No markdown, no code blocks, just pure JSON.
+
+The JSON must have this exact structure:
+{
+  "riskScore": <number 0-100>,
+  "riskLevel": "<low|medium|high>",
+  "sourceType": "${sourceTypeMap[input.contentType]}",
+  "summary": "<French summary>",
+  "summaryEn": "<English summary>",
+  "explanation": "<detailed French explanation>",
+  "explanationEn": "<detailed English explanation>",
+  "suspiciousElements": ["<French element 1>", ...],
+  "suspiciousElementsEn": ["<English element 1>", ...],
+  "reassuringElements": ["<French element 1>", ...],
+  "reassuringElementsEn": ["<English element 1>", ...],
+  "advice": ["<French advice 1>", ...],
+  "adviceEn": ["<English advice 1>", ...]
+}
+
+Risk scoring rules:
+- HIGH (70-100): Clear phishing/scam indicators (fake domains, urgency, suspicious links, impersonation, grammar errors)
+- MEDIUM (40-69): Suspicious but not confirmed
+- LOW (0-39): Appears legitimate
+
+Always include Quebec/Canada-specific reporting organizations in advice:
+- Centre antifraude du Canada (1-888-495-8501)
+- Sûreté du Québec
+- Office de la protection du consommateur
+- Autorité des marchés financiers (AMF)
+
+Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected
+Explain WHY with concrete Quebec-specific examples when relevant.`;
+
+  const messages: ChatMessage[] = [
+    { role: 'system', content: systemPrompt },
+    {
+      role: 'user',
+      content: `${contentDescription}\n\n${language === 'fr' ? 'Retourne uniquement le JSON.' : 'Return only the JSON.'}`,
+    },
+  ];
+
+  const response = await callOpenAI(messages, 2000);
+  console.log('[OpenAI] Text analysis raw response:', response.substring(0, 200));
+
+  try {
+    const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const result = JSON.parse(cleaned) as ScanAnalysisResult;
+
+    if (result.riskScore < 0 || result.riskScore > 100) {
+      result.riskScore = Math.max(0, Math.min(100, result.riskScore));
+    }
+    if (!['low', 'medium', 'high'].includes(result.riskLevel)) {
+      result.riskLevel = result.riskScore >= 70 ? 'high' : result.riskScore >= 40 ? 'medium' : 'low';
+    }
+    result.sourceType = sourceTypeMap[input.contentType] as ScanAnalysisResult['sourceType'];
+
+    return result;
+  } catch (parseError) {
+    console.log('[OpenAI] Text analysis JSON parse error:', parseError);
     throw new Error('Failed to parse AI analysis response');
   }
 }

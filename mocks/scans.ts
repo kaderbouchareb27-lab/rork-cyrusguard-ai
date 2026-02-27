@@ -1,5 +1,5 @@
 export type RiskLevel = 'low' | 'medium' | 'high';
-export type SourceType = 'sms' | 'email' | 'website' | 'url';
+export type SourceType = 'sms' | 'email' | 'website' | 'url' | 'phone' | 'social';
 
 export interface ScanResult {
   id: string;

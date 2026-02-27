@@ -32,6 +32,18 @@ export default function ResultScreen() {
 
   const localized = useLocalizedScan(scan);
   const orgs = reportingOrganizations[country] ?? reportingOrganizations.CA;
+
+  const getSourceTypeLabel = (type: string): string => {
+    const labels: Record<string, { fr: string; en: string }> = {
+      sms: { fr: 'SMS / Texto', en: 'SMS / Text' },
+      url: { fr: 'Lien / URL', en: 'Link / URL' },
+      email: { fr: 'Email', en: 'Email' },
+      phone: { fr: 'Appel téléphonique', en: 'Phone call' },
+      social: { fr: 'Réseaux sociaux', en: 'Social media' },
+      website: { fr: 'Site web', en: 'Website' },
+    };
+    return labels[type]?.[language === 'fr' ? 'fr' : 'en'] ?? type.toUpperCase();
+  };
   const levelLabel = t(`risk${scan.riskLevel.charAt(0).toUpperCase() + scan.riskLevel.slice(1)}`);
 
   const riskColor = scan.riskLevel === 'high' ? Colors.danger 
@@ -60,7 +72,7 @@ export default function ResultScreen() {
             <RiskCircle score={scan.riskScore} level={scan.riskLevel} levelLabel={levelLabel} size={180} />
             <View style={[styles.sourceTag, { backgroundColor: riskColor + '20' }]}>
               <Text style={[styles.sourceTagText, { color: riskColor }]}>
-                {t('sourceType')}: {scan.sourceType.toUpperCase()}
+                {t('contentTypeLabel')}: {getSourceTypeLabel(scan.sourceType)}
               </Text>
             </View>
           </View>
