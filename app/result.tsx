@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { 
-  AlertTriangle, CheckCircle, ShieldAlert, MessageCircle, ExternalLink,
+  AlertTriangle, CheckCircle, MessageCircle, ExternalLink,
   Phone, ChevronLeft, Lightbulb, Flag
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +18,8 @@ export default function ResultScreen() {
   const { t, scans, language, country } = useApp();
 
   const scan = useMemo(() => scans.find(s => s.id === scanId), [scans, scanId]);
+  const localized = useLocalizedScan(scan ?? scans[0]);
+  const orgs = reportingOrganizations[country] ?? reportingOrganizations.CA;
 
   if (!scan) {
     return (
@@ -29,9 +31,6 @@ export default function ResultScreen() {
       </View>
     );
   }
-
-  const localized = useLocalizedScan(scan);
-  const orgs = reportingOrganizations[country] ?? reportingOrganizations.CA;
 
   const getSourceTypeLabel = (type: string): string => {
     const labels: Record<string, { fr: string; en: string }> = {
