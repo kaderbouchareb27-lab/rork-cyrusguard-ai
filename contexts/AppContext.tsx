@@ -57,18 +57,36 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
     queryFn: async () => {
-      const [langStr, countryStr, userStr, creditsStr] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.language),
-        AsyncStorage.getItem(STORAGE_KEYS.country),
-        AsyncStorage.getItem(STORAGE_KEYS.user),
-        AsyncStorage.getItem(STORAGE_KEYS.creditsUsed),
-      ]);
-      return {
-        language: (langStr as Language) || 'fr',
-        country: (countryStr as Country) || 'CA',
-        user: userStr ? JSON.parse(userStr) : null,
-        creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
-      };
+      try {
+        const [langStr, countryStr, userStr, creditsStr] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.language),
+          AsyncStorage.getItem(STORAGE_KEYS.country),
+          AsyncStorage.getItem(STORAGE_KEYS.user),
+          AsyncStorage.getItem(STORAGE_KEYS.creditsUsed),
+        ]);
+        let parsedUser = null;
+        if (userStr) {
+          try {
+            parsedUser = JSON.parse(userStr);
+          } catch (e) {
+            console.log('[AppContext] Failed to parse user data:', e);
+          }
+        }
+        return {
+          language: (langStr as Language) || 'fr',
+          country: (countryStr as Country) || 'CA',
+          user: parsedUser,
+          creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
+        };
+      } catch (e) {
+        console.log('[AppContext] Error loading settings:', e);
+        return {
+          language: 'fr' as Language,
+          country: 'CA' as Country,
+          user: null,
+          creditsUsed: 0,
+        };
+      }
     },
   });
 
