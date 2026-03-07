@@ -44,13 +44,13 @@ const PLATFORM_KEYS: Record<string, string> = {
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { t, addScan, language, canScan } = useApp();
+  const { t, addScan, language, country, canScan } = useApp();
   const [selectedType, setSelectedType] = useState<ContentType>('sms');
   const [textInput, setTextInput] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('Messenger');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showImageOptions, setShowImageOptions] = useState(false);
+  const [_showImageOptions, setShowImageOptions] = useState(false);
   const scanAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -86,7 +86,7 @@ export default function ScanScreen() {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         console.log('[Scan] Image selected, uri:', asset.uri?.substring(0, 50));
-        startImageAnalysis(asset.uri, asset.base64 ?? undefined);
+        void startImageAnalysis(asset.uri, asset.base64 ?? undefined);
       }
     } catch (error) {
       console.log('Image picker error:', error);
@@ -137,7 +137,7 @@ export default function ScanScreen() {
     setIsAnalyzing(true);
     startLoadingAnimation();
     try {
-      const analysis = await analyzeImage(imageUri, language, base64);
+      const analysis = await analyzeImage(imageUri, language, base64, country);
       handleAnalysisResult(analysis, imageUri);
     } catch (error) {
       console.log('[Scan] Image analysis error:', error);
@@ -160,7 +160,7 @@ export default function ScanScreen() {
         text: textInput.trim(),
         phoneNumber: selectedType === 'phone' ? phoneNumber.trim() || undefined : undefined,
         platform: selectedType === 'social' ? selectedPlatform : undefined,
-      }, language);
+      }, language, country);
       handleAnalysisResult(analysis);
     } catch (error) {
       console.log('[Scan] Text analysis error:', error);

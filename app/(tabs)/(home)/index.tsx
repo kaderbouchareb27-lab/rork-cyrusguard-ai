@@ -1,17 +1,15 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { quebecAlerts, type AlertItem } from '@/mocks/scans';
+import { countryAlerts, trendingScamsByCountry, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
 
-function AlertCard({ alert, language }: { alert: AlertItem; language: string }) {
-  const title = language === 'fr' ? alert.titleFr : alert.titleEn;
-  const desc = language === 'fr' ? alert.descFr : alert.descEn;
+function AlertCard({ alert }: { alert: AlertData }) {
   const isHigh = alert.severity === 'high';
 
   return (
@@ -25,8 +23,8 @@ function AlertCard({ alert, language }: { alert: AlertItem; language: string }) 
         </View>
         <Text style={alertStyles.date}>{alert.date}</Text>
       </View>
-      <Text style={alertStyles.title} numberOfLines={2}>{title}</Text>
-      <Text style={alertStyles.desc} numberOfLines={3}>{desc}</Text>
+      <Text style={alertStyles.title} numberOfLines={2}>{alert.title}</Text>
+      <Text style={alertStyles.desc} numberOfLines={3}>{alert.desc}</Text>
     </View>
   );
 }
@@ -124,7 +122,25 @@ export default function HomeScreen() {
   }, [showPaymentSuccess, bannerAnim, setShowPaymentSuccess]);
 
   const recentScans = scans.slice(0, 3);
-  const topAlerts = useMemo(() => quebecAlerts.slice(0, 4), []);
+
+  const alertsSectionTitle = useMemo(() => {
+    const titles: Record<string, { fr: string; en: string }> = {
+      CA: { fr: 'Alertes Canada', en: 'Canada Alerts' },
+      US: { fr: 'Alertes États-Unis', en: 'USA Alerts' },
+      FR: { fr: 'Alertes France', en: 'France Alerts' },
+    };
+    return titles[country]?.[language] ?? titles[country]?.en ?? t('countryAlerts');
+  }, [country, language, t]);
+
+  const topAlerts = useMemo(() => {
+    const langKey = language === 'fr' ? 'fr' : 'en';
+    return (countryAlerts[country]?.[langKey] ?? countryAlerts.CA.fr).slice(0, 4);
+  }, [country, language]);
+
+  const trendingScams = useMemo(() => {
+    const langKey = language === 'fr' ? 'fr' : 'en';
+    return trendingScamsByCountry[country]?.[langKey] ?? trendingScamsByCountry.CA.fr;
+  }, [country, language]);
 
   return (
     <View style={styles.root}>
@@ -270,7 +286,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Bell size={16} color={Colors.danger} />
-              <Text style={styles.sectionTitle}>{t('alertesQuebec')}</Text>
+              <Text style={styles.sectionTitle}>{alertsSectionTitle}</Text>
             </View>
           </View>
           <ScrollView
@@ -279,7 +295,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.alertsScroll}
           >
             {topAlerts.map((alert) => (
-              <AlertCard key={alert.id} alert={alert} language={language} />
+              <AlertCard key={alert.id} alert={alert} />
             ))}
           </ScrollView>
 
@@ -288,31 +304,7 @@ export default function HomeScreen() {
             <AlertTriangle size={16} color={Colors.warning} />
           </View>
           <View style={styles.scamsCard}>
-            {(country === 'CA' ? (language === 'fr' ? [
-              'Faux messages Desjardins - "Activité suspecte sur votre compte"',
-              'Arnaque Postes Canada - "Votre colis est en attente de frais"',
-              'Fraude Hydro-Québec - "Votre compte sera suspendu"',
-            ] : [
-              'Fake Desjardins messages - "Suspicious activity on your account"',
-              'Canada Post scam - "Your package is pending fees"',
-              'Hydro-Québec fraud - "Your account will be suspended"',
-            ]) : country === 'FR' ? (language === 'fr' ? [
-              'Arnaque au CPF (Compte Personnel de Formation)',
-              'Faux conseillers bancaires par téléphone',
-              'Arnaque à la vignette Crit\'Air',
-            ] : [
-              'CPF scam (Personal Training Account)',
-              'Fake bank advisors by phone',
-              'Crit\'Air sticker scam',
-            ]) : (language === 'fr' ? [
-              'Arnaque IRS par téléphone',
-              'Fraude aux cartes cadeaux',
-              'Arnaque romance sur les apps de rencontre',
-            ] : [
-              'IRS phone scam',
-              'Gift card fraud',
-              'Romance scam on dating apps',
-            ])).map((scam, idx, arr) => (
+            {trendingScams.map((scam, idx, arr) => (
               <View key={idx} style={[styles.scamItem, idx < arr.length - 1 && styles.scamBorder]}>
                 <AlertTriangle size={14} color={Colors.danger} />
                 <Text style={styles.scamText}>{scam}</Text>

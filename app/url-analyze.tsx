@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Animat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import {
-  ChevronLeft, Globe, Search, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle,
+  ChevronLeft, Globe, Search, AlertTriangle, CheckCircle,
   Clock, MapPin, FileText, Star, MessageSquareWarning, Building2, ShoppingCart,
-  Lightbulb, Lock, ArrowRight, ThumbsUp, ThumbsDown, Phone, ExternalLink, Info
+  Lightbulb, Lock, ArrowRight, ThumbsUp, ThumbsDown, Phone, Info
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
@@ -33,7 +33,7 @@ const ANALYSIS_STEPS_EN = [
 
 export default function UrlAnalyzeScreen() {
   const router = useRouter();
-  const { t, language, canUseFeature, consumeCredit } = useApp();
+  const { t, language, country, canUseFeature, consumeCredit } = useApp();
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<UrlAnalysisResult | null>(null);
@@ -69,7 +69,7 @@ export default function UrlAnalyzeScreen() {
 
     try {
       consumeCredit();
-      const apiResult = await analyzeUrlApi(url.trim(), language);
+      const apiResult = await analyzeUrlApi(url.trim(), language, country);
       console.log('[URL] Deep analysis result:', apiResult.score);
 
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);

@@ -5,9 +5,10 @@ import { Crown, Check, X, Star, Users, Target, ChevronDown, ChevronUp, Zap } fro
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { countryConfigs } from '@/constants/countries';
 
 export default function PremiumScreen() {
-  const { t, currency, upgradeToPremium, user, remainingCredits } = useApp();
+  const { t, currency, country, upgradeToPremium, user, remainingCredits } = useApp();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const shineAnim = useRef(new Animated.Value(0)).current;
@@ -21,17 +22,9 @@ export default function PremiumScreen() {
     ).start();
   }, [shineAnim]);
 
-  const prices = {
-    monthly: { CAD: '4.99', EUR: '3.99' },
-    annual: { CAD: '34.99', EUR: '27.99' },
-  };
-
-  const monthlyEquivalent: Record<string, string> = {
-    CAD: '2.92', EUR: '2.33',
-  };
-
-  const currencySymbol = currency === 'EUR' ? '€' : 'CA$';
-  const price = prices[billingCycle][currency];
+  const config = countryConfigs[country];
+  const currencySymbol = config.currencySymbol;
+  const price = billingCycle === 'monthly' ? config.pricing.monthly : config.pricing.annual;
 
   const faqs = [
     { q: t('faq1Q'), a: t('faq1A') },
@@ -149,7 +142,7 @@ export default function PremiumScreen() {
               </Text>
               {billingCycle === 'annual' && (
                 <Text style={styles.monthlyEquivalentText}>
-                  ~{currency === 'EUR' ? '' : currencySymbol}{monthlyEquivalent[currency]}{currency === 'EUR' ? '€' : ''}{t('perMonth')}
+                  ~{currency === 'EUR' ? '' : currencySymbol}{config.pricing.monthlyEquivalent}{currency === 'EUR' ? '€' : ''}{t('perMonth')}
                 </Text>
               )}
               {premiumFeatures.map((f, i) => (

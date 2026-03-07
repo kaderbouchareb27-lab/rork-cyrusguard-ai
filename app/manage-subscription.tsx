@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
@@ -8,18 +8,20 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { countryConfigs } from '@/constants/countries';
 
 type PlanType = 'free' | 'monthly' | 'annual';
 
 export default function ManageSubscriptionScreen() {
   const router = useRouter();
-  const { t, user, currency, upgradeToPremium, remainingCredits } = useApp();
+  const { t, user, country, upgradeToPremium, remainingCredits } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(user.plan);
 
-  const currencySymbol = currency === 'EUR' ? '€' : 'CA$';
+  const config = countryConfigs[country];
+  const currencySymbol = config.currencySymbol;
   const prices = {
-    monthly: { CAD: '4.99', EUR: '3.99' },
-    annual: { CAD: '34.99', EUR: '27.99' },
+    monthly: config.pricing.monthly,
+    annual: config.pricing.annual,
   };
 
   const currentPlanLabel = (): string => {
@@ -29,15 +31,15 @@ export default function ManageSubscriptionScreen() {
   };
 
   const currentPlanPrice = (): string => {
-    if (user.plan === 'monthly') return `${currencySymbol}${prices.monthly[currency]}${t('perMonth')}`;
-    if (user.plan === 'annual') return `${currencySymbol}${prices.annual[currency]}${t('perYear')}`;
+    if (user.plan === 'monthly') return `${currencySymbol}${prices.monthly}${t('perMonth')}`;
+    if (user.plan === 'annual') return `${currencySymbol}${prices.annual}${t('perYear')}`;
     return `${currencySymbol}0`;
   };
 
   const handleChangePlan = (plan: PlanType) => {
     if (plan === 'free') return;
     const cycle = plan === 'monthly' ? 'monthly' : 'annual';
-    upgradeToPremium(cycle);
+    void upgradeToPremium(cycle);
     setSelectedPlan(plan);
   };
 
@@ -83,7 +85,7 @@ export default function ManageSubscriptionScreen() {
     {
       key: 'monthly',
       label: t('monthlyPlanLabel'),
-      price: `${currencySymbol}${prices.monthly[currency]}`,
+      price: `${currencySymbol}${prices.monthly}`,
       billing: t('billedMonthly'),
       features: [t('premiumFeature1'), t('premiumFeature2'), t('premiumFeature3'), t('premiumFeature6')],
       isCurrent: user.plan === 'monthly',
@@ -94,7 +96,7 @@ export default function ManageSubscriptionScreen() {
     {
       key: 'annual',
       label: t('annualPlanLabel'),
-      price: `${currencySymbol}${prices.annual[currency]}`,
+      price: `${currencySymbol}${prices.annual}`,
       billing: t('billedAnnually'),
       features: [t('premiumFeature1'), t('premiumFeature2'), t('premiumFeature3'), t('premiumFeature6'), t('premiumFeature7'), t('premiumFeature8')],
       isCurrent: user.plan === 'annual',

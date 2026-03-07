@@ -8,16 +8,18 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp, type Country } from '@/contexts/AppContext';
+import { countryConfigs } from '@/constants/countries';
 import type { Language } from '@/constants/translations';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { t, language, country, currency, user, setLanguage, setCountry } = useApp();
+  const { t, language, country, currencySymbol, user, availableLanguages, setLanguageSafe, setCountry } = useApp();
 
-  const languageOptions: { key: Language; label: string }[] = [
+  const allLanguageOptions: { key: Language; label: string }[] = [
     { key: 'fr', label: t('french') },
     { key: 'en', label: t('english') },
   ];
+  const languageOptions = allLanguageOptions.filter(l => availableLanguages.includes(l.key));
 
   const countryOptions: { key: Country; label: string }[] = [
     { key: 'CA', label: t('canada') },
@@ -25,19 +27,22 @@ export default function ProfileScreen() {
     { key: 'US', label: t('usa') },
   ];
 
-  const currentLanguageLabel = languageOptions.find(l => l.key === language)?.label ?? '';
+  const currentLanguageLabel = languageOptions.find(l => l.key === language)?.label ?? languageOptions[0]?.label ?? '';
   const currentCountryLabel = countryOptions.find(c => c.key === country)?.label ?? '';
+  const currencyDisplay = `${countryConfigs[country].currency} (${currencySymbol})`;
 
   const toggleLanguage = () => {
-    const next = language === 'fr' ? 'en' : 'fr';
-    setLanguage(next);
+    if (availableLanguages.length <= 1) return;
+    const currentIdx = availableLanguages.indexOf(language);
+    const nextIdx = (currentIdx + 1) % availableLanguages.length;
+    void setLanguageSafe(availableLanguages[nextIdx]);
   };
 
   const cycleCountry = () => {
     const countries: Country[] = ['CA', 'FR', 'US'];
     const idx = countries.indexOf(country);
     const next = countries[(idx + 1) % countries.length];
-    setCountry(next);
+    void setCountry(next);
   };
 
   const menuSections = [
@@ -79,7 +84,7 @@ export default function ProfileScreen() {
         {
           icon: Globe,
           label: t('currency'),
-          value: currency,
+          value: currencyDisplay,
           color: Colors.accent,
           onPress: () => {},
         },

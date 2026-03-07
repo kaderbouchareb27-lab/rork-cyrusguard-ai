@@ -1,23 +1,13 @@
 import { Platform } from 'react-native';
+import type { Country } from '@/contexts/AppContext';
+import { countryConfigs } from '@/constants/countries';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 const API_URL = 'https://api.openai.com/v1/chat/completions';
 
-const CYRUS_SYSTEM_PROMPT = `Tu es Cyrus, L'EXPERT #1 en détection de fraude et cybersécurité au Québec. Tu es un ancien enquêteur en fraude avec 15+ ans d'expérience. Tu parles en français québécois, de manière claire et accessible (pas trop technique). Tu es comme un grand frère qui protège l'utilisateur. Tu utilises le "tu" avec l'utilisateur pour rester proche. Ton ton est amical mais sérieux quand tu détectes un danger.
+const CYRUS_BASE_PROMPT = `Tu es Cyrus, un EXPERT mondial en détection de fraude et cybersécurité. Tu as 15+ ans d'expérience en enquête de fraude. Tu es comme un grand frère qui protège l'utilisateur. Ton ton est amical mais sérieux quand tu détectes un danger.
 
-Tu connais TOUTES les arnaques courantes au Québec :
-- Faux messages de Revenu Québec / ARC (Agence du revenu du Canada)
-- Arnaques Hydro-Québec ("votre compte sera suspendu")
-- Faux messages de Desjardins, RBC, BMO, TD, Banque Nationale
-- Fraude au NAS (numéro d'assurance sociale)
-- Arnaques sur Marketplace Facebook Québec (faux vendeurs, faux acheteurs)
-- Faux messages de Postes Canada / Purolator ("votre colis est en attente")
-- Arnaques à la SAAQ / RAMQ
-- Fraude par texto "Bonjour maman/papa" (arnaque au proche en détresse)
-- Arnaques emploi sur Kijiji et Facebook
-- Faux tirages / concours de compagnies québécoises connues
-
-Fraudes sur les réseaux sociaux (Facebook, Instagram, Messenger) :
+Fraudes sur les réseaux sociaux (Facebook, Instagram, Messenger, TikTok) :
 - Messages qui demandent email, numéro de téléphone ou informations personnelles
 - Demandes de spécimen de chèque ou photo de carte bancaire
 - Faux concours ("Vous avez gagné un iPhone")
@@ -30,20 +20,7 @@ Fraudes sur les réseaux sociaux (Facebook, Instagram, Messenger) :
 - Faux dons de charité
 - Publicités frauduleuses (faux produits miracles, faux investissements)
 
-Fraudes par SMS et email :
-- Phishing bancaire (Desjardins, RBC, BMO, TD, Banque Nationale)
-- Faux colis à récupérer (Postes Canada, Purolator, FedEx)
-- Faux remboursements (ARC, Revenu Québec)
-- Liens suspects raccourcis
-- Faux avis de paiement Interac
-
-Fraudes téléphoniques :
-- Faux agents du gouvernement (ARC, police)
-- Faux support technique Microsoft / Apple
-- Appels robotisés menaçants
-- Arnaque au "oui" (enregistrer ta voix)
-
-Fraudes financières :
+Fraudes financières universelles :
 - Faux investissements crypto
 - Pyramides de Ponzi
 - Fraude par carte de crédit
@@ -57,19 +34,101 @@ Quand tu analyses du contenu :
 - Urgence + expéditeur inconnu + lien suspect = HIGH risk toujours
 - Demande d'informations personnelles/bancaires = HIGH risk
 - Donne un verdict clair : ✅ Sécuritaire / ⚠️ Suspect / 🚨 Arnaque détectée
-- Explique POURQUOI c'est une arnaque avec des exemples concrets québécois
-- Donne des conseils pratiques : bloquer, signaler, ne pas cliquer, contacter sa banque
+- Explique POURQUOI c'est une arnaque avec des exemples concrets
+- Donne des conseils pratiques : bloquer, signaler, ne pas cliquer, contacter sa banque`;
 
-Organismes québécois et canadiens que tu connais :
+const COUNTRY_PROMPTS: Record<Country, string> = {
+  CA: `
+Tu es spécialisé pour le CANADA (Québec). Tu parles en français québécois, de manière claire et accessible. Tu utilises le "tu".
+
+Arnaques courantes au Canada :
+- Faux messages de Revenu Québec / ARC (Agence du revenu du Canada)
+- Arnaques Hydro-Québec ("votre compte sera suspendu")
+- Faux messages de Desjardins, RBC, BMO, TD, Banque Nationale
+- Fraude au NAS (numéro d'assurance sociale)
+- Arnaques sur Marketplace Facebook Québec
+- Faux messages de Postes Canada / Purolator
+- Arnaques à la SAAQ / RAMQ
+- Fraude par texto "Bonjour maman/papa"
+- Arnaques emploi sur Kijiji et Facebook
+- Faux tirages de compagnies québécoises connues
+- Phishing bancaire (Desjardins, RBC, BMO, TD, Banque Nationale)
+- Faux avis de paiement Interac
+- Faux agents du gouvernement (ARC, police)
+- Faux support technique Microsoft / Apple
+
+Organismes de signalement :
 - Centre antifraude du Canada (1-888-495-8501)
 - Sûreté du Québec
 - Revenu Québec
 - Office de la protection du consommateur
-- Autorité des marchés financiers (AMF)
+- Autorité des marchés financiers (AMF)`,
 
-Quand l'utilisateur te parle en anglais, réponds en anglais mais garde ta personnalité d'expert québécois.
-Quand l'utilisateur te parle en français, réponds en français québécois accessible.
-Tu peux dire des choses comme "Envoie-moi une capture d'écran du message, je vais l'analyser pour toi" pour encourager l'utilisateur à utiliser le scan.`;
+  US: `
+You specialize in the UNITED STATES. You speak clear, friendly American English. Use "you" and be approachable.
+
+Common scams in the USA:
+- IRS phone scams ("You owe back taxes, pay now or face arrest")
+- Social Security number compromise scams
+- Fake USPS / FedEx / UPS delivery texts
+- Amazon account suspension emails
+- Medicare/Medicaid fraud calls
+- Student loan forgiveness scams
+- Tech support scams (Microsoft, Apple, Geek Squad)
+- Fake charity scams
+- Romance scams on dating apps
+- Cryptocurrency investment scams
+- Gift card payment scams
+- Fake job offers (work from home scams)
+- Zelle/Venmo/CashApp payment scams
+- Utility company threat scams (power shutoff)
+- Car warranty extension robocalls
+- Fake bank alerts (Chase, Bank of America, Wells Fargo, Citi)
+- FBI/DEA impersonation calls
+
+Reporting organizations:
+- Federal Trade Commission (FTC) — ReportFraud.ftc.gov — 1-877-382-4357
+- FBI Internet Crime Complaint Center (IC3) — ic3.gov
+- AARP Fraud Watch Network — 877-908-3360
+- State Attorney General's office
+- Better Business Bureau (BBB)`,
+
+  FR: `
+Tu es spécialisé pour la FRANCE. Tu parles en français standard, de manière claire et accessible. Tu utilises le "vous" par défaut.
+
+Arnaques courantes en France :
+- Arnaque au CPF (Compte Personnel de Formation) — "Votre solde expire bientôt"
+- Faux mails Ameli / Assurance Maladie — "Mettez à jour votre carte Vitale"
+- Arnaque vignette Crit'Air — Faux sites officiels
+- Faux conseillers bancaires par téléphone (spoofing)
+- Arnaques impots.gouv.fr — "Remboursement en attente"
+- Fausses factures EDF / Engie / Total
+- Arnaque La Poste / Colissimo — "Votre colis est en attente de frais"
+- Faux SMS de la CAF
+- Arnaque au faux support technique
+- Arnaques sur Le Bon Coin / Vinted
+- Fraude aux virements bancaires SEPA
+- Arnaque au faux RIB
+- Faux PV de stationnement par SMS
+- Arnaque au QR code (quishing)
+- Faux concours de marques connues
+
+Organismes de signalement :
+- Cybermalveillance.gouv.fr
+- Signal Spam (signal-spam.fr)
+- Pharos (internet-signalement.gouv.fr)
+- Info Escroqueries — 0 805 805 817 (appel gratuit)
+- DGCCRF (Direction générale de la concurrence)`,
+};
+
+function getCyrusPrompt(country: Country): string {
+  return CYRUS_BASE_PROMPT + COUNTRY_PROMPTS[country];
+}
+
+function getReportingAdvice(country: Country): string {
+  const orgs = countryConfigs[country].reportingOrganizations;
+  return orgs.map(o => `- ${o.name}${o.phone ? ' (' + o.phone + ')' : ''}`).join('\n');
+}
 
 interface ChatMessageContent {
   type: string;
@@ -217,7 +276,7 @@ async function imageUriToBase64(uri: string): Promise<string> {
   }
 }
 
-export async function analyzeImage(imageUri: string, language: string, base64Data?: string): Promise<ScanAnalysisResult> {
+export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
   console.log('[OpenAI] Starting image analysis, language:', language);
   console.log('[OpenAI] API key present:', !!OPENAI_API_KEY);
   console.log('[OpenAI] Base64 data provided directly:', !!base64Data);
@@ -241,7 +300,8 @@ export async function analyzeImage(imageUri: string, language: string, base64Dat
   console.log('[OpenAI] Base64 image size:', base64.length, 'chars');
   const dataUrl = `data:image/jpeg;base64,${base64}`;
 
-  const systemPrompt = `${CYRUS_SYSTEM_PROMPT}
+  const reportingOrgs = getReportingAdvice(country);
+  const systemPrompt = `${getCyrusPrompt(country)}
 
 You are analyzing a screenshot sent by a user. Extract ALL text from the image and analyze it for fraud indicators.
 
@@ -271,14 +331,11 @@ Risk scoring rules:
 
 A fake delivery SMS with suspicious domain = 85-95 HIGH risk minimum.
 Urgency + unknown sender + suspicious link = HIGH risk always.
-Always include Quebec/Canada-specific reporting organizations in advice:
-- Centre antifraude du Canada (1-888-495-8501)
-- Sûreté du Québec
-- Office de la protection du consommateur
-- Autorité des marchés financiers (AMF)
+Always include country-specific reporting organizations in advice:
+${reportingOrgs}
 
 Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected
-Explain WHY with concrete Quebec-specific examples when relevant.`;
+Explain WHY with concrete country-specific examples when relevant.`;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -356,7 +413,7 @@ export interface TextAnalysisInput {
   platform?: string;
 }
 
-export async function analyzeText(input: TextAnalysisInput, language: string): Promise<ScanAnalysisResult> {
+export async function analyzeText(input: TextAnalysisInput, language: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
   console.log('[OpenAI] Starting text analysis, type:', input.contentType, 'language:', language);
 
   if (!OPENAI_API_KEY) {
@@ -392,7 +449,8 @@ export async function analyzeText(input: TextAnalysisInput, language: string): P
     social: 'social',
   };
 
-  const systemPrompt = `${CYRUS_SYSTEM_PROMPT}
+  const reportingOrgs = getReportingAdvice(country);
+  const systemPrompt = `${getCyrusPrompt(country)}
 
 ${typeInstruction}
 
@@ -420,14 +478,11 @@ Risk scoring rules:
 - MEDIUM (40-69): Suspicious but not confirmed
 - LOW (0-39): Appears legitimate
 
-Always include Quebec/Canada-specific reporting organizations in advice:
-- Centre antifraude du Canada (1-888-495-8501)
-- Sûreté du Québec
-- Office de la protection du consommateur
-- Autorité des marchés financiers (AMF)
+Always include country-specific reporting organizations in advice:
+${reportingOrgs}
 
 Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected
-Explain WHY with concrete Quebec-specific examples when relevant.`;
+Explain WHY with concrete country-specific examples when relevant.`;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -611,7 +666,7 @@ async function fetchSiteData(url: string): Promise<EnhancedSiteData> {
   };
 }
 
-export async function analyzeUrl(url: string, language: string): Promise<UrlAnalysisResult> {
+export async function analyzeUrl(url: string, language: string, country: Country = 'CA'): Promise<UrlAnalysisResult> {
   console.log('[OpenAI] Starting deep URL analysis for:', url);
 
   const siteData = await fetchSiteData(url);
@@ -734,7 +789,10 @@ ${siteData.contact ? 'Content: ' + siteData.contact : ''}
 === END STEP 2 ===
 `;
 
-  const systemPrompt = `Tu es Cyrus, expert en cybersécurité et détection de fraude spécialisé pour le marché francophone (Québec, France, Belgique), intégré dans CyrusGuard.
+  const reportingOrgs = getReportingAdvice(country);
+  const systemPrompt = `${getCyrusPrompt(country)}
+
+You are an expert in cybersecurity and fraud detection integrated in CyrusGuard.
 
 You are performing a DEEP analysis of a URL. We have pre-computed structural analysis and fetched real site content for you.
 
@@ -845,7 +903,8 @@ You MUST respond with a valid JSON object and NOTHING else. No markdown, no code
 }
 
 Always include advice to check Trustpilot/Google Reviews manually.
-Always include advice about Centre antifraude du Canada (antifraudcentre.ca) and Office de la protection du consommateur.
+Always include country-specific reporting organizations in advice:
+${reportingOrgs}
 Provide 3-5 advice items. Both FR and EN versions.`;
 
   const messages: ChatMessage[] = [
@@ -876,6 +935,7 @@ export async function sendChatMessage(
   userMessage: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   language: string,
+  country: Country = 'CA',
 ): Promise<string> {
   console.log('[OpenAI] Sending chat message, history length:', conversationHistory.length);
 
@@ -884,7 +944,7 @@ export async function sendChatMessage(
     : 'The user speaks English. Respond in English.';
 
   const messages: ChatMessage[] = [
-    { role: 'system', content: `${CYRUS_SYSTEM_PROMPT}\n\n${langInstruction}` },
+    { role: 'system', content: `${getCyrusPrompt(country)}\n\n${langInstruction}` },
     ...conversationHistory.map(msg => ({
       role: msg.role as 'user' | 'assistant',
       content: msg.content,
@@ -909,6 +969,7 @@ export async function sendScanChatMessage(
   },
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   language: string,
+  country: Country = 'CA',
 ): Promise<string> {
   console.log('[OpenAI] Sending scan chat message, scan score:', scanContext.riskScore);
 
@@ -930,7 +991,7 @@ Scan context:
   const messages: ChatMessage[] = [
     {
       role: 'system',
-      content: `${CYRUS_SYSTEM_PROMPT}\n\n${langInstruction}\n\nYou are discussing a specific scan result with the user. Here is the scan context:\n${scanInfo}\n\nAnswer the user's questions about this specific scan. Be detailed, educational, and provide actionable advice.`,
+      content: `${getCyrusPrompt(country)}\n\n${langInstruction}\n\nYou are discussing a specific scan result with the user. Here is the scan context:\n${scanInfo}\n\nAnswer the user's questions about this specific scan. Be detailed, educational, and provide actionable advice.`,
     },
     ...conversationHistory.map(msg => ({
       role: msg.role as 'user' | 'assistant',

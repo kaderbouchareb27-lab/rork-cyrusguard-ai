@@ -11,7 +11,7 @@ import { sendChatMessage } from '@/services/openai';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { t, chatMessages, addChatMessage, canSendMessage, remainingCredits, user, language, canChat, consumeCredit } = useApp();
+  const { t, chatMessages, addChatMessage, canSendMessage, remainingCredits, user, language, country, canChat, consumeCredit } = useApp();
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
@@ -43,7 +43,7 @@ export default function ChatScreen() {
 
     try {
       const history = chatMessages.map(m => ({ role: m.role, content: m.content }));
-      const aiResponse = await sendChatMessage(messageText, history, language);
+      const aiResponse = await sendChatMessage(messageText, history, language, country);
 
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -66,7 +66,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, canSendMessage, isLoading, addChatMessage, language, chatMessages, consumeCredit]);
+  }, [input, canSendMessage, isLoading, addChatMessage, language, country, chatMessages, consumeCredit]);
 
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isUser = item.role === 'user';

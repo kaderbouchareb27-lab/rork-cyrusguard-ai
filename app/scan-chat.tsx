@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { ChevronLeft, Send, Shield } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { useApp, useLocalizedScan } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import { sendScanChatMessage } from '@/services/openai';
@@ -12,7 +12,7 @@ import { sendScanChatMessage } from '@/services/openai';
 export default function ScanChatScreen() {
   const router = useRouter();
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
-  const { t, scans, language, user, canUseFeature, consumeCredit } = useApp();
+  const { t, scans, language, country, canUseFeature } = useApp();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
@@ -58,7 +58,7 @@ export default function ScanChatScreen() {
       };
 
       const history = messages.map(m => ({ role: m.role, content: m.content }));
-      const aiResponse = await sendScanChatMessage(messageText, scanContext, history, language);
+      const aiResponse = await sendScanChatMessage(messageText, scanContext, history, language, country);
 
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -81,7 +81,7 @@ export default function ScanChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, language, scan, messages]);
+  }, [input, isLoading, language, country, scan, messages]);
 
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isUser = item.role === 'user';

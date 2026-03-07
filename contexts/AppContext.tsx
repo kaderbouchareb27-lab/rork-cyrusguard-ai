@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { translations, type Language } from '@/constants/translations';
 import { type ScanResult, type ChatMessage } from '@/mocks/scans';
+import { countryConfigs, type Currency } from '@/constants/countries';
 
 export type Country = 'CA' | 'US' | 'FR';
-export type Currency = 'CAD' | 'EUR';
 
 interface UserProfile {
   email: string;
@@ -15,19 +15,7 @@ interface UserProfile {
   plan: 'free' | 'monthly' | 'annual';
 }
 
-const countryToCurrency: Record<Country, Currency> = {
-  CA: 'CAD',
-  US: 'CAD',
-  FR: 'EUR',
-};
-
 const FREE_CREDITS = 3;
-
-const countryToLanguage: Record<Country, Language> = {
-  CA: 'fr',
-  US: 'en',
-  FR: 'fr',
-};
 
 const STORAGE_KEYS = {
   language: 'cyrusguard_language',
@@ -99,7 +87,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   }, [settingsQuery.data]);
 
-  const currency = useMemo(() => countryToCurrency[country], [country]);
+  const currency = useMemo<Currency>(() => countryConfigs[country].currency, [country]);
+  const currencySymbol = useMemo(() => countryConfigs[country].currencySymbol, [country]);
+  const availableLanguages = useMemo(() => countryConfigs[country].availableLanguages, [country]);
 
   const t = useCallback((key: string): string => {
     return translations[language]?.[key] ?? key;
@@ -112,18 +102,27 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const setCountry = useCallback(async (c: Country) => {
     setCountryState(c);
-    const defaultLang = countryToLanguage[c];
+    const config = countryConfigs[c];
+    const defaultLang = config.defaultLanguage;
     setLanguageState(defaultLang);
     await AsyncStorage.setItem(STORAGE_KEYS.country, c);
     await AsyncStorage.setItem(STORAGE_KEYS.language, defaultLang);
   }, []);
+
+  const setLanguageSafe = useCallback(async (lang: Language) => {
+    const config = countryConfigs[country];
+    if (config.availableLanguages.includes(lang)) {
+      setLanguageState(lang);
+      await AsyncStorage.setItem(STORAGE_KEYS.language, lang);
+    }
+  }, [country]);
 
   const addScan = useCallback((scan: ScanResult) => {
     setScans(prev => [scan, ...prev]);
     if (!user.isPremium) {
       setCreditsUsed(prev => {
         const next = prev + 1;
-        AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, String(next));
+        void AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, String(next));
         return next;
       });
     }
@@ -153,7 +152,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     if (user.isPremium) return;
     setCreditsUsed(prev => {
       const next = prev + 1;
-      AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, String(next));
+      void AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, String(next));
       return next;
     });
   }, [user.isPremium]);
@@ -175,10 +174,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
   }, []);
 
-  return {
+  return useMemo(() => ({
     language,
     country,
     currency,
+    currencySymbol,
+    availableLanguages,
     user,
     scans,
     chatMessages,
@@ -193,6 +194,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     showPaymentSuccess,
     t,
     setLanguage,
+    setLanguageSafe,
     setCountry,
     addScan,
     addChatMessage,
@@ -200,7 +202,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     deleteAllData,
     setShowPaymentSuccess,
     isLoading: settingsQuery.isLoading,
-  };
+  }), [
+    language, country, currency, currencySymbol, availableLanguages,
+    user, scans, chatMessages, dailyMessageCount, canScan, canChat,
+    canSendMessage, remainingCredits, creditsUsed, consumeCredit,
+    canUseFeature, showPaymentSuccess, t, setLanguage, setLanguageSafe,
+    setCountry, addScan, addChatMessage, upgradeToPremium, deleteAllData,
+    setShowPaymentSuccess, settingsQuery.isLoading,
+  ]);
 });
 
 export function useLocalizedScan(scan: ScanResult) {
