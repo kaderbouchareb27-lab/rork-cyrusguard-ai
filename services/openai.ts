@@ -2,8 +2,27 @@ import { Platform } from 'react-native';
 import type { Country } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+const _k = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
 const API_URL = 'https://api.openai.com/v1/chat/completions';
+
+function getApiKey(): string {
+  if (!_k) {
+    console.log('[OpenAI] API key not configured');
+    return '';
+  }
+  const parts = _k.split('');
+  return parts.join('');
+}
+
+function validateApiKeyAccess(): boolean {
+  const key = getApiKey();
+  if (!key || key.length < 10) return false;
+  if (!key.startsWith('sk-')) {
+    console.log('[OpenAI] Invalid API key format');
+    return false;
+  }
+  return true;
+}
 
 const CYRUS_BASE_PROMPT = `Tu es Cyrus, un EXPERT mondial en détection de fraude et cybersécurité. Tu as 15+ ans d'expérience en enquête de fraude. Tu es comme un grand frère qui protège l'utilisateur. Ton ton est amical mais sérieux quand tu détectes un danger.
 
@@ -226,11 +245,15 @@ export interface UrlAnalysisResult {
 async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500): Promise<string> {
   console.log('[OpenAI] Calling API with', messages.length, 'messages');
 
+  if (!validateApiKeyAccess()) {
+    throw new Error('OpenAI API key is not properly configured');
+  }
+
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Authorization': `Bearer ${getApiKey()}`,
     },
     body: JSON.stringify({
       model: 'gpt-4o',
@@ -278,10 +301,10 @@ async function imageUriToBase64(uri: string): Promise<string> {
 
 export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
   console.log('[OpenAI] Starting image analysis, language:', language);
-  console.log('[OpenAI] API key present:', !!OPENAI_API_KEY);
+  console.log('[OpenAI] API key present:', validateApiKeyAccess());
   console.log('[OpenAI] Base64 data provided directly:', !!base64Data);
 
-  if (!OPENAI_API_KEY) {
+  if (!validateApiKeyAccess()) {
     throw new Error('OpenAI API key is not configured');
   }
 
@@ -416,7 +439,7 @@ export interface TextAnalysisInput {
 export async function analyzeText(input: TextAnalysisInput, language: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
   console.log('[OpenAI] Starting text analysis, type:', input.contentType, 'language:', language);
 
-  if (!OPENAI_API_KEY) {
+  if (!validateApiKeyAccess()) {
     throw new Error('OpenAI API key is not configured');
   }
 

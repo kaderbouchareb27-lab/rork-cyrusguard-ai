@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Check, X, Star, Users, Target, ChevronDown, ChevronUp, Zap, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,10 +8,12 @@ import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 
 export default function PremiumScreen() {
-  const { t, currency, country, upgradeToPremium, user, remainingCredits } = useApp();
+  const {
+    t, currency, country, upgradeToPremium, user, remainingCredits,
+    restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
+  } = useApp();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [isRestoring, setIsRestoring] = useState(false);
   const shineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -25,7 +27,12 @@ export default function PremiumScreen() {
 
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
-  const price = billingCycle === 'monthly' ? config.pricing.monthly : config.pricing.annual;
+
+  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly');
+  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual');
+  const monthlyPrice = monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`;
+  const annualPrice = annualPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.annual}`;
+  const displayPrice = billingCycle === 'monthly' ? monthlyPrice : annualPrice;
 
   const faqs = [
     { q: t('faq1Q'), a: t('faq1A') },
@@ -138,7 +145,7 @@ export default function PremiumScreen() {
               </View>
               <Text style={styles.planName}>{t('premiumPlan')}</Text>
               <Text style={styles.planPricePremium}>
-                {currency === 'EUR' ? '' : currencySymbol}{price}{currency === 'EUR' ? '€' : ''}
+                {displayPrice}
                 <Text style={styles.planPeriod}>{billingCycle === 'monthly' ? t('perMonth') : t('perYear')}</Text>
               </Text>
               {billingCycle === 'annual' && (
@@ -154,12 +161,17 @@ export default function PremiumScreen() {
               ))}
               {!user.isPremium ? (
                 <TouchableOpacity
-                  style={styles.subscribeBtn}
+                  style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
                   onPress={() => upgradeToPremium(billingCycle)}
                   activeOpacity={0.8}
+                  disabled={isPurchasing || isOfferingsLoading}
                   testID="subscribe-btn"
                 >
-                  <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
+                  {isPurchasing ? (
+                    <ActivityIndicator color={Colors.background} size="small" />
+                  ) : (
+                    <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
+                  )}
                 </TouchableOpacity>
               ) : (
                 <View style={styles.currentPlanBadge}>
@@ -199,22 +211,17 @@ export default function PremiumScreen() {
           ))}
 
           <TouchableOpacity
-            style={styles.restoreBtn}
-            onPress={() => {
-              setIsRestoring(true);
-              setTimeout(() => {
-                setIsRestoring(false);
-                Alert.alert(
-                  t('restorePurchasesTitle'),
-                  t('restorePurchasesResult'),
-                );
-              }, 2000);
-            }}
+            style={[styles.restoreBtn, isRestoring && styles.restoreBtnDisabled]}
+            onPress={restorePurchases}
             disabled={isRestoring}
             activeOpacity={0.7}
             testID="premium-restore-btn"
           >
-            <RotateCcw size={16} color={Colors.accent} />
+            {isRestoring ? (
+              <ActivityIndicator color={Colors.accent} size="small" />
+            ) : (
+              <RotateCcw size={16} color={Colors.accent} />
+            )}
             <Text style={styles.restoreBtnText}>
               {isRestoring ? t('restoringPurchases') : t('restorePurchases')}
             </Text>
@@ -407,6 +414,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
+  subscribeBtnDisabled: {
+    opacity: 0.6,
+  },
   subscribeBtnText: {
     color: Colors.background,
     fontSize: 16,
@@ -481,6 +491,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  restoreBtnDisabled: {
+    opacity: 0.6,
   },
   restoreBtnText: {
     fontSize: 15,
