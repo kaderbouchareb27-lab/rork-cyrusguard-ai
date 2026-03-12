@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
-  Crown, CreditCard, Check, ChevronLeft, Shield, Zap, XCircle, Star,
+  Crown, CreditCard, Check, ChevronLeft, Shield, Zap, XCircle, Star, RotateCcw,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -16,6 +16,7 @@ export default function ManageSubscriptionScreen() {
   const router = useRouter();
   const { t, user, country, upgradeToPremium, remainingCredits } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(user.plan);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
@@ -244,6 +245,28 @@ export default function ManageSubscriptionScreen() {
           </TouchableOpacity>
         )}
 
+        <TouchableOpacity
+          style={styles.restoreBtn}
+          onPress={() => {
+            setIsRestoring(true);
+            setTimeout(() => {
+              setIsRestoring(false);
+              Alert.alert(
+                t('restorePurchasesTitle'),
+                t('restorePurchasesResult'),
+              );
+            }, 2000);
+          }}
+          disabled={isRestoring}
+          activeOpacity={0.7}
+          testID="restore-purchases-btn"
+        >
+          <RotateCcw size={16} color={Colors.accent} />
+          <Text style={styles.restoreBtnText}>
+            {isRestoring ? t('restoringPurchases') : t('restorePurchases')}
+          </Text>
+        </TouchableOpacity>
+
         <Text style={styles.restoreText}>{t('restoreInfo')}</Text>
 
         <View style={styles.bottomSpace} />
@@ -470,11 +493,28 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: Colors.danger,
   },
+  restoreBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  restoreBtnText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.accent,
+  },
   restoreText: {
     fontSize: 12,
     color: Colors.textMuted,
     textAlign: 'center' as const,
-    marginTop: 20,
+    marginTop: 10,
     lineHeight: 18,
   },
   bottomSpace: {

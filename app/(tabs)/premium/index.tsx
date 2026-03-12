@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Check, X, Star, Users, Target, ChevronDown, ChevronUp, Zap } from 'lucide-react-native';
+import { Crown, Check, X, Star, Users, Target, ChevronDown, ChevronUp, Zap, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -11,6 +11,7 @@ export default function PremiumScreen() {
   const { t, currency, country, upgradeToPremium, user, remainingCredits } = useApp();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
   const shineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -196,6 +197,28 @@ export default function PremiumScreen() {
               )}
             </TouchableOpacity>
           ))}
+
+          <TouchableOpacity
+            style={styles.restoreBtn}
+            onPress={() => {
+              setIsRestoring(true);
+              setTimeout(() => {
+                setIsRestoring(false);
+                Alert.alert(
+                  t('restorePurchasesTitle'),
+                  t('restorePurchasesResult'),
+                );
+              }, 2000);
+            }}
+            disabled={isRestoring}
+            activeOpacity={0.7}
+            testID="premium-restore-btn"
+          >
+            <RotateCcw size={16} color={Colors.accent} />
+            <Text style={styles.restoreBtnText}>
+              {isRestoring ? t('restoringPurchases') : t('restorePurchases')}
+            </Text>
+          </TouchableOpacity>
 
           <View style={styles.addressFooter}>
             <Text style={styles.addressFooterText}>
@@ -446,6 +469,23 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 20,
     marginTop: 10,
+  },
+  restoreBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  restoreBtnText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.accent,
   },
   bottomSpace: {
     height: 30,
