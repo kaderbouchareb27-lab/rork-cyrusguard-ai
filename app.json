@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.rork.cyrusguard-ai"
+      "bundleIdentifier": "app.rork.cyrusguard-ai",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CyrusGuard AI utilise votre caméra pour scanner et analyser des QR codes, des liens ou des textes suspects en temps réel afin de vous protéger contre les menaces de sécurité et le phishing."
+      }
     },
     "android": {
       "adaptiveIcon": {
