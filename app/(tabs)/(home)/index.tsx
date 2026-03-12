@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle } from 'lucide-react-native';
+import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -327,6 +327,41 @@ export default function HomeScreen() {
             </>
           )}
 
+          <View style={styles.legalFooter}>
+            <View style={styles.legalDivider} />
+            <View style={styles.legalLinks}>
+              <TouchableOpacity
+                onPress={() => router.push('/privacy' as any)}
+                activeOpacity={0.7}
+                style={styles.legalLink}
+                testID="footer-privacy"
+              >
+                <Lock size={13} color={Colors.textMuted} />
+                <Text style={styles.legalLinkText}>{t('footerPrivacy')}</Text>
+              </TouchableOpacity>
+              <View style={styles.legalDot} />
+              <TouchableOpacity
+                onPress={() => router.push('/terms' as any)}
+                activeOpacity={0.7}
+                style={styles.legalLink}
+                testID="footer-terms"
+              >
+                <FileText size={13} color={Colors.textMuted} />
+                <Text style={styles.legalLinkText}>{t('footerTerms')}</Text>
+              </TouchableOpacity>
+              <View style={styles.legalDot} />
+              <TouchableOpacity
+                onPress={() => router.push('/contact' as any)}
+                activeOpacity={0.7}
+                style={styles.legalLink}
+                testID="footer-contact"
+              >
+                <Mail size={13} color={Colors.textMuted} />
+                <Text style={styles.legalLinkText}>{t('footerContact')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.bottomSpace} />
         </ScrollView>
       </SafeAreaView>
@@ -535,6 +570,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 18,
+  },
+  legalFooter: {
+    marginTop: 8,
+    paddingTop: 4,
+  },
+  legalDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginBottom: 14,
+  },
+  legalLinks: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legalLink: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '500' as const,
+  },
+  legalDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.textMuted,
+    opacity: 0.5,
   },
   bottomSpace: {
     height: 20,

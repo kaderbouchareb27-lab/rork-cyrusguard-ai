@@ -261,6 +261,9 @@ const fr: Translations = {
   aiDisclosureTitle: 'Transparence sur les données',
   aiDisclosureMessage: 'Pour assurer votre sécurité, CyrusGuard AI utilise des services d\'intelligence artificielle tiers pour analyser le contenu soumis. Aucune donnée personnelle n\'est stockée de façon permanente par ces services.',
   aiDisclosureAccept: 'J\'accepte et je continue',
+  footerPrivacy: 'Politique de confidentialité',
+  footerTerms: 'Conditions d\'utilisation',
+  footerContact: 'Contacter le support',
 };
 
 
@@ -521,6 +524,9 @@ const en: Translations = {
   aiDisclosureTitle: 'Data Transparency',
   aiDisclosureMessage: 'To ensure your security, CyrusGuard AI uses third-party artificial intelligence services to analyze submitted content. No personal data is permanently stored by these services.',
   aiDisclosureAccept: 'I accept and continue',
+  footerPrivacy: 'Privacy Policy',
+  footerTerms: 'Terms of Use',
+  footerContact: 'Contact Support',
 };
 
 
