@@ -258,6 +258,9 @@ const fr: Translations = {
   contentTypeLabel: 'Type analysé',
   phoneCall: 'Appel téléphonique',
   socialMessage: 'Message réseaux sociaux',
+  aiDisclosureTitle: 'Transparence sur les données',
+  aiDisclosureMessage: 'Pour assurer votre sécurité, CyrusGuard AI utilise des services d\'intelligence artificielle tiers pour analyser le contenu soumis. Aucune donnée personnelle n\'est stockée de façon permanente par ces services.',
+  aiDisclosureAccept: 'J\'accepte et je continue',
 };
 
 
@@ -515,6 +518,9 @@ const en: Translations = {
   contentTypeLabel: 'Type analyzed',
   phoneCall: 'Phone call',
   socialMessage: 'Social media message',
+  aiDisclosureTitle: 'Data Transparency',
+  aiDisclosureMessage: 'To ensure your security, CyrusGuard AI uses third-party artificial intelligence services to analyze submitted content. No personal data is permanently stored by these services.',
+  aiDisclosureAccept: 'I accept and continue',
 };
 
 

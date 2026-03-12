@@ -16,6 +16,7 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
+import AIDisclosureModal from '@/components/AIDisclosureModal';
 import { analyzeImage, analyzeText, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
@@ -44,7 +45,9 @@ const PLATFORM_KEYS: Record<string, string> = {
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { t, addScan, language, country, canScan } = useApp();
+  const { t, addScan, language, country, canScan, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
+  const [showDisclosure, setShowDisclosure] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [selectedType, setSelectedType] = useState<ContentType>('sms');
   const [textInput, setTextInput] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -69,6 +72,24 @@ export default function ScanScreen() {
       default: return '';
     }
   }, [selectedType, t]);
+
+  const requireDisclosure = (action: () => void) => {
+    if (!hasAcceptedAIDisclosure) {
+      setPendingAction(() => action);
+      setShowDisclosure(true);
+      return;
+    }
+    void Promise.resolve(action());
+  };
+
+  const handleDisclosureAccept = () => {
+    void acceptAIDisclosure();
+    setShowDisclosure(false);
+    if (pendingAction) {
+      void Promise.resolve(pendingAction());
+      setPendingAction(null);
+    }
+  };
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -353,7 +374,7 @@ export default function ScanScreen() {
 
                 <TouchableOpacity
                   style={[styles.analyzeBtn, !textInput.trim() && styles.analyzeBtnDisabled]}
-                  onPress={startTextAnalysis}
+                  onPress={() => requireDisclosure(startTextAnalysis)}
                   disabled={!textInput.trim()}
                   activeOpacity={0.8}
                   testID="analyze-btn"
@@ -374,7 +395,7 @@ export default function ScanScreen() {
               <View style={styles.imageButtons}>
                 <TouchableOpacity
                   style={styles.imageBtn}
-                  onPress={() => pickImage(true)}
+                  onPress={() => requireDisclosure(() => pickImage(true))}
                   activeOpacity={0.8}
                   testID="take-photo-btn"
                 >
@@ -387,7 +408,7 @@ export default function ScanScreen() {
 
                 <TouchableOpacity
                   style={styles.imageBtn}
-                  onPress={() => pickImage(false)}
+                  onPress={() => requireDisclosure(() => pickImage(false))}
                   activeOpacity={0.8}
                   testID="gallery-btn"
                 >
@@ -401,6 +422,7 @@ export default function ScanScreen() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
       </SafeAreaView>
     </View>
   );

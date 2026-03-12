@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
@@ -7,15 +7,18 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
+import AIDisclosureModal from '@/components/AIDisclosureModal';
 import { sendScanChatMessage } from '@/services/openai';
 
 export default function ScanChatScreen() {
   const router = useRouter();
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
-  const { t, scans, language, country, canUseFeature } = useApp();
+  const { t, scans, language, country, canUseFeature, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [showDisclosure, setShowDisclosure] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const pendingAfterDisclosureRef = useRef(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,7 +35,7 @@ export default function ScanChatScreen() {
 
   const allMessages = [contextMessage, ...messages];
 
-  const sendMessage = useCallback(async () => {
+  const doSendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const messageText = input.trim();
@@ -82,6 +85,28 @@ export default function ScanChatScreen() {
       setIsLoading(false);
     }
   }, [input, isLoading, language, country, scan, messages]);
+
+  const handleDisclosureAccept = useCallback(() => {
+    void acceptAIDisclosure();
+    setShowDisclosure(false);
+    pendingAfterDisclosureRef.current = true;
+  }, [acceptAIDisclosure]);
+
+  useEffect(() => {
+    if (pendingAfterDisclosureRef.current && hasAcceptedAIDisclosure) {
+      pendingAfterDisclosureRef.current = false;
+      void doSendMessage();
+    }
+  }, [hasAcceptedAIDisclosure, doSendMessage]);
+
+  const sendMessage = useCallback(() => {
+    if (!input.trim() || isLoading) return;
+    if (!hasAcceptedAIDisclosure) {
+      setShowDisclosure(true);
+      return;
+    }
+    void doSendMessage();
+  }, [input, isLoading, hasAcceptedAIDisclosure, doSendMessage]);
 
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isUser = item.role === 'user';
@@ -156,6 +181,7 @@ export default function ScanChatScreen() {
             </KeyboardAvoidingView>
           </>
         )}
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
       </SafeAreaView>
     </View>
   );

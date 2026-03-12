@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import PaywallGate from '@/components/PaywallGate';
+import AIDisclosureModal from '@/components/AIDisclosureModal';
 import RiskCircle from '@/components/RiskCircle';
 import { analyzeUrl as analyzeUrlApi } from '@/services/openai';
 import type { UrlAnalysisResult } from '@/services/openai';
@@ -33,7 +34,8 @@ const ANALYSIS_STEPS_EN = [
 
 export default function UrlAnalyzeScreen() {
   const router = useRouter();
-  const { t, language, country, canUseFeature, consumeCredit } = useApp();
+  const { t, language, country, canUseFeature, consumeCredit, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
+  const [showDisclosure, setShowDisclosure] = useState(false);
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<UrlAnalysisResult | null>(null);
@@ -50,7 +52,22 @@ export default function UrlAnalyzeScreen() {
     };
   }, []);
 
-  const analyze = async () => {
+  const handleDisclosureAccept = () => {
+    void acceptAIDisclosure();
+    setShowDisclosure(false);
+    void doAnalyze();
+  };
+
+  const analyze = () => {
+    if (!url.trim()) return;
+    if (!hasAcceptedAIDisclosure) {
+      setShowDisclosure(true);
+      return;
+    }
+    void doAnalyze();
+  };
+
+  const doAnalyze = async () => {
     if (!url.trim()) return;
     setIsAnalyzing(true);
     setResult(null);
@@ -166,6 +183,8 @@ export default function UrlAnalyzeScreen() {
         {!canUseFeature ? (
           <PaywallGate type="url" />
         ) : (
+        <>
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
             <View style={styles.inputRow}>
@@ -481,6 +500,7 @@ export default function UrlAnalyzeScreen() {
             </Animated.View>
           )}
         </ScrollView>
+        </>
         )}
       </SafeAreaView>
     </View>

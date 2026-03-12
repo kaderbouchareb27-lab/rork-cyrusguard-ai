@@ -25,6 +25,7 @@ const STORAGE_KEYS = {
   chatMessages: 'cyrusguard_chat',
   dailyMessages: 'cyrusguard_daily_msgs',
   creditsUsed: 'cyrusguard_credits_used',
+  aiDisclosure: 'cyrusguard_ai_disclosure',
 };
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -41,16 +42,18 @@ export const [AppProvider, useApp] = createContextHook(() => {
   });
   const [showPaymentSuccess, setShowPaymentSuccess] = useState<boolean>(false);
   const [creditsUsed, setCreditsUsed] = useState<number>(0);
+  const [hasAcceptedAIDisclosure, setHasAcceptedAIDisclosureState] = useState<boolean>(false);
 
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
     queryFn: async () => {
       try {
-        const [langStr, countryStr, userStr, creditsStr] = await Promise.all([
+        const [langStr, countryStr, userStr, creditsStr, disclosureStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.language),
           AsyncStorage.getItem(STORAGE_KEYS.country),
           AsyncStorage.getItem(STORAGE_KEYS.user),
           AsyncStorage.getItem(STORAGE_KEYS.creditsUsed),
+          AsyncStorage.getItem(STORAGE_KEYS.aiDisclosure),
         ]);
         let parsedUser = null;
         if (userStr) {
@@ -65,6 +68,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
           country: (countryStr as Country) || 'CA',
           user: parsedUser,
           creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
+          hasAcceptedAIDisclosure: disclosureStr === 'true',
         };
       } catch (e) {
         console.log('[AppContext] Error loading settings:', e);
@@ -73,6 +77,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
           country: 'CA' as Country,
           user: null,
           creditsUsed: 0,
+          hasAcceptedAIDisclosure: false,
         };
       }
     },
@@ -84,6 +89,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       if (settingsQuery.data.country) setCountryState(settingsQuery.data.country);
       if (settingsQuery.data.user) setUser(settingsQuery.data.user);
       setCreditsUsed(settingsQuery.data.creditsUsed ?? 0);
+      setHasAcceptedAIDisclosureState(settingsQuery.data.hasAcceptedAIDisclosure ?? false);
     }
   }, [settingsQuery.data]);
 
@@ -148,6 +154,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const canChat = canUseFeature;
   const canSendMessage = canUseFeature;
 
+  const acceptAIDisclosure = useCallback(async () => {
+    setHasAcceptedAIDisclosureState(true);
+    await AsyncStorage.setItem(STORAGE_KEYS.aiDisclosure, 'true');
+    console.log('[AppContext] AI disclosure accepted');
+  }, []);
+
   const consumeCredit = useCallback(() => {
     if (user.isPremium) return;
     setCreditsUsed(prev => {
@@ -192,6 +204,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     consumeCredit,
     canUseFeature,
     showPaymentSuccess,
+    hasAcceptedAIDisclosure,
+    acceptAIDisclosure,
     t,
     setLanguage,
     setLanguageSafe,
@@ -206,7 +220,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     language, country, currency, currencySymbol, availableLanguages,
     user, scans, chatMessages, dailyMessageCount, canScan, canChat,
     canSendMessage, remainingCredits, creditsUsed, consumeCredit,
-    canUseFeature, showPaymentSuccess, t, setLanguage, setLanguageSafe,
+    canUseFeature, showPaymentSuccess, hasAcceptedAIDisclosure, acceptAIDisclosure,
+    t, setLanguage, setLanguageSafe,
     setCountry, addScan, addChatMessage, upgradeToPremium, deleteAllData,
     setShowPaymentSuccess, settingsQuery.isLoading,
   ]);
