@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Check, Users, Target, ChevronDown, ChevronUp, Zap, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
+import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -68,11 +68,6 @@ export default function PremiumScreen() {
   ];
 
   const testimonials = [t('testimonial1'), t('testimonial2'), t('testimonial3')];
-  const stats = [
-    { icon: Users, value: t('stat1') },
-    { icon: Target, value: t('stat2') },
-    { icon: Zap, value: t('stat3') },
-  ];
 
   const creditsLeft = remainingCredits === Infinity ? 3 : remainingCredits;
 
@@ -90,15 +85,6 @@ export default function PremiumScreen() {
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
-          </View>
-
-          <View style={styles.statsRow}>
-            {stats.map((stat, idx) => (
-              <View key={idx} style={styles.statItem}>
-                <stat.icon size={20} color={Colors.accent} />
-                <Text style={styles.statValue}>{stat.value}</Text>
-              </View>
-            ))}
           </View>
 
           {!user.isPremium && (
@@ -353,26 +339,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  statsRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-around',
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statItem: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  statValue: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    color: Colors.textPrimary,
-    textAlign: 'center' as const,
-  },
+
   creditCounter: {
     flexDirection: 'row' as const,
     alignItems: 'center',

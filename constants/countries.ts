@@ -42,9 +42,9 @@ export const countryConfigs: Record<Country, CountryConfig> = {
       { name: 'Autorité des marchés financiers (AMF)', nameEn: 'Autorité des marchés financiers (AMF)', url: 'https://lautorite.qc.ca', phone: '' },
     ],
     pricing: {
-      monthly: '2.99',
-      annual: '29.99',
-      monthlyEquivalent: '2.50',
+      monthly: '2.49',
+      annual: '24.99',
+      monthlyEquivalent: '2.08',
     },
   },
   US: {
