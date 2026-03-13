@@ -22,6 +22,14 @@ interface UserProfile {
   plan: 'free' | 'monthly' | 'annual';
 }
 
+interface AuthState {
+  isAuthenticated: boolean;
+  uid: string | null;
+  email: string | null;
+  fullName: string | null;
+  provider: 'apple' | 'guest' | null;
+}
+
 const FREE_CREDITS = 3;
 const ENTITLEMENT_ID = 'CyrusGuard AI Pro';
 
@@ -34,6 +42,7 @@ const STORAGE_KEYS = {
   dailyMessages: 'cyrusguard_daily_msgs',
   creditsUsed: 'cyrusguard_credits_used',
   aiDisclosure: 'cyrusguard_ai_disclosure',
+  auth: 'cyrusguard_auth',
 };
 
 function getRCApiKey(): string {
@@ -90,25 +99,34 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [dailyMessageCount, setDailyMessageCount] = useState<number>(0);
   const [user, setUser] = useState<UserProfile>({
-    email: 'demo@cyrusguard.ai',
-    name: 'Utilisateur Demo',
+    email: '',
+    name: '',
     isPremium: false,
     plan: 'free',
   });
   const [showPaymentSuccess, setShowPaymentSuccess] = useState<boolean>(false);
   const [creditsUsed, setCreditsUsed] = useState<number>(0);
   const [hasAcceptedAIDisclosure, setHasAcceptedAIDisclosureState] = useState<boolean>(false);
+  const [auth, setAuth] = useState<AuthState>({
+    isAuthenticated: false,
+    uid: null,
+    email: null,
+    fullName: null,
+    provider: null,
+  });
+  const [rcLoggedIn, setRcLoggedIn] = useState<boolean>(false);
 
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
     queryFn: async () => {
       try {
-        const [langStr, countryStr, userStr, creditsStr, disclosureStr] = await Promise.all([
+        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.language),
           AsyncStorage.getItem(STORAGE_KEYS.country),
           AsyncStorage.getItem(STORAGE_KEYS.user),
           AsyncStorage.getItem(STORAGE_KEYS.creditsUsed),
           AsyncStorage.getItem(STORAGE_KEYS.aiDisclosure),
+          AsyncStorage.getItem(STORAGE_KEYS.auth),
         ]);
         let parsedUser = null;
         if (userStr) {
@@ -118,12 +136,21 @@ export const [AppProvider, useApp] = createContextHook(() => {
             console.log('[AppContext] Failed to parse user data:', e);
           }
         }
+        let parsedAuth: AuthState | null = null;
+        if (authStr) {
+          try {
+            parsedAuth = JSON.parse(authStr);
+          } catch (e) {
+            console.log('[AppContext] Failed to parse auth data:', e);
+          }
+        }
         return {
           language: (langStr as Language) || 'fr',
           country: (countryStr as Country) || 'CA',
           user: parsedUser,
           creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
           hasAcceptedAIDisclosure: disclosureStr === 'true',
+          auth: parsedAuth,
         };
       } catch (e) {
         console.log('[AppContext] Error loading settings:', e);
@@ -133,6 +160,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
           user: null,
           creditsUsed: 0,
           hasAcceptedAIDisclosure: false,
+          auth: null,
         };
       }
     },
@@ -145,8 +173,40 @@ export const [AppProvider, useApp] = createContextHook(() => {
       if (settingsQuery.data.user) setUser(settingsQuery.data.user);
       setCreditsUsed(settingsQuery.data.creditsUsed ?? 0);
       setHasAcceptedAIDisclosureState(settingsQuery.data.hasAcceptedAIDisclosure ?? false);
+      if (settingsQuery.data.auth) {
+        setAuth(settingsQuery.data.auth);
+      }
     }
   }, [settingsQuery.data]);
+
+  const rcLoginMutation = useMutation({
+    mutationFn: async (uid: string) => {
+      if (!rcConfigured) {
+        console.log('[RC] Not configured, skipping logIn');
+        return null;
+      }
+      console.log('[RC] Logging in with UID:', uid);
+      const { customerInfo } = await Purchases.logIn(uid);
+      return customerInfo;
+    },
+    onSuccess: (info) => {
+      if (info) {
+        console.log('[RC] logIn successful');
+        queryClient.setQueryData(['rc-customer-info'], info);
+        setRcLoggedIn(true);
+      }
+    },
+    onError: (error: any) => {
+      console.log('[RC] logIn error:', error);
+    },
+  });
+
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.uid && rcConfigured && !rcLoggedIn) {
+      console.log('[RC] Auto-login for authenticated user:', auth.uid);
+      rcLoginMutation.mutate(auth.uid);
+    }
+  }, [auth.isAuthenticated, auth.uid, rcLoggedIn, rcLoginMutation]);
 
   const customerInfoQuery = useQuery({
     queryKey: ['rc-customer-info'],
@@ -208,6 +268,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
+      if (!auth.isAuthenticated) {
+        throw new Error('User must be authenticated before purchasing');
+      }
+      if (!rcLoggedIn && auth.uid) {
+        console.log('[RC] Ensuring logIn before purchase...');
+        const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
+        setRcLoggedIn(true);
+        queryClient.setQueryData(['rc-customer-info'], loginInfo);
+      }
       console.log('[RC] Purchasing package:', pkg.identifier);
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       return customerInfo;
@@ -241,9 +310,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
       queryClient.setQueryData(['rc-customer-info'], info);
       const isPremium = checkPremiumFromCustomerInfo(info);
       if (isPremium) {
-        Alert.alert('✅', 'Your premium subscription has been restored!');
+        Alert.alert('✅', language === 'fr'
+          ? 'Votre abonnement Premium a été restauré !'
+          : 'Your premium subscription has been restored!');
       } else {
-        Alert.alert('ℹ️', 'No active subscription found.');
+        Alert.alert('ℹ️', language === 'fr'
+          ? 'Aucun abonnement actif trouvé.'
+          : 'No active subscription found.');
       }
     },
     onError: (error: any) => {
@@ -313,6 +386,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return user.isPremium || creditsUsed < FREE_CREDITS;
   }, [user.isPremium, creditsUsed]);
 
+  const needsAuth = useMemo(() => {
+    return !canUseFeature && !auth.isAuthenticated;
+  }, [canUseFeature, auth.isAuthenticated]);
+
+  const needsPaywall = useMemo(() => {
+    return !canUseFeature && auth.isAuthenticated;
+  }, [canUseFeature, auth.isAuthenticated]);
+
   const canScan = canUseFeature;
   const canChat = canUseFeature;
   const canSendMessage = canUseFeature;
@@ -332,21 +413,107 @@ export const [AppProvider, useApp] = createContextHook(() => {
     });
   }, [user.isPremium]);
 
+  const loginUser = useCallback(async (params: {
+    uid: string;
+    email: string | null;
+    fullName: string | null;
+    provider: 'apple' | 'guest';
+  }) => {
+    console.log('[Auth] Logging in user:', params.uid, params.provider);
+    const newAuth: AuthState = {
+      isAuthenticated: true,
+      uid: params.uid,
+      email: params.email,
+      fullName: params.fullName,
+      provider: params.provider,
+    };
+    setAuth(newAuth);
+    await AsyncStorage.setItem(STORAGE_KEYS.auth, JSON.stringify(newAuth));
+
+    const updatedUser: UserProfile = {
+      ...user,
+      email: params.email ?? user.email,
+      name: params.fullName ?? user.name,
+    };
+    setUser(updatedUser);
+    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
+
+    if (rcConfigured && params.uid) {
+      try {
+        console.log('[RC] Calling Purchases.logIn after auth...');
+        const { customerInfo } = await Purchases.logIn(params.uid);
+        setRcLoggedIn(true);
+        queryClient.setQueryData(['rc-customer-info'], customerInfo);
+        console.log('[RC] logIn after auth successful');
+
+        const isPremium = checkPremiumFromCustomerInfo(customerInfo);
+        const plan = getPlanFromCustomerInfo(customerInfo);
+        if (isPremium) {
+          const premiumUser = { ...updatedUser, isPremium, plan };
+          setUser(premiumUser);
+          await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(premiumUser));
+        }
+      } catch (e) {
+        console.log('[RC] logIn after auth error:', e);
+      }
+    }
+  }, [user, queryClient]);
+
+  const logoutUser = useCallback(async () => {
+    console.log('[Auth] Logging out user');
+    setAuth({
+      isAuthenticated: false,
+      uid: null,
+      email: null,
+      fullName: null,
+      provider: null,
+    });
+    await AsyncStorage.removeItem(STORAGE_KEYS.auth);
+    setRcLoggedIn(false);
+
+    if (rcConfigured) {
+      try {
+        await Purchases.logOut();
+        console.log('[RC] Logged out from RevenueCat');
+      } catch (e) {
+        console.log('[RC] logOut error:', e);
+      }
+    }
+
+    setUser({ email: '', name: '', isPremium: false, plan: 'free' });
+    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ email: '', name: '', isPremium: false, plan: 'free' }));
+  }, []);
+
   const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
+    if (!auth.isAuthenticated) {
+      console.log('[RC] User not authenticated, cannot purchase');
+      Alert.alert(
+        language === 'fr' ? 'Compte requis' : 'Account Required',
+        language === 'fr'
+          ? 'Veuillez créer un compte avant de souscrire à un abonnement.'
+          : 'Please create an account before subscribing.'
+      );
+      return;
+    }
+
     if (!currentOffering) {
       console.log('[RC] No offering available');
-      Alert.alert('Error', 'No subscription packages available. Please try again later.');
+      Alert.alert('Error', language === 'fr'
+        ? 'Aucun forfait disponible. Veuillez réessayer plus tard.'
+        : 'No subscription packages available. Please try again later.');
       return;
     }
     const packageId = plan === 'monthly' ? '$rc_monthly' : '$rc_annual';
     const pkg = currentOffering.availablePackages.find(p => p.identifier === packageId);
     if (!pkg) {
       console.log('[RC] Package not found:', packageId);
-      Alert.alert('Error', 'Subscription package not found.');
+      Alert.alert('Error', language === 'fr'
+        ? 'Forfait introuvable.'
+        : 'Subscription package not found.');
       return;
     }
     purchaseMutation.mutate(pkg);
-  }, [currentOffering, purchaseMutation]);
+  }, [auth.isAuthenticated, currentOffering, purchaseMutation, language]);
 
   const restorePurchases = useCallback(() => {
     restoreMutation.mutate();
@@ -357,8 +524,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setChatMessages([]);
     setDailyMessageCount(0);
     setCreditsUsed(0);
+    setAuth({ isAuthenticated: false, uid: null, email: null, fullName: null, provider: null });
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
+    setRcLoggedIn(false);
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+    if (rcConfigured) {
+      try { await Purchases.logOut(); } catch (e) { console.log('[RC] logOut error:', e); }
+    }
   }, []);
 
   return useMemo(() => ({
@@ -378,9 +550,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     creditsUsed,
     consumeCredit,
     canUseFeature,
+    needsAuth,
+    needsPaywall,
     showPaymentSuccess,
     hasAcceptedAIDisclosure,
     acceptAIDisclosure,
+    auth,
+    loginUser,
+    logoutUser,
     t,
     setLanguage,
     setLanguageSafe,
@@ -400,7 +577,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
     language, country, currency, currencySymbol, availableLanguages,
     user, scans, chatMessages, dailyMessageCount, canScan, canChat,
     canSendMessage, remainingCredits, creditsUsed, consumeCredit,
-    canUseFeature, showPaymentSuccess, hasAcceptedAIDisclosure, acceptAIDisclosure,
+    canUseFeature, needsAuth, needsPaywall, showPaymentSuccess,
+    hasAcceptedAIDisclosure, acceptAIDisclosure,
+    auth, loginUser, logoutUser,
     t, setLanguage, setLanguageSafe,
     setCountry, addScan, addChatMessage, upgradeToPremium, restorePurchases,
     deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading,

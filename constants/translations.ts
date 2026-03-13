@@ -272,6 +272,20 @@ const fr: Translations = {
   cancelSubRedirect: 'Pour annuler votre abonnement, vous devez vous rendre dans les réglages de votre compte Apple (Réglages > Apple ID > Abonnements).',
   openSettings: 'Ouvrir les réglages',
   cancelSubManual: 'Rendez-vous dans Réglages > Apple ID > Abonnements pour gérer votre abonnement.',
+  authTitle: 'Créez votre compte',
+  authSubtitle: 'Un compte est nécessaire pour sécuriser votre abonnement et synchroniser vos données entre vos appareils.',
+  authBenefit1: 'Sécurisez votre abonnement Premium',
+  authBenefit2: 'Synchronisez vos données entre appareils',
+  authBenefit3: 'Accédez à toutes les fonctionnalités',
+  signInWithApple: 'Se connecter avec Apple',
+  continueWithAccount: 'Continuer avec un compte',
+  authDisclaimer: 'En créant un compte, vous acceptez nos Conditions d\'utilisation et notre Politique de confidentialité. Votre compte permet de gérer votre abonnement via l\'App Store.',
+  authRequiredTitle: 'Créez un compte pour continuer',
+  authRequiredDesc: 'Vos crédits gratuits sont épuisés. Créez un compte pour accéder à l\'abonnement Premium.',
+  authRequiredWhy: 'Pourquoi un compte ?',
+  createAccountCTA: 'Créer un compte',
+  accountConnected: 'Compte connecté',
+  notConnected: 'Non connecté',
 };
 
 
@@ -543,6 +557,20 @@ const en: Translations = {
   cancelSubRedirect: 'To cancel your subscription, you need to go to your Apple account settings (Settings > Apple ID > Subscriptions).',
   openSettings: 'Open Settings',
   cancelSubManual: 'Go to Settings > Apple ID > Subscriptions to manage your subscription.',
+  authTitle: 'Create your account',
+  authSubtitle: 'An account is required to secure your subscription and sync your data across devices.',
+  authBenefit1: 'Secure your Premium subscription',
+  authBenefit2: 'Sync your data across devices',
+  authBenefit3: 'Access all features',
+  signInWithApple: 'Sign in with Apple',
+  continueWithAccount: 'Continue with an account',
+  authDisclaimer: 'By creating an account, you agree to our Terms of Use and Privacy Policy. Your account enables subscription management via the App Store.',
+  authRequiredTitle: 'Create an account to continue',
+  authRequiredDesc: 'Your free credits are used up. Create an account to access the Premium subscription.',
+  authRequiredWhy: 'Why an account?',
+  createAccountCTA: 'Create an account',
+  accountConnected: 'Account connected',
+  notConnected: 'Not connected',
 };
 
 

@@ -9,7 +9,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import Colors from "@/constants/colors";
 
 try {
-  SplashScreen.preventAutoHideAsync();
+  void SplashScreen.preventAutoHideAsync();
 } catch (e) {
   console.log('[Layout] SplashScreen.preventAutoHideAsync error:', e);
 }
@@ -39,6 +39,7 @@ function RootLayoutNav() {
       <Stack.Screen name="contact" />
       <Stack.Screen name="manage-subscription" />
       <Stack.Screen name="quiz" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -95,7 +96,7 @@ export default function RootLayout() {
         setAppReady(true);
       }
     };
-    prepare();
+    void prepare();
   }, []);
 
   if (!appReady) {

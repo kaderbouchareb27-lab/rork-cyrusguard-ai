@@ -13,6 +13,7 @@ export default function PremiumScreen() {
   const {
     t, currency, country, upgradeToPremium, user, remainingCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
+    auth,
   } = useApp();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -162,19 +163,30 @@ export default function PremiumScreen() {
                 </View>
               ))}
               {!user.isPremium ? (
-                <TouchableOpacity
-                  style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
-                  onPress={() => upgradeToPremium(billingCycle)}
-                  activeOpacity={0.8}
-                  disabled={isPurchasing || isOfferingsLoading}
-                  testID="subscribe-btn"
-                >
-                  {isPurchasing ? (
-                    <ActivityIndicator color={Colors.background} size="small" />
-                  ) : (
-                    <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
-                  )}
-                </TouchableOpacity>
+                auth.isAuthenticated ? (
+                  <TouchableOpacity
+                    style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
+                    onPress={() => upgradeToPremium(billingCycle)}
+                    activeOpacity={0.8}
+                    disabled={isPurchasing || isOfferingsLoading}
+                    testID="subscribe-btn"
+                  >
+                    {isPurchasing ? (
+                      <ActivityIndicator color={Colors.background} size="small" />
+                    ) : (
+                      <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.subscribeBtn, { backgroundColor: Colors.info }]}
+                    onPress={() => router.push('/auth' as any)}
+                    activeOpacity={0.8}
+                    testID="subscribe-auth-btn"
+                  >
+                    <Text style={styles.subscribeBtnText}>{t('createAccountCTA')}</Text>
+                  </TouchableOpacity>
+                )
               ) : (
                 <View style={styles.currentPlanBadge}>
                   <Text style={styles.currentPlanText}>{t('currentPlan')}</Text>

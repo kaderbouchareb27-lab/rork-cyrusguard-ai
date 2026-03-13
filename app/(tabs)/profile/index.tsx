@@ -13,7 +13,7 @@ import type { Language } from '@/constants/translations';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { t, language, country, currencySymbol, user, availableLanguages, setLanguageSafe, setCountry } = useApp();
+  const { t, language, country, currencySymbol, user, availableLanguages, setLanguageSafe, setCountry, auth, logoutUser } = useApp();
 
   const allLanguageOptions: { key: Language; label: string }[] = [
     { key: 'fr', label: t('french') },
@@ -113,8 +113,8 @@ export default function ProfileScreen() {
               <User size={28} color={Colors.accent} />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user.name}</Text>
-              <Text style={styles.profileEmail}>{user.email}</Text>
+              <Text style={styles.profileName}>{auth.isAuthenticated ? (auth.fullName || user.name || (language === 'fr' ? 'Utilisateur' : 'User')) : (language === 'fr' ? 'Invité' : 'Guest')}</Text>
+              <Text style={styles.profileEmail}>{auth.isAuthenticated ? (auth.email || t('accountConnected')) : t('notConnected')}</Text>
             </View>
             {user.isPremium && (
               <View style={styles.premiumTag}>
@@ -159,10 +159,27 @@ export default function ProfileScreen() {
             <Text style={styles.dangerText}>{t('deleteAccount')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.7} testID="logout-btn">
-            <LogOut size={18} color={Colors.textMuted} />
-            <Text style={styles.logoutText}>{t('logout')}</Text>
-          </TouchableOpacity>
+          {auth.isAuthenticated ? (
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={() => void logoutUser()}
+              activeOpacity={0.7}
+              testID="logout-btn"
+            >
+              <LogOut size={18} color={Colors.textMuted} />
+              <Text style={styles.logoutText}>{t('logout')}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.logoutBtn, { borderColor: Colors.accent + '40' }]}
+              onPress={() => router.push('/auth' as any)}
+              activeOpacity={0.7}
+              testID="login-btn"
+            >
+              <User size={18} color={Colors.accent} />
+              <Text style={[styles.logoutText, { color: Colors.accent }]}>{t('createAccountCTA')}</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.addressSection}>
             <MapPin size={14} color={Colors.textMuted} style={{ marginTop: 2 }} />

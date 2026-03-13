@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Shield, Lock, Crown, Zap } from 'lucide-react-native';
+import { Shield, Lock, Crown, Zap, UserPlus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -10,9 +10,9 @@ interface PaywallGateProps {
   type: 'scan' | 'chat' | 'url' | 'scan-chat';
 }
 
-export default function PaywallGate({ type }: PaywallGateProps) {
+export default function PaywallGate({ type: _type }: PaywallGateProps) {
   const router = useRouter();
-  const { t } = useApp();
+  const { t, needsAuth } = useApp();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -31,8 +31,61 @@ export default function PaywallGate({ type }: PaywallGateProps) {
     ).start();
   }, [fadeAnim, scaleAnim, pulseAnim]);
 
-  const titleKey = 'paywallTitle';
-  const descKey = 'paywallDesc';
+  if (needsAuth) {
+    return (
+      <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+        <View style={styles.lockCircleOuter}>
+          <LinearGradient
+            colors={['rgba(59,130,246,0.2)', 'rgba(59,130,246,0.05)']}
+            style={styles.lockCircle}
+          >
+            <UserPlus size={40} color={Colors.info} />
+          </LinearGradient>
+        </View>
+
+        <Text style={styles.title}>{t('authRequiredTitle')}</Text>
+        <Text style={styles.description}>{t('authRequiredDesc')}</Text>
+
+        <View style={styles.featuresCard}>
+          <View style={styles.featuresHeader}>
+            <Lock size={16} color={Colors.info} />
+            <Text style={[styles.featuresTitle, { color: Colors.info }]}>{t('authRequiredWhy')}</Text>
+          </View>
+          <View style={styles.featureRow}>
+            <Zap size={14} color={Colors.accent} />
+            <Text style={styles.featureText}>{t('authBenefit1')}</Text>
+          </View>
+          <View style={styles.featureRow}>
+            <Zap size={14} color={Colors.accent} />
+            <Text style={styles.featureText}>{t('authBenefit2')}</Text>
+          </View>
+          <View style={styles.featureRow}>
+            <Zap size={14} color={Colors.accent} />
+            <Text style={styles.featureText}>{t('authBenefit3')}</Text>
+          </View>
+        </View>
+
+        <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%' }}>
+          <TouchableOpacity
+            style={styles.authBtn}
+            onPress={() => router.push('/auth' as any)}
+            activeOpacity={0.8}
+            testID="paywall-auth-btn"
+          >
+            <LinearGradient
+              colors={[Colors.info, '#2563EB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.upgradeBtnGradient}
+            >
+              <UserPlus size={20} color="#FFFFFF" />
+              <Text style={styles.authBtnText}>{t('createAccountCTA')}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
 
   const features = [
     t('premiumFeature1'),
@@ -52,8 +105,8 @@ export default function PaywallGate({ type }: PaywallGateProps) {
         </LinearGradient>
       </View>
 
-      <Text style={styles.title}>{t(titleKey)}</Text>
-      <Text style={styles.description}>{t(descKey)}</Text>
+      <Text style={styles.title}>{t('paywallTitle')}</Text>
+      <Text style={styles.description}>{t('paywallDesc')}</Text>
 
       <View style={styles.featuresCard}>
         <View style={styles.featuresHeader}>
@@ -160,6 +213,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden' as const,
   },
+  authBtn: {
+    width: '100%',
+    borderRadius: 14,
+    overflow: 'hidden' as const,
+  },
   upgradeBtnGradient: {
     flexDirection: 'row' as const,
     alignItems: 'center',
@@ -171,5 +229,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800' as const,
     color: Colors.background,
+  },
+  authBtnText: {
+    fontSize: 17,
+    fontWeight: '800' as const,
+    color: '#FFFFFF',
   },
 });
