@@ -17,7 +17,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { analyzeImage, analyzeText, cancelActiveRequests, type ContentType } from '@/services/openai';
+import { analyzeImage, analyzeText, cancelActiveRequests, pingOpenAI, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
   type: ContentType;
@@ -63,6 +63,11 @@ export default function ScanScreen() {
   useEffect(() => {
     isMountedRef.current = true;
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    pingOpenAI().then(r => {
+      console.log('[Scan] OpenAI ping result:', JSON.stringify(r));
+    }).catch(e => {
+      console.error('[Scan] OpenAI ping failed:', e);
+    });
     return () => {
       isMountedRef.current = false;
       cancelActiveRequests();
@@ -205,23 +210,29 @@ export default function ScanScreen() {
       stopLoadingAnimation();
       const msg = error?.message ?? '';
       const isNetwork = error?.name === 'AbortError' || msg.includes('timeout') || msg.includes('Network');
-      const isRateLimit = msg.includes('Rate limit') || msg.includes('429');
-      const isServerError = msg.includes('temporarily unavailable') || msg.includes('500');
-      const isApiKey = msg.includes('API key');
-      const isImageError = msg.includes('Failed to read image') || msg.includes('too large') || msg.includes('empty');
+      const isQuota = msg.includes('quota') || msg.includes('billing');
+      const isRateLimit = msg.includes('429');
+      const isServerError = msg.includes('500') || msg.includes('server error') || msg.includes('unavailable');
+      const isApiKey = msg.includes('401') || msg.includes('API key') || msg.includes('not configured');
+      const isForbidden = msg.includes('403');
+      const isImageError = msg.includes('Failed to read image') || msg.includes('too large') || msg.includes('empty') || msg.includes('413');
       let alertMsg: string;
       if (isNetwork) {
         alertMsg = language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.';
+      } else if (isQuota) {
+        alertMsg = language === 'fr' ? 'Quota OpenAI épuisé. Ajoutez des crédits sur platform.openai.com.' : 'OpenAI quota exceeded. Add credits at platform.openai.com.';
       } else if (isRateLimit) {
         alertMsg = language === 'fr' ? 'Service surchargé. Veuillez patienter un moment et réessayer.' : 'Service overloaded. Please wait a moment and try again.';
-      } else if (isServerError) {
-        alertMsg = language === 'fr' ? 'Le service d\'analyse est temporairement indisponible. Réessayez dans quelques instants.' : 'Analysis service is temporarily unavailable. Please try again shortly.';
       } else if (isApiKey) {
-        alertMsg = language === 'fr' ? 'Configuration de l\'API manquante. Contactez le support.' : 'API configuration missing. Please contact support.';
+        alertMsg = language === 'fr' ? 'Clé API invalide ou expirée. Contactez le support.' : 'API key invalid or expired. Contact support.';
+      } else if (isForbidden) {
+        alertMsg = language === 'fr' ? 'Accès refusé à l\'API. Contactez le support.' : 'API access forbidden. Contact support.';
+      } else if (isServerError) {
+        alertMsg = language === 'fr' ? 'Service OpenAI temporairement indisponible. Réessayez dans quelques instants.' : 'OpenAI service temporarily unavailable. Try again shortly.';
       } else if (isImageError) {
         alertMsg = language === 'fr' ? 'Impossible de lire l\'image. Essayez avec une autre image ou prenez une nouvelle photo.' : 'Unable to read the image. Try another image or take a new photo.';
       } else {
-        alertMsg = language === 'fr' ? 'Erreur lors de l\'analyse : ' + msg : 'Analysis error: ' + msg;
+        alertMsg = language === 'fr' ? 'Erreur : ' + msg : 'Error: ' + msg;
       }
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',

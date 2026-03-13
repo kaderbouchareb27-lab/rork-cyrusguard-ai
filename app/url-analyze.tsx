@@ -103,16 +103,39 @@ export default function UrlAnalyzeScreen() {
       });
     } catch (error: any) {
       if (!isMountedRef.current) return;
-      console.log('[URL] Analysis error:', error?.message);
+      console.error('[URL] Analysis error:', error?.message, error);
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
       setIsAnalyzing(false);
       progressAnim.setValue(0);
-      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
+
+      const msg = error?.message ?? '';
+      const isNetwork = error?.name === 'AbortError' || msg.includes('timeout') || msg.includes('Network');
+      const isRateLimit = msg.includes('429');
+      const isQuota = msg.includes('quota') || msg.includes('billing');
+      const isApiKey = msg.includes('401') || msg.includes('API key') || msg.includes('not configured');
+      const isForbidden = msg.includes('403');
+      const isServerError = msg.includes('500') || msg.includes('server error') || msg.includes('unavailable');
+
+      let alertMsg: string;
+      if (isNetwork) {
+        alertMsg = language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.';
+      } else if (isQuota) {
+        alertMsg = language === 'fr' ? 'Quota OpenAI épuisé. Ajoutez des crédits sur platform.openai.com.' : 'OpenAI quota exceeded. Add credits at platform.openai.com.';
+      } else if (isRateLimit) {
+        alertMsg = language === 'fr' ? 'Service surchargé. Veuillez patienter un moment et réessayer.' : 'Service overloaded. Please wait a moment and try again.';
+      } else if (isApiKey) {
+        alertMsg = language === 'fr' ? 'Clé API invalide ou expirée. Contactez le support.' : 'API key invalid or expired. Contact support.';
+      } else if (isForbidden) {
+        alertMsg = language === 'fr' ? 'Accès refusé à l\'API. Contactez le support.' : 'API access forbidden. Contact support.';
+      } else if (isServerError) {
+        alertMsg = language === 'fr' ? 'Service OpenAI temporairement indisponible. Réessayez dans quelques instants.' : 'OpenAI service temporarily unavailable. Try again shortly.';
+      } else {
+        alertMsg = language === 'fr' ? 'Erreur : ' + msg : 'Error: ' + msg;
+      }
+
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
-        isNetwork
-          ? (language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.')
-          : (language === 'fr' ? 'Impossible d\'analyser l\'URL. Veuillez réessayer.' : 'Unable to analyze the URL. Please try again.')
+        alertMsg
       );
     }
   };

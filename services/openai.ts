@@ -7,20 +7,75 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
 function getApiKey(): string {
   const k = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
   if (!k) {
-    console.log('[OpenAI] API key not configured');
+    console.error('[OpenAI] CRITICAL: EXPO_PUBLIC_OPENAI_API_KEY is empty or undefined');
+    console.error('[OpenAI] typeof:', typeof process.env.EXPO_PUBLIC_OPENAI_API_KEY);
+    console.error('[OpenAI] value:', process.env.EXPO_PUBLIC_OPENAI_API_KEY);
     return '';
   }
+  console.log('[OpenAI] API key loaded, length:', k.length, 'prefix:', k.substring(0, 7) + '...');
   return k;
 }
 
 function validateApiKeyAccess(): boolean {
   const key = getApiKey();
-  if (!key || key.length < 10) return false;
-  if (!key.startsWith('sk-')) {
-    console.log('[OpenAI] Invalid API key format');
+  if (!key || key.length < 10) {
+    console.error('[OpenAI] API key validation FAILED: key is empty or too short, length:', key?.length);
     return false;
   }
+  if (!key.startsWith('sk-')) {
+    console.error('[OpenAI] API key validation FAILED: does not start with sk-, starts with:', key.substring(0, 5));
+    return false;
+  }
+  console.log('[OpenAI] API key validation OK');
   return true;
+}
+
+export async function pingOpenAI(): Promise<{ success: boolean; status?: number; error?: string; message?: string }> {
+  console.log('[OpenAI] === PING TEST START ===');
+  const key = getApiKey();
+  if (!key || key.length < 10 || !key.startsWith('sk-')) {
+    const reason = !key ? 'Key is empty' : key.length < 10 ? 'Key too short' : 'Key does not start with sk-';
+    console.error('[OpenAI] PING FAILED - Key issue:', reason);
+    return { success: false, error: 'API_KEY_INVALID', message: reason };
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'Say OK' }],
+        max_tokens: 5,
+      }),
+    });
+
+    const status = response.status;
+    const body = await response.text();
+    console.log('[OpenAI] PING response status:', status);
+    console.log('[OpenAI] PING response body:', body.substring(0, 500));
+
+    if (response.ok) {
+      console.log('[OpenAI] === PING TEST SUCCESS ===');
+      return { success: true, status, message: 'API is working' };
+    }
+
+    let errorCode = 'UNKNOWN';
+    if (status === 401) errorCode = 'INVALID_API_KEY';
+    else if (status === 403) errorCode = 'FORBIDDEN';
+    else if (status === 429) errorCode = 'RATE_LIMITED_OR_BILLING';
+    else if (status === 404) errorCode = 'MODEL_NOT_FOUND';
+    else if (status >= 500) errorCode = 'OPENAI_SERVER_ERROR';
+
+    console.error('[OpenAI] PING FAILED - HTTP', status, errorCode, body.substring(0, 300));
+    return { success: false, status, error: errorCode, message: body.substring(0, 300) };
+  } catch (err: any) {
+    console.error('[OpenAI] PING FAILED - Network error:', err?.message);
+    return { success: false, error: 'NETWORK_ERROR', message: err?.message };
+  }
 }
 
 const CYRUS_BASE_PROMPT = `Tu es Cyrus, un EXPERT mondial en détection de fraude et cybersécurité. Tu as 15+ ans d'expérience en enquête de fraude. Tu es comme un grand frère qui protège l'utilisateur. Ton ton est amical mais sérieux quand tu détectes un danger.
@@ -262,57 +317,92 @@ export function cancelActiveRequests() {
 }
 
 async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500, timeoutMs: number = 60000): Promise<string> {
-  console.log('[OpenAI] Calling API, timeout:', timeoutMs, 'ms');
+  console.log('[OpenAI] === API CALL START ===');
+  console.log('[OpenAI] Timeout:', timeoutMs, 'ms, maxTokens:', maxTokens);
+  console.log('[OpenAI] Messages count:', messages.length);
 
   if (!validateApiKeyAccess()) {
-    throw new Error('OpenAI API key is not properly configured');
+    console.error('[OpenAI] === API CALL ABORTED: Invalid API key ===');
+    throw new Error('API key is not configured or invalid. Check EXPO_PUBLIC_OPENAI_API_KEY.');
   }
 
   cancelActiveRequests();
   const controller = createAbortController(timeoutMs);
   activeController = controller;
 
+  const apiKey = getApiKey();
+  const bodyPayload = {
+    model: 'gpt-4o',
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.7,
+  };
+
+  const bodyString = JSON.stringify(bodyPayload);
+  console.log('[OpenAI] Request body size:', bodyString.length, 'bytes');
+
   try {
+    console.log('[OpenAI] Sending fetch to', API_URL);
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getApiKey()}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages,
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      }),
+      body: bodyString,
       signal: controller.signal,
     });
 
+    console.log('[OpenAI] Response received, status:', response.status);
+
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.log('[OpenAI] API error:', response.status, errorText);
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
-      }
+      const errorText = await response.text().catch(() => 'Unable to read error body');
+      console.error('[OpenAI] === API ERROR ===');
+      console.error('[OpenAI] HTTP Status:', response.status);
+      console.error('[OpenAI] Error body:', errorText.substring(0, 500));
+
       if (response.status === 401) {
-        throw new Error('API key is invalid or expired. Please contact support.');
+        throw new Error(`[401] API key invalid or expired. Verify your OpenAI API key.`);
+      }
+      if (response.status === 403) {
+        throw new Error(`[403] Access forbidden. Your API key may not have permission for this model.`);
+      }
+      if (response.status === 429) {
+        const isQuota = errorText.includes('quota') || errorText.includes('billing');
+        if (isQuota) {
+          throw new Error(`[429] OpenAI billing quota exceeded. Add credits at platform.openai.com.`);
+        }
+        throw new Error(`[429] Rate limit exceeded. Please wait a moment and try again.`);
+      }
+      if (response.status === 404) {
+        throw new Error(`[404] Model not found. The gpt-4o model may not be available on your account.`);
       }
       if (response.status === 413) {
-        throw new Error('Image is too large for the API. Please try with a smaller image.');
+        throw new Error(`[413] Request payload too large. Try with a smaller image.`);
       }
       if (response.status >= 500) {
-        throw new Error('OpenAI service is temporarily unavailable. Please try again later.');
+        throw new Error(`[${response.status}] OpenAI server error. Service temporarily unavailable.`);
       }
-      throw new Error(`OpenAI API error (${response.status}): ${errorText.substring(0, 200)}`);
+      throw new Error(`[${response.status}] OpenAI error: ${errorText.substring(0, 200)}`);
     }
 
     const data = await response.json();
-    console.log('[OpenAI] Response received');
-    return data.choices[0]?.message?.content ?? '';
+    const content = data.choices?.[0]?.message?.content ?? '';
+    console.log('[OpenAI] === API CALL SUCCESS ===');
+    console.log('[OpenAI] Response content length:', content.length);
+    if (!content) {
+      console.error('[OpenAI] WARNING: Empty response content from API');
+      console.error('[OpenAI] Full response:', JSON.stringify(data).substring(0, 500));
+    }
+    return content;
   } catch (error: any) {
     if (error?.name === 'AbortError') {
+      console.error('[OpenAI] === REQUEST TIMED OUT after', timeoutMs, 'ms ===');
       throw new Error('Request timed out. Please check your connection and try again.');
     }
+    console.error('[OpenAI] === API CALL FAILED ===');
+    console.error('[OpenAI] Error name:', error?.name);
+    console.error('[OpenAI] Error message:', error?.message);
     throw error;
   } finally {
     if (activeController === controller) {
