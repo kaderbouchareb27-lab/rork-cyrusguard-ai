@@ -340,7 +340,7 @@ async function imageUriToBase64(uri: string): Promise<string> {
   }
 }
 
-export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
+export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA', mimeType?: string): Promise<ScanAnalysisResult> {
   console.log('[OpenAI] Starting image analysis');
 
   if (!validateApiKeyAccess()) {
@@ -359,8 +359,16 @@ export async function analyzeImage(imageUri: string, language: string, base64Dat
     throw new Error('Failed to read image data');
   }
 
-  console.log('[OpenAI] Image ready for analysis');
-  const dataUrl = `data:image/jpeg;base64,${base64}`;
+  const detectedMime = mimeType || (imageUri.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg');
+  console.log('[OpenAI] Image ready for analysis, mime:', detectedMime, 'base64 length:', base64.length);
+
+  const MAX_BASE64_LENGTH = 2_000_000;
+  if (base64.length > MAX_BASE64_LENGTH) {
+    console.log('[OpenAI] Base64 too large, truncating from', base64.length, 'to', MAX_BASE64_LENGTH);
+    base64 = base64.substring(0, MAX_BASE64_LENGTH);
+  }
+
+  const dataUrl = `data:${detectedMime};base64,${base64}`;
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
@@ -406,7 +414,7 @@ Explain WHY with concrete country-specific examples when relevant.`;
       content: [
         {
           type: 'image_url',
-          image_url: { url: dataUrl, detail: 'high' },
+          image_url: { url: dataUrl, detail: 'low' },
         },
         {
           type: 'text',

@@ -111,14 +111,14 @@ export default function ScanScreen() {
           Alert.alert('Permission', language === 'fr' ? 'Permission caméra requise' : 'Camera permission required');
           return;
         }
-        result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
+        result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.5, base64: true, exif: false });
       } else {
-        result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
+        result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.5, base64: true, exif: false });
       }
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        console.log('[Scan] Image selected, uri:', asset.uri?.substring(0, 50));
-        void startImageAnalysis(asset.uri, asset.base64 ?? undefined);
+        console.log('[Scan] Image selected, uri:', asset.uri?.substring(0, 50), 'base64 length:', asset.base64?.length ?? 0, 'mimeType:', asset.mimeType);
+        void startImageAnalysis(asset.uri, asset.base64 ?? undefined, asset.mimeType ?? undefined);
       }
     } catch (error) {
       console.log('Image picker error:', error);
@@ -173,11 +173,11 @@ export default function ScanScreen() {
     router.replace({ pathname: '/result' as any, params: { scanId: newScan.id } });
   };
 
-  const startImageAnalysis = async (imageUri: string, base64?: string) => {
+  const startImageAnalysis = async (imageUri: string, base64?: string, mimeType?: string) => {
     setIsAnalyzing(true);
     startLoadingAnimation();
     try {
-      const analysis = await analyzeImage(imageUri, language, base64, country);
+      const analysis = await analyzeImage(imageUri, language, base64, country, mimeType);
       if (!isMountedRef.current) return;
       handleAnalysisResult(analysis, imageUri);
     } catch (error: any) {
