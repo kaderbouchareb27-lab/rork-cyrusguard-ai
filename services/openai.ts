@@ -1,82 +1,102 @@
 
+import { generateText } from '@rork-ai/toolkit-sdk';
 import type { Country } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 
-const API_URL = 'https://api.openai.com/v1/chat/completions';
+export type ContentType = 'sms' | 'url' | 'email' | 'phone' | 'social';
 
-function getApiKey(): string {
-  const k = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
-  if (!k) {
-    console.error('[OpenAI] CRITICAL: EXPO_PUBLIC_OPENAI_API_KEY is empty or undefined');
-    console.error('[OpenAI] typeof:', typeof process.env.EXPO_PUBLIC_OPENAI_API_KEY);
-    console.error('[OpenAI] value:', process.env.EXPO_PUBLIC_OPENAI_API_KEY);
-    return '';
-  }
-  console.log('[OpenAI] API key loaded, length:', k.length, 'prefix:', k.substring(0, 7) + '...');
-  return k;
+export interface ScanAnalysisResult {
+  riskScore: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  sourceType: 'sms' | 'email' | 'website' | 'url' | 'phone' | 'social';
+  summary: string;
+  summaryEn: string;
+  explanation: string;
+  explanationEn: string;
+  suspiciousElements: string[];
+  suspiciousElementsEn: string[];
+  reassuringElements: string[];
+  reassuringElementsEn: string[];
+  advice: string[];
+  adviceEn: string[];
 }
 
-function validateApiKeyAccess(): boolean {
-  const key = getApiKey();
-  if (!key || key.length < 10) {
-    console.error('[OpenAI] API key validation FAILED: key is empty or too short, length:', key?.length);
-    return false;
-  }
-  if (!key.startsWith('sk-')) {
-    console.error('[OpenAI] API key validation FAILED: does not start with sk-, starts with:', key.substring(0, 5));
-    return false;
-  }
-  console.log('[OpenAI] API key validation OK');
-  return true;
+export interface UrlReview {
+  source: string;
+  rating: string;
+  summary: string;
+  summaryEn: string;
 }
 
-export async function pingOpenAI(): Promise<{ success: boolean; status?: number; error?: string; message?: string }> {
-  console.log('[OpenAI] === PING TEST START ===');
-  const key = getApiKey();
-  if (!key || key.length < 10 || !key.startsWith('sk-')) {
-    const reason = !key ? 'Key is empty' : key.length < 10 ? 'Key too short' : 'Key does not start with sk-';
-    console.error('[OpenAI] PING FAILED - Key issue:', reason);
-    return { success: false, error: 'API_KEY_INVALID', message: reason };
-  }
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: 'Say OK' }],
-        max_tokens: 5,
-      }),
-    });
-
-    const status = response.status;
-    const body = await response.text();
-    console.log('[OpenAI] PING response status:', status);
-    console.log('[OpenAI] PING response body:', body.substring(0, 500));
-
-    if (response.ok) {
-      console.log('[OpenAI] === PING TEST SUCCESS ===');
-      return { success: true, status, message: 'API is working' };
-    }
-
-    let errorCode = 'UNKNOWN';
-    if (status === 401) errorCode = 'INVALID_API_KEY';
-    else if (status === 403) errorCode = 'FORBIDDEN';
-    else if (status === 429) errorCode = 'RATE_LIMITED_OR_BILLING';
-    else if (status === 404) errorCode = 'MODEL_NOT_FOUND';
-    else if (status >= 500) errorCode = 'OPENAI_SERVER_ERROR';
-
-    console.error('[OpenAI] PING FAILED - HTTP', status, errorCode, body.substring(0, 300));
-    return { success: false, status, error: errorCode, message: body.substring(0, 300) };
-  } catch (err: any) {
-    console.error('[OpenAI] PING FAILED - Network error:', err?.message);
-    return { success: false, error: 'NETWORK_ERROR', message: err?.message };
-  }
+export interface UrlComplaint {
+  source: string;
+  description: string;
+  descriptionEn: string;
 }
+
+export interface UrlAnalysisResult {
+  score: number;
+  ssl: boolean;
+  domainAge: string;
+  legalMentions: boolean;
+  privacyPolicy: boolean;
+  termsOfService: boolean;
+  physicalAddress: boolean;
+  redirects: number;
+  verdict: string;
+  verdictEn: string;
+  verdictEmoji: string;
+  isOnlineStore: boolean;
+  reputation: {
+    trustScore: number | null;
+    positiveReviews: number | null;
+    negativeReviews: number | null;
+    summary: string;
+    summaryEn: string;
+    reviews: UrlReview[];
+    dataAvailable: boolean;
+  } | null;
+  complaints: {
+    total: number;
+    items: UrlComplaint[];
+    summary: string;
+    summaryEn: string;
+    dataAvailable: boolean;
+  } | null;
+  business: {
+    name: string;
+    registered: boolean | null;
+    hasContact: boolean;
+    address: string;
+    phone: string;
+    summary: string;
+    summaryEn: string;
+    dataAvailable: boolean;
+  } | null;
+  onlineStore: {
+    realisticPrices: boolean;
+    returnPolicy: boolean;
+    securePayment: boolean;
+    brandCopying: boolean;
+    summary: string;
+    summaryEn: string;
+  } | null;
+  personalizedAdvice: string[];
+  personalizedAdviceEn: string[];
+}
+
+export interface TextAnalysisInput {
+  contentType: ContentType;
+  text: string;
+  phoneNumber?: string;
+  platform?: string;
+}
+
+type TextPart = { type: 'text'; text: string };
+type ImagePart = { type: 'image'; image: string };
+type UserMessage = { role: 'user'; content: string | (TextPart | ImagePart)[] };
+type AssistantMessage = { role: 'assistant'; content: string | TextPart[] };
+type ToolkitMessage = UserMessage | AssistantMessage;
 
 const CYRUS_BASE_PROMPT = `Tu es Cyrus, un EXPERT mondial en détection de fraude et cybersécurité. Tu as 15+ ans d'expérience en enquête de fraude. Tu es comme un grand frère qui protège l'utilisateur. Ton ton est amical mais sérieux quand tu détectes un danger.
 
@@ -203,232 +223,56 @@ function getReportingAdvice(country: Country): string {
   return orgs.map(o => `- ${o.name}${o.phone ? ' (' + o.phone + ')' : ''}`).join('\n');
 }
 
-interface ChatMessageContent {
-  type: string;
-  text?: string;
-  image_url?: { url: string; detail?: string };
-}
-
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string | ChatMessageContent[];
-}
-
-export type ContentType = 'sms' | 'url' | 'email' | 'phone' | 'social';
-
-export interface ScanAnalysisResult {
-  riskScore: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  sourceType: 'sms' | 'email' | 'website' | 'url' | 'phone' | 'social';
-  summary: string;
-  summaryEn: string;
-  explanation: string;
-  explanationEn: string;
-  suspiciousElements: string[];
-  suspiciousElementsEn: string[];
-  reassuringElements: string[];
-  reassuringElementsEn: string[];
-  advice: string[];
-  adviceEn: string[];
-}
-
-export interface UrlReview {
-  source: string;
-  rating: string;
-  summary: string;
-  summaryEn: string;
-}
-
-export interface UrlComplaint {
-  source: string;
-  description: string;
-  descriptionEn: string;
-}
-
-export interface UrlAnalysisResult {
-  score: number;
-  ssl: boolean;
-  domainAge: string;
-  legalMentions: boolean;
-  privacyPolicy: boolean;
-  termsOfService: boolean;
-  physicalAddress: boolean;
-  redirects: number;
-  verdict: string;
-  verdictEn: string;
-  verdictEmoji: string;
-  isOnlineStore: boolean;
-  reputation: {
-    trustScore: number | null;
-    positiveReviews: number | null;
-    negativeReviews: number | null;
-    summary: string;
-    summaryEn: string;
-    reviews: UrlReview[];
-    dataAvailable: boolean;
-  } | null;
-  complaints: {
-    total: number;
-    items: UrlComplaint[];
-    summary: string;
-    summaryEn: string;
-    dataAvailable: boolean;
-  } | null;
-  business: {
-    name: string;
-    registered: boolean | null;
-    hasContact: boolean;
-    address: string;
-    phone: string;
-    summary: string;
-    summaryEn: string;
-    dataAvailable: boolean;
-  } | null;
-  onlineStore: {
-    realisticPrices: boolean;
-    returnPolicy: boolean;
-    securePayment: boolean;
-    brandCopying: boolean;
-    summary: string;
-    summaryEn: string;
-  } | null;
-  personalizedAdvice: string[];
-  personalizedAdviceEn: string[];
-}
-
-let activeController: AbortController | null = null;
-
-function createAbortController(timeoutMs: number = 60000): AbortController {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const origAbort = controller.abort.bind(controller);
-  controller.abort = () => {
-    clearTimeout(timeout);
-    origAbort();
-  };
-  return controller;
-}
-
 export function cancelActiveRequests() {
-  if (activeController) {
-    activeController.abort();
-    activeController = null;
+  console.log('[AI] cancelActiveRequests called (no-op with toolkit)');
+}
+
+export async function pingOpenAI(): Promise<{ success: boolean; status?: number; error?: string; message?: string }> {
+  console.log('[AI] === PING TEST START (via Rork Toolkit) ===');
+  try {
+    const result = await generateText({
+      messages: [{ role: 'user', content: 'Say OK' }],
+    });
+    console.log('[AI] Ping result:', result?.substring(0, 50));
+    return { success: true, message: 'Toolkit API is working' };
+  } catch (err: any) {
+    console.error('[AI] Ping failed:', err?.message);
+    return { success: false, error: 'TOOLKIT_ERROR', message: err?.message };
   }
 }
 
-async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500, timeoutMs: number = 60000): Promise<string> {
-  console.log('[OpenAI] === API CALL START ===');
-  console.log('[OpenAI] Timeout:', timeoutMs, 'ms, maxTokens:', maxTokens);
-  console.log('[OpenAI] Messages count:', messages.length);
+function parseJsonResponse<T>(response: string): T {
+  const cleaned = response
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
 
-  if (!validateApiKeyAccess()) {
-    console.error('[OpenAI] === API CALL ABORTED: Invalid API key ===');
-    throw new Error('API key is not configured or invalid. Check EXPO_PUBLIC_OPENAI_API_KEY.');
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error('[AI] No JSON object found in response:', cleaned.substring(0, 200));
+    throw new Error('No valid JSON found in AI response');
   }
 
-  cancelActiveRequests();
-  const controller = createAbortController(timeoutMs);
-  activeController = controller;
-
-  const apiKey = getApiKey();
-  const bodyPayload = {
-    model: 'gpt-4o',
-    messages,
-    max_tokens: maxTokens,
-    temperature: 0.7,
-  };
-
-  const bodyString = JSON.stringify(bodyPayload);
-  console.log('[OpenAI] Request body size:', bodyString.length, 'bytes');
-
-  try {
-    console.log('[OpenAI] Sending fetch to', API_URL);
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: bodyString,
-      signal: controller.signal,
-    });
-
-    console.log('[OpenAI] Response received, status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unable to read error body');
-      console.error('[OpenAI] === API ERROR ===');
-      console.error('[OpenAI] HTTP Status:', response.status);
-      console.error('[OpenAI] Error body:', errorText.substring(0, 500));
-
-      if (response.status === 401) {
-        throw new Error(`[401] API key invalid or expired. Verify your OpenAI API key.`);
-      }
-      if (response.status === 403) {
-        throw new Error(`[403] Access forbidden. Your API key may not have permission for this model.`);
-      }
-      if (response.status === 429) {
-        const isQuota = errorText.includes('quota') || errorText.includes('billing');
-        if (isQuota) {
-          throw new Error(`[429] OpenAI billing quota exceeded. Add credits at platform.openai.com.`);
-        }
-        throw new Error(`[429] Rate limit exceeded. Please wait a moment and try again.`);
-      }
-      if (response.status === 404) {
-        throw new Error(`[404] Model not found. The gpt-4o model may not be available on your account.`);
-      }
-      if (response.status === 413) {
-        throw new Error(`[413] Request payload too large. Try with a smaller image.`);
-      }
-      if (response.status >= 500) {
-        throw new Error(`[${response.status}] OpenAI server error. Service temporarily unavailable.`);
-      }
-      throw new Error(`[${response.status}] OpenAI error: ${errorText.substring(0, 200)}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content ?? '';
-    console.log('[OpenAI] === API CALL SUCCESS ===');
-    console.log('[OpenAI] Response content length:', content.length);
-    if (!content) {
-      console.error('[OpenAI] WARNING: Empty response content from API');
-      console.error('[OpenAI] Full response:', JSON.stringify(data).substring(0, 500));
-    }
-    return content;
-  } catch (error: any) {
-    if (error?.name === 'AbortError') {
-      console.error('[OpenAI] === REQUEST TIMED OUT after', timeoutMs, 'ms ===');
-      throw new Error('Request timed out. Please check your connection and try again.');
-    }
-    console.error('[OpenAI] === API CALL FAILED ===');
-    console.error('[OpenAI] Error name:', error?.name);
-    console.error('[OpenAI] Error message:', error?.message);
-    throw error;
-  } finally {
-    if (activeController === controller) {
-      activeController = null;
-    }
-  }
+  return JSON.parse(jsonMatch[0]) as T;
 }
 
 async function imageUriToBase64(uri: string): Promise<string> {
-  console.log('[OpenAI] Converting image to base64, uri prefix:', uri.substring(0, 30));
+  console.log('[AI] Converting image to base64, uri prefix:', uri.substring(0, 30));
   try {
     if (uri.startsWith('data:')) {
       const parts = uri.split(',');
       if (parts[1] && parts[1].length > 100) {
-        console.log('[OpenAI] URI is already a data URL, extracting base64');
+        console.log('[AI] URI is already a data URL, extracting base64');
         return parts[1];
       }
     }
 
     const response = await fetch(uri);
     if (!response.ok) {
-      console.log('[OpenAI] Fetch image failed, status:', response.status);
       throw new Error('Failed to fetch image: HTTP ' + response.status);
     }
     const blob = await response.blob();
-    console.log('[OpenAI] Blob size:', blob.size, 'type:', blob.type);
+    console.log('[AI] Blob size:', blob.size, 'type:', blob.type);
 
     if (blob.size === 0) {
       throw new Error('Image blob is empty');
@@ -439,62 +283,56 @@ async function imageUriToBase64(uri: string): Promise<string> {
       reader.onloadend = () => {
         const result = reader.result as string;
         const base64 = result.split(',')[1] ?? '';
-        console.log('[OpenAI] Base64 conversion complete, length:', base64.length);
+        console.log('[AI] Base64 conversion complete, length:', base64.length);
         if (base64.length < 100) {
           reject(new Error('Base64 conversion produced empty result'));
           return;
         }
         resolve(base64);
       };
-      reader.onerror = (err) => {
-        console.log('[OpenAI] FileReader error:', err);
+      reader.onerror = () => {
         reject(new Error('Failed to convert image to base64'));
       };
       reader.readAsDataURL(blob);
     });
   } catch (error: any) {
-    console.log('[OpenAI] imageUriToBase64 error:', error?.message);
+    console.error('[AI] imageUriToBase64 error:', error?.message);
     throw new Error('Failed to read image: ' + (error?.message || 'Unknown error'));
   }
 }
 
-export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA', mimeType?: string): Promise<ScanAnalysisResult> {
-  console.log('[OpenAI] Starting image analysis, hasBase64:', !!base64Data, 'base64Len:', base64Data?.length ?? 0, 'uri:', imageUri?.substring(0, 50));
-
-  if (!validateApiKeyAccess()) {
-    console.log('[OpenAI] API key validation failed');
-    throw new Error('OpenAI API key is not configured');
-  }
+export async function analyzeImage(
+  imageUri: string,
+  language: string,
+  base64Data?: string,
+  country: Country = 'CA',
+  _mimeType?: string,
+): Promise<ScanAnalysisResult> {
+  console.log('[AI] Starting image analysis via Rork Toolkit');
+  console.log('[AI] hasBase64:', !!base64Data, 'base64Len:', base64Data?.length ?? 0);
 
   let base64: string;
   if (base64Data && base64Data.length > 100) {
     base64 = base64Data;
-    console.log('[OpenAI] Using provided base64 data, length:', base64.length);
+    console.log('[AI] Using provided base64 data, length:', base64.length);
   } else {
-    console.log('[OpenAI] No base64 provided or too short, converting from URI');
+    console.log('[AI] Converting from URI...');
     try {
       base64 = await imageUriToBase64(imageUri);
     } catch (convErr: any) {
-      console.log('[OpenAI] URI conversion failed:', convErr?.message);
+      console.error('[AI] URI conversion failed:', convErr?.message);
       throw new Error('Failed to read image data: ' + (convErr?.message || 'Unknown'));
     }
   }
 
   if (!base64 || base64.length < 100) {
-    console.log('[OpenAI] Base64 data is too short or empty, length:', base64?.length);
     throw new Error('Failed to read image data - image appears empty');
   }
 
-  const detectedMime = mimeType && mimeType.startsWith('image/') ? mimeType : (imageUri.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg');
-  console.log('[OpenAI] Image ready for analysis, mime:', detectedMime, 'base64 length:', base64.length);
-
   const MAX_BASE64_LENGTH = 1_500_000;
   if (base64.length > MAX_BASE64_LENGTH) {
-    console.log('[OpenAI] Base64 too large:', base64.length, '- image needs more compression');
     throw new Error('Image is too large for analysis. Please try with a smaller image.');
   }
-
-  const dataUrl = `data:${detectedMime};base64,${base64}`;
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
@@ -512,12 +350,12 @@ The JSON must have this exact structure:
   "summaryEn": "<English summary>",
   "explanation": "<detailed French explanation>",
   "explanationEn": "<detailed English explanation>",
-  "suspiciousElements": ["<French element 1>", ...],
-  "suspiciousElementsEn": ["<English element 1>", ...],
-  "reassuringElements": ["<French element 1>", ...],
-  "reassuringElementsEn": ["<English element 1>", ...],
-  "advice": ["<French advice 1>", ...],
-  "adviceEn": ["<English advice 1>", ...]
+  "suspiciousElements": ["<French element 1>"],
+  "suspiciousElementsEn": ["<English element 1>"],
+  "reassuringElements": ["<French element 1>"],
+  "reassuringElementsEn": ["<English element 1>"],
+  "advice": ["<French advice 1>"],
+  "adviceEn": ["<English advice 1>"]
 }
 
 Risk scoring rules:
@@ -533,31 +371,30 @@ ${reportingOrgs}
 Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected
 Explain WHY with concrete country-specific examples when relevant.`;
 
-  const messages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
+  const userText = language === 'fr'
+    ? 'Analyse cette image pour détecter des signes de fraude ou d\'arnaque. Retourne uniquement le JSON.'
+    : 'Analyze this image to detect signs of fraud or scam. Return only the JSON.';
+
+  const messages: ToolkitMessage[] = [
     {
       role: 'user',
       content: [
-        {
-          type: 'image_url',
-          image_url: { url: dataUrl, detail: 'low' },
-        },
-        {
-          type: 'text',
-          text: language === 'fr'
-            ? 'Analyse cette image pour détecter des signes de fraude ou d\'arnaque. Retourne uniquement le JSON.'
-            : 'Analyze this image to detect signs of fraud or scam. Return only the JSON.',
-        },
+        { type: 'text', text: systemPrompt + '\n\n' + userText },
+        { type: 'image', image: base64 },
       ],
     },
   ];
 
-  const response = await callOpenAI(messages, 2000, 120000);
-  console.log('[OpenAI] Image analysis response received');
-
+  console.log('[AI] Sending image analysis request to toolkit...');
   try {
-    const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const result = JSON.parse(cleaned) as ScanAnalysisResult;
+    const response = await generateText({ messages });
+    console.log('[AI] Image analysis response received, length:', response?.length);
+
+    if (!response) {
+      throw new Error('Empty response from AI service');
+    }
+
+    const result = parseJsonResponse<ScanAnalysisResult>(response);
 
     if (result.riskScore < 0 || result.riskScore > 100) {
       result.riskScore = Math.max(0, Math.min(100, result.riskScore));
@@ -569,52 +406,46 @@ Explain WHY with concrete country-specific examples when relevant.`;
       result.sourceType = 'sms';
     }
 
+    console.log('[AI] Image analysis complete, score:', result.riskScore, 'level:', result.riskLevel);
     return result;
-  } catch (parseError) {
-    console.log('[OpenAI] JSON parse error:', parseError);
-    throw new Error('Failed to parse AI analysis response');
+  } catch (error: any) {
+    console.error('[AI] Image analysis failed:', error?.message);
+    throw error;
   }
 }
 
 function getContentTypePrompt(contentType: ContentType, language: string): string {
   const prompts: Record<ContentType, { fr: string; en: string }> = {
     sms: {
-      fr: 'Analyse ce message SMS/texto pour détecter des signes de fraude ou d\'arnaque. Vérifie les liens suspects, l\'urgence artificielle, les demandes d\'informations personnelles, le typosquatting, et les patterns de phishing courants au Québec/Canada.',
-      en: 'Analyze this SMS/text message for signs of fraud or scam. Check for suspicious links, artificial urgency, personal information requests, typosquatting, and common phishing patterns in Quebec/Canada.',
+      fr: 'Analyse ce message SMS/texto pour détecter des signes de fraude ou d\'arnaque.',
+      en: 'Analyze this SMS/text message for signs of fraud or scam.',
     },
     url: {
-      fr: 'Analyse ce lien/URL pour détecter des signes de fraude. Vérifie le domaine, le protocole, les redirections possibles, le typosquatting, et les indicateurs de phishing.',
-      en: 'Analyze this link/URL for signs of fraud. Check the domain, protocol, possible redirects, typosquatting, and phishing indicators.',
+      fr: 'Analyse ce lien/URL pour détecter des signes de fraude.',
+      en: 'Analyze this link/URL for signs of fraud.',
     },
     email: {
-      fr: 'Analyse ce contenu d\'email pour détecter des signes de fraude ou de phishing. Vérifie l\'expéditeur, les liens dans le corps, l\'urgence artificielle, les pièces jointes suspectes mentionnées, et les demandes inhabituelles.',
-      en: 'Analyze this email content for signs of fraud or phishing. Check the sender, links in the body, artificial urgency, mentioned suspicious attachments, and unusual requests.',
+      fr: 'Analyse ce contenu d\'email pour détecter des signes de fraude ou de phishing.',
+      en: 'Analyze this email content for signs of fraud or phishing.',
     },
     phone: {
-      fr: 'Analyse cette description d\'appel téléphonique pour détecter des signes de fraude. Vérifie les tactiques d\'intimidation, les demandes de paiement par cartes prépayées ou virement, l\'usurpation d\'identité d\'organismes officiels, et les techniques de manipulation courantes.',
-      en: 'Analyze this phone call description for signs of fraud. Check for intimidation tactics, requests for payment via prepaid cards or wire transfer, impersonation of official organizations, and common manipulation techniques.',
+      fr: 'Analyse cette description d\'appel téléphonique pour détecter des signes de fraude.',
+      en: 'Analyze this phone call description for signs of fraud.',
     },
     social: {
-      fr: 'Analyse ce message de réseau social pour détecter des signes de fraude. Vérifie les liens suspects, les demandes d\'informations personnelles, les faux concours, les arnaques sentimentales, et les patterns de fraude sur les réseaux sociaux.',
-      en: 'Analyze this social media message for signs of fraud. Check for suspicious links, personal information requests, fake contests, romance scams, and social media fraud patterns.',
+      fr: 'Analyse ce message de réseau social pour détecter des signes de fraude.',
+      en: 'Analyze this social media message for signs of fraud.',
     },
   };
   return prompts[contentType]?.[language === 'fr' ? 'fr' : 'en'] ?? prompts.sms.en;
 }
 
-export interface TextAnalysisInput {
-  contentType: ContentType;
-  text: string;
-  phoneNumber?: string;
-  platform?: string;
-}
-
-export async function analyzeText(input: TextAnalysisInput, language: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
-  console.log('[OpenAI] Starting text analysis, type:', input.contentType);
-
-  if (!validateApiKeyAccess()) {
-    throw new Error('OpenAI API key is not configured');
-  }
+export async function analyzeText(
+  input: TextAnalysisInput,
+  language: string,
+  country: Country = 'CA',
+): Promise<ScanAnalysisResult> {
+  console.log('[AI] Starting text analysis via Rork Toolkit, type:', input.contentType);
 
   const typeInstruction = getContentTypePrompt(input.contentType, language);
 
@@ -661,39 +492,41 @@ The JSON must have this exact structure:
   "summaryEn": "<English summary>",
   "explanation": "<detailed French explanation>",
   "explanationEn": "<detailed English explanation>",
-  "suspiciousElements": ["<French element 1>", ...],
-  "suspiciousElementsEn": ["<English element 1>", ...],
-  "reassuringElements": ["<French element 1>", ...],
-  "reassuringElementsEn": ["<English element 1>", ...],
-  "advice": ["<French advice 1>", ...],
-  "adviceEn": ["<English advice 1>", ...]
+  "suspiciousElements": ["<French element 1>"],
+  "suspiciousElementsEn": ["<English element 1>"],
+  "reassuringElements": ["<French element 1>"],
+  "reassuringElementsEn": ["<English element 1>"],
+  "advice": ["<French advice 1>"],
+  "adviceEn": ["<English advice 1>"]
 }
 
 Risk scoring rules:
-- HIGH (70-100): Clear phishing/scam indicators (fake domains, urgency, suspicious links, impersonation, grammar errors)
+- HIGH (70-100): Clear phishing/scam indicators
 - MEDIUM (40-69): Suspicious but not confirmed
 - LOW (0-39): Appears legitimate
 
 Always include country-specific reporting organizations in advice:
 ${reportingOrgs}
 
-Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected
-Explain WHY with concrete country-specific examples when relevant.`;
+Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected`;
 
-  const messages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
+  const messages: ToolkitMessage[] = [
     {
       role: 'user',
-      content: `${contentDescription}\n\n${language === 'fr' ? 'Retourne uniquement le JSON.' : 'Return only the JSON.'}`,
+      content: `${systemPrompt}\n\n${contentDescription}\n\n${language === 'fr' ? 'Retourne uniquement le JSON.' : 'Return only the JSON.'}`,
     },
   ];
 
-  const response = await callOpenAI(messages, 2000);
-  console.log('[OpenAI] Text analysis response received');
-
+  console.log('[AI] Sending text analysis request to toolkit...');
   try {
-    const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const result = JSON.parse(cleaned) as ScanAnalysisResult;
+    const response = await generateText({ messages });
+    console.log('[AI] Text analysis response received, length:', response?.length);
+
+    if (!response) {
+      throw new Error('Empty response from AI service');
+    }
+
+    const result = parseJsonResponse<ScanAnalysisResult>(response);
 
     if (result.riskScore < 0 || result.riskScore > 100) {
       result.riskScore = Math.max(0, Math.min(100, result.riskScore));
@@ -703,22 +536,12 @@ Explain WHY with concrete country-specific examples when relevant.`;
     }
     result.sourceType = sourceTypeMap[input.contentType] as ScanAnalysisResult['sourceType'];
 
+    console.log('[AI] Text analysis complete, score:', result.riskScore);
     return result;
-  } catch (parseError) {
-    console.log('[OpenAI] Text analysis JSON parse error:', parseError);
-    throw new Error('Failed to parse AI analysis response');
+  } catch (error: any) {
+    console.error('[AI] Text analysis failed:', error?.message);
+    throw error;
   }
-}
-
-interface FetchedSiteData {
-  homepage: string | null;
-  legalMentions: string | null;
-  privacyPolicy: string | null;
-  terms: string | null;
-  contact: string | null;
-  ssl: boolean;
-  redirectCount: number;
-  fetchError: string | null;
 }
 
 interface SafeFetchResult {
@@ -745,9 +568,8 @@ async function fetchUrlSafely(url: string): Promise<SafeFetchResult> {
     const response = await fetch(normalizedUrl, {
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'fr-CA,fr;q=0.9,en;q=0.8',
       },
       signal: controller.signal,
       redirect: 'follow',
@@ -763,7 +585,6 @@ async function fetchUrlSafely(url: string): Promise<SafeFetchResult> {
       .replace(/\s+/g, ' ')
       .trim();
     const snippet = stripped.substring(0, 3000);
-    console.log('[Fetch] Got content, length:', snippet.length, 'status:', response.status);
 
     return {
       success: true,
@@ -776,7 +597,6 @@ async function fetchUrlSafely(url: string): Promise<SafeFetchResult> {
     };
   } catch (err: any) {
     clearTimeout(timeout);
-    console.log('[Fetch] Error:', err?.message);
     return {
       success: false,
       statusCode: null,
@@ -795,13 +615,7 @@ async function fetchPageContent(pageUrl: string, maxLength: number = 3000): Prom
   return result.contentSnippet.substring(0, maxLength);
 }
 
-interface EnhancedSiteData extends FetchedSiteData {
-  homepageFetch: SafeFetchResult;
-  statusCode: number | null;
-  finalUrl: string;
-}
-
-async function fetchSiteData(url: string): Promise<EnhancedSiteData> {
+async function fetchSiteData(url: string) {
   let normalizedUrl = url.trim();
   if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
     normalizedUrl = 'https://' + normalizedUrl;
@@ -815,22 +629,12 @@ async function fetchSiteData(url: string): Promise<EnhancedSiteData> {
     baseUrl = normalizedUrl;
   }
 
-  console.log('[SiteData] Fetching site data for:', baseUrl);
-
   const homepageFetch = await fetchUrlSafely(normalizedUrl);
 
-  const legalPaths = [
-    '/mentions-legales', '/legal', '/legal-notice', '/mentions_legales',
-  ];
-  const privacyPaths = [
-    '/politique-de-confidentialite', '/privacy', '/privacy-policy', '/politique-confidentialite',
-  ];
-  const termsPaths = [
-    '/conditions-utilisation', '/terms', '/terms-of-service', '/tos', '/cgu', '/conditions-generales',
-  ];
-  const contactPaths = [
-    '/contact', '/a-propos', '/about', '/about-us', '/nous-contacter', '/contactez-nous',
-  ];
+  const legalPaths = ['/mentions-legales', '/legal', '/legal-notice'];
+  const privacyPaths = ['/politique-de-confidentialite', '/privacy', '/privacy-policy'];
+  const termsPaths = ['/conditions-utilisation', '/terms', '/terms-of-service', '/tos', '/cgu'];
+  const contactPaths = ['/contact', '/a-propos', '/about', '/about-us'];
 
   async function tryPaths(paths: string[]): Promise<string | null> {
     for (const path of paths) {
@@ -862,11 +666,15 @@ async function fetchSiteData(url: string): Promise<EnhancedSiteData> {
   };
 }
 
-export async function analyzeUrl(url: string, language: string, country: Country = 'CA'): Promise<UrlAnalysisResult> {
-  console.log('[OpenAI] Starting deep URL analysis for:', url);
+export async function analyzeUrl(
+  url: string,
+  language: string,
+  country: Country = 'CA',
+): Promise<UrlAnalysisResult> {
+  console.log('[AI] Starting deep URL analysis for:', url);
 
   const siteData = await fetchSiteData(url);
-  console.log('[OpenAI] Site data fetched - success:', siteData.homepageFetch.success, 'status:', siteData.statusCode, 'homepage:', !!siteData.homepage, 'legal:', !!siteData.legalMentions, 'privacy:', !!siteData.privacyPolicy, 'terms:', !!siteData.terms, 'contact:', !!siteData.contact);
+  console.log('[AI] Site data fetched, success:', siteData.homepageFetch.success);
 
   let normalizedUrl = url.trim();
   if (!normalizedUrl.startsWith('http')) {
@@ -890,240 +698,128 @@ export async function analyzeUrl(url: string, language: string, country: Country
   const hasDigitsInDomain = /\d/.test(parsedDomain.replace(/\.[^.]+$/, ''));
   const suspiciousTlds = ['.xyz', '.top', '.click', '.buzz', '.tk', '.ml', '.ga', '.cf', '.gq', '.pw', '.cc', '.icu'];
   const isSuspiciousTld = suspiciousTlds.includes(parsedTld.toLowerCase());
-  const suspiciousKeywords = ['login', 'verify', 'secure', 'update', 'confirm', 'free', 'winner', 'prize', 'urgent', 'account-verify', 'signin'];
-  const hasSuspiciousKeywords = suspiciousKeywords.some(kw => normalizedUrl.toLowerCase().includes(kw));
 
-  const knownEcommerce = [
-    'shein.com', 'temu.com', 'amazon.com', 'amazon.ca', 'amazon.fr', 'ebay.com', 'ebay.ca',
-    'walmart.ca', 'walmart.com', 'aliexpress.com', 'wish.com', 'costco.ca', 'bestbuy.ca',
-    'etsy.com', 'asos.com', 'zara.com', 'hm.com', 'uniqlo.com', 'nike.com', 'adidas.com',
-    'ikea.com', 'wayfair.ca',
-  ];
-  const knownBanks = [
-    'desjardins.com', 'td.com', 'bmo.com', 'rbc.com', 'bnc.ca', 'scotiabank.com',
-    'cibc.com', 'paypal.com', 'stripe.com', 'interac.ca', 'visa.com', 'mastercard.com',
-  ];
-  const knownGov = [
-    'canada.ca', 'quebec.ca', 'gouv.qc.ca', 'gc.ca', 'service-public.fr', 'belgique.be', 'caf.fr',
-  ];
-  const knownTech = [
-    'google.com', 'apple.com', 'microsoft.com', 'meta.com', 'facebook.com', 'instagram.com',
-    'youtube.com', 'twitter.com', 'x.com', 'linkedin.com', 'netflix.com', 'spotify.com',
-    'tiktok.com', 'github.com', 'wikipedia.org', 'reddit.com', 'whatsapp.com',
-  ];
+  const knownEcommerce = ['shein.com', 'temu.com', 'amazon.com', 'amazon.ca', 'amazon.fr', 'ebay.com', 'walmart.ca', 'walmart.com', 'aliexpress.com', 'etsy.com'];
+  const knownBanks = ['desjardins.com', 'td.com', 'bmo.com', 'rbc.com', 'bnc.ca', 'scotiabank.com', 'paypal.com'];
+  const knownGov = ['canada.ca', 'quebec.ca', 'gouv.qc.ca', 'gc.ca', 'service-public.fr'];
+  const knownTech = ['google.com', 'apple.com', 'microsoft.com', 'facebook.com', 'instagram.com', 'youtube.com', 'netflix.com'];
   const knownDomains = [...knownEcommerce, ...knownBanks, ...knownGov, ...knownTech];
   const isKnownDomain = knownDomains.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
   const isKnownEcommerce = knownEcommerce.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
-  const isKnownBank = knownBanks.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
-  const isKnownGov = knownGov.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
-  const isKnownTech = knownTech.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d));
 
   let knownSiteCategory = '';
-  if (isKnownGov) knownSiteCategory = 'government';
-  else if (isKnownBank) knownSiteCategory = 'bank/finance';
-  else if (isKnownTech) knownSiteCategory = 'tech/service';
+  if (knownGov.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d))) knownSiteCategory = 'government';
+  else if (knownBanks.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d))) knownSiteCategory = 'bank/finance';
+  else if (knownTech.some(d => parsedDomain === d || parsedDomain.endsWith('.' + d))) knownSiteCategory = 'tech/service';
   else if (isKnownEcommerce) knownSiteCategory = 'e-commerce';
 
-  const typosquatTargets = [
-    'amazon', 'google', 'facebook', 'paypal', 'microsoft', 'apple', 'netflix',
-    'desjardins', 'scotiabank', 'instagram', 'twitter', 'linkedin',
-  ];
-  let typosquatSimilarTo: string | null = null;
-  if (!isKnownDomain) {
-    const domainBase = parsedDomain.replace(/\.[^.]+$/, '').replace(/\./g, '');
-    for (const target of typosquatTargets) {
-      if (domainBase !== target && domainBase.includes(target.substring(0, target.length - 1))) {
-        typosquatSimilarTo = target + '.com';
-        break;
-      }
-      const replaced = domainBase.replace(/0/g, 'o').replace(/1/g, 'l').replace(/3/g, 'e');
-      if (replaced === target && domainBase !== target) {
-        typosquatSimilarTo = target + '.com';
-        break;
-      }
-    }
-  }
-
   const urlAnalysisSection = `
-=== STEP 1: URL STRUCTURAL ANALYSIS (pre-computed) ===
+=== URL STRUCTURAL ANALYSIS ===
 Full URL: ${normalizedUrl}
 Protocol: ${normalizedUrl.startsWith('https') ? 'HTTPS (secure)' : 'HTTP (NOT secure)'}
 Domain: ${parsedDomain}
 TLD: ${parsedTld}
-URL length: ${urlLength} characters ${urlLength > 80 ? '(SUSPICIOUS - very long)' : '(normal)'}
-Subdomain levels: ${subdomainCount} ${subdomainCount > 3 ? '(SUSPICIOUS - too many subdomains)' : ''}
-Excessive dashes in domain: ${hasExcessiveDashes ? 'YES (SUSPICIOUS)' : 'No'}
-Digits in domain name: ${hasDigitsInDomain ? 'YES (potentially suspicious)' : 'No'}
+URL length: ${urlLength} characters
+Subdomain levels: ${subdomainCount}
+Excessive dashes: ${hasExcessiveDashes ? 'YES' : 'No'}
+Digits in domain: ${hasDigitsInDomain ? 'YES' : 'No'}
 Suspicious TLD: ${isSuspiciousTld ? 'YES (' + parsedTld + ')' : 'No'}
-Suspicious keywords in URL: ${hasSuspiciousKeywords ? 'YES' : 'No'}
 Known/trusted domain: ${isKnownDomain ? 'YES — category: ' + knownSiteCategory : 'No'}
-Typosquatting detected: ${typosquatSimilarTo ? 'POSSIBLE - similar to ' + typosquatSimilarTo : 'No'}
-=== END STEP 1 ===
 
-=== STEP 2: FETCH RESULTS ===
+=== FETCH RESULTS ===
 Fetch success: ${siteData.homepageFetch.success}
 HTTP Status: ${siteData.statusCode ?? 'N/A'}
-SSL: ${siteData.ssl ? 'Yes (HTTPS)' : 'No (HTTP only)'}
-Redirects detected: ${siteData.redirectCount}
-Final URL after redirects: ${siteData.finalUrl}
+SSL: ${siteData.ssl ? 'Yes' : 'No'}
+Redirects: ${siteData.redirectCount}
+Final URL: ${siteData.finalUrl}
 Fetch error: ${siteData.fetchError ?? 'None'}
 
 Homepage content (first ~3000 chars):
-${siteData.homepage ? siteData.homepage : '[FAILED TO FETCH - site may be down or blocking requests]'}
+${siteData.homepage ? siteData.homepage.substring(0, 2000) : '[FAILED TO FETCH]'}
 
-Legal mentions page found: ${siteData.legalMentions ? 'YES' : 'NO'}
-${siteData.legalMentions ? 'Content: ' + siteData.legalMentions : ''}
-
-Privacy policy page found: ${siteData.privacyPolicy ? 'YES' : 'NO'}
-${siteData.privacyPolicy ? 'Content: ' + siteData.privacyPolicy : ''}
-
-Terms of service page found: ${siteData.terms ? 'YES' : 'NO'}
-${siteData.terms ? 'Content: ' + siteData.terms : ''}
-
-Contact/About page found: ${siteData.contact ? 'YES' : 'NO'}
-${siteData.contact ? 'Content: ' + siteData.contact : ''}
-=== END STEP 2 ===
+Legal mentions found: ${siteData.legalMentions ? 'YES' : 'NO'}
+Privacy policy found: ${siteData.privacyPolicy ? 'YES' : 'NO'}
+Terms of service found: ${siteData.terms ? 'YES' : 'NO'}
+Contact page found: ${siteData.contact ? 'YES' : 'NO'}
 `;
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
 
-You are an expert in cybersecurity and fraud detection integrated in CyrusGuard.
-
-You are performing a DEEP analysis of a URL. We have pre-computed structural analysis and fetched real site content for you.
+You are an expert in cybersecurity performing a DEEP analysis of a URL.
 
 ${urlAnalysisSection}
 
-=== STEP 3: KNOWN SITE RECOGNITION (PRIORITY) ===
-BEFORE analyzing fetch results, check if the root domain is a KNOWN site.
+SCORING RULES:
+- Known government: 85-95
+- Known banks: 80-90
+- Known tech: 80-90
+- Known e-commerce (good reputation): 75-85
+- Unknown + HTTPS + no red flags = 50-60
+- FETCH FAILURE MUST NEVER lower the score
 
-If the domain is RECOGNIZED as a known site:
-- hasLegalPages: true (major sites ALL have legal pages)
-- hasPrivacyPolicy: true
-- termsOfService: true
-- hasContact: true
-- DO NOT base the score on fetch results — base it on KNOWLEDGE of the site
-- Add a note if the site has KNOWN CONTROVERSIES (e.g., Shein = quality/ethics controversies, but NOT a scam)
-
-Known site scoring:
-- Government sites: 85-95
-- Banks/Finance: 80-90
-- Major tech/services: 80-90
-- Major e-commerce (good reputation): 75-85
-- Major e-commerce (with controversies but not scam): 65-80
-
-If the domain is NOT recognized → rely on structural analysis + fetch data.
-
-=== STEP 4: SCORING FOR UNKNOWN SITES ===
-90-100: Known official domain + HTTPS + all pages verified
-75-89: Legitimate site with HTTPS + legal pages + contact info
-60-74: HTTPS + some pages present, no red flags
-40-59: Missing info OR some suspicious elements (neutral, caution)
-20-39: Multiple red flags (no SSL, typosquatting possible, suspicious domain)
-0-19: Clear phishing, confirmed typosquatting, obvious scam
-
-CRITICAL RULES:
-- An UNKNOWN site is NOT automatically dangerous
-- Unknown + HTTPS + no red flags = 50-60 (neutral)
-- Unknown + red flags = lower based on severity
-- Known trusted domain (exact match) = automatic high score per category above
-- Domain SIMILAR to known but NOT exact = ALERT typosquatting, very low score
-- FETCH FAILURE MUST NEVER lower the score. An inaccessible site = insufficient data, NOT a dangerous site
-- Modern sites (React, Angular, Vue) often return empty HTML to fetch — this means NOTHING about their legitimacy
-
-=== ABSOLUTE RULES ===
-- reputation.dataAvailable = ALWAYS false (we did NOT check reviews)
+ABSOLUTE RULES:
+- reputation.dataAvailable = ALWAYS false
 - reputation.trustScore = ALWAYS null
 - reputation.positiveReviews = ALWAYS null
-- reputation.negativeReviews = ALWAYS null  
+- reputation.negativeReviews = ALWAYS null
 - reputation.reviews = ALWAYS empty array []
-- complaints.dataAvailable = ALWAYS false (we did NOT check complaints)
+- complaints.dataAvailable = ALWAYS false
 - complaints.total = ALWAYS 0
 - complaints.items = ALWAYS empty array []
-- NEVER invent Trustpilot scores, Google reviews, or complaint data
-- NEVER say a known site has no legal pages just because fetch failed
-- If content was NOT fetched, content fields may be false but DON'T assume danger
-- Extract business info ONLY from fetched content (legal page, contact page, homepage)
-- If a page was NOT found via fetch AND it's NOT a known site, report honestly
-- Be HONEST: if we don't know, say "Inconnu", not "Dangereux"
 
-VerdictEmoji rules:
-- ✅ for score >= 65: "Site fiable" / "Reliable site"
-- ⚠️ for score 35-64: "À utiliser avec prudence" / "Use with caution"
-- 🚨 for score < 35: "Site dangereux" / "Dangerous site"
+VerdictEmoji: ✅ for score >= 65, ⚠️ for 35-64, 🚨 for < 35
 
-You MUST respond with a valid JSON object and NOTHING else. No markdown, no code blocks, just pure JSON.
+You MUST respond with a valid JSON object and NOTHING else.
 
 {
   "score": <0-100>,
   "ssl": <boolean>,
   "domainAge": "Inconnu",
-  "legalMentions": <boolean - true if known site OR found in fetch>,
-  "privacyPolicy": <boolean - true if known site OR found in fetch>,
-  "termsOfService": <boolean - true if known site OR found in fetch>,
+  "legalMentions": <boolean>,
+  "privacyPolicy": <boolean>,
+  "termsOfService": <boolean>,
   "physicalAddress": <boolean>,
   "redirects": <number>,
   "verdict": "<French verdict>",
   "verdictEn": "<English verdict>",
   "verdictEmoji": "<emoji>",
   "isOnlineStore": <boolean>,
-  "reputation": {
-    "dataAvailable": false,
-    "trustScore": null,
-    "positiveReviews": null,
-    "negativeReviews": null,
-    "summary": "Aucune donnée de réputation vérifiable — vérifiez manuellement sur Trustpilot et Google.",
-    "summaryEn": "No verifiable reputation data — check Trustpilot and Google manually.",
-    "reviews": []
-  },
-  "complaints": {
-    "dataAvailable": false,
-    "total": 0,
-    "items": [],
-    "summary": "Vérifiez le Centre antifraude du Canada et l'Office de la protection du consommateur.",
-    "summaryEn": "Check the Canadian Anti-Fraud Centre and consumer protection agencies."
-  },
-  "business": {
-    "dataAvailable": <boolean>,
-    "name": "<from content, known info, or 'Inconnu'>",
-    "registered": null,
-    "hasContact": <boolean>,
-    "address": "<from content or 'Non disponible'>",
-    "phone": "<from content or 'Non disponible'>",
-    "summary": "<French>",
-    "summaryEn": "<English>"
-  },
-  "onlineStore": null or { "realisticPrices": <bool>, "returnPolicy": <bool>, "securePayment": <bool>, "brandCopying": <bool>, "summary": "<FR>", "summaryEn": "<EN>" },
-  "personalizedAdvice": ["<3-5 French tips based ONLY on verified data>"],
-  "personalizedAdviceEn": ["<3-5 English tips based ONLY on verified data>"]
+  "reputation": { "dataAvailable": false, "trustScore": null, "positiveReviews": null, "negativeReviews": null, "summary": "Aucune donnée de réputation vérifiable.", "summaryEn": "No verifiable reputation data.", "reviews": [] },
+  "complaints": { "dataAvailable": false, "total": 0, "items": [], "summary": "Vérifiez manuellement.", "summaryEn": "Check manually." },
+  "business": { "dataAvailable": <boolean>, "name": "<string>", "registered": null, "hasContact": <boolean>, "address": "<string>", "phone": "<string>", "summary": "<FR>", "summaryEn": "<EN>" },
+  "onlineStore": null,
+  "personalizedAdvice": ["<French tips>"],
+  "personalizedAdviceEn": ["<English tips>"]
 }
 
-Always include advice to check Trustpilot/Google Reviews manually.
-Always include country-specific reporting organizations in advice:
-${reportingOrgs}
-Provide 3-5 advice items. Both FR and EN versions.`;
+Include reporting organizations:
+${reportingOrgs}`;
 
-  const messages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
+  const messages: ToolkitMessage[] = [
     {
       role: 'user',
       content: language === 'fr'
-        ? `Fais une analyse approfondie de cette URL : ${url}. Vérifie la fiabilité, la réputation, les avis, les plaintes, les informations de l'entreprise, et si c'est une boutique en ligne, analyse les prix et politiques. Retourne uniquement le JSON.`
-        : `Perform a deep analysis of this URL: ${url}. Check reliability, reputation, reviews, complaints, business information, and if it's an online store, analyze pricing and policies. Return only the JSON.`,
+        ? `${systemPrompt}\n\nFais une analyse approfondie de cette URL : ${url}. Retourne uniquement le JSON.`
+        : `${systemPrompt}\n\nPerform a deep analysis of this URL: ${url}. Return only the JSON.`,
     },
   ];
 
-  const response = await callOpenAI(messages, 3000);
-  console.log('[OpenAI] URL analysis response received');
-
+  console.log('[AI] Sending URL analysis request to toolkit...');
   try {
-    const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const result = JSON.parse(cleaned) as UrlAnalysisResult;
-    console.log('[OpenAI] Deep URL analysis parsed, score:', result.score);
+    const response = await generateText({ messages });
+    console.log('[AI] URL analysis response received, length:', response?.length);
+
+    if (!response) {
+      throw new Error('Empty response from AI service');
+    }
+
+    const result = parseJsonResponse<UrlAnalysisResult>(response);
+    console.log('[AI] URL analysis complete, score:', result.score);
     return result;
-  } catch (parseError) {
-    console.log('[OpenAI] URL JSON parse error:', parseError);
-    throw new Error('Failed to parse URL analysis response');
+  } catch (error: any) {
+    console.error('[AI] URL analysis failed:', error?.message);
+    throw error;
   }
 }
 
@@ -1133,23 +829,30 @@ export async function sendChatMessage(
   language: string,
   country: Country = 'CA',
 ): Promise<string> {
-  console.log('[OpenAI] Sending chat message');
+  console.log('[AI] Sending chat message via Rork Toolkit');
 
   const langInstruction = language === 'fr'
     ? 'L\'utilisateur parle français. Réponds en français.'
     : 'The user speaks English. Respond in English.';
 
-  const messages: ChatMessage[] = [
-    { role: 'system', content: `${getCyrusPrompt(country)}\n\n${langInstruction}` },
-    ...conversationHistory.map(msg => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    })),
-    { role: 'user', content: userMessage },
+  const systemContent = `${getCyrusPrompt(country)}\n\n${langInstruction}`;
+
+  const messages: ToolkitMessage[] = [
+    { role: 'user', content: systemContent + '\n\nUser: ' + (conversationHistory.length > 0 ? conversationHistory[0].content : userMessage) },
   ];
 
-  const response = await callOpenAI(messages, 1000);
-  return response;
+  for (let i = 0; i < conversationHistory.length; i++) {
+    const msg = conversationHistory[i];
+    if (i === 0) continue;
+    messages.push({ role: msg.role, content: msg.content });
+  }
+
+  if (conversationHistory.length > 0) {
+    messages.push({ role: 'user', content: userMessage });
+  }
+
+  const response = await generateText({ messages });
+  return response || '';
 }
 
 export async function sendScanChatMessage(
@@ -1167,7 +870,7 @@ export async function sendScanChatMessage(
   language: string,
   country: Country = 'CA',
 ): Promise<string> {
-  console.log('[OpenAI] Sending scan chat message');
+  console.log('[AI] Sending scan chat message via Rork Toolkit');
 
   const langInstruction = language === 'fr'
     ? 'L\'utilisateur parle français. Réponds en français.'
@@ -1184,18 +887,26 @@ Scan context:
 - Advice given: ${scanContext.advice.join(', ')}
 `;
 
-  const messages: ChatMessage[] = [
-    {
-      role: 'system',
-      content: `${getCyrusPrompt(country)}\n\n${langInstruction}\n\nYou are discussing a specific scan result with the user. Here is the scan context:\n${scanInfo}\n\nAnswer the user's questions about this specific scan. Be detailed, educational, and provide actionable advice.`,
-    },
-    ...conversationHistory.map(msg => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    })),
-    { role: 'user', content: userMessage },
-  ];
+  const systemContent = `${getCyrusPrompt(country)}\n\n${langInstruction}\n\nYou are discussing a specific scan result with the user. Here is the scan context:\n${scanInfo}\n\nAnswer the user's questions about this specific scan. Be detailed, educational, and provide actionable advice.`;
 
-  const response = await callOpenAI(messages, 1000);
-  return response;
+  const messages: ToolkitMessage[] = [];
+
+  if (conversationHistory.length > 0) {
+    messages.push({
+      role: 'user',
+      content: systemContent + '\n\nUser: ' + conversationHistory[0].content,
+    });
+    for (let i = 1; i < conversationHistory.length; i++) {
+      messages.push({ role: conversationHistory[i].role, content: conversationHistory[i].content });
+    }
+    messages.push({ role: 'user', content: userMessage });
+  } else {
+    messages.push({
+      role: 'user',
+      content: systemContent + '\n\nUser: ' + userMessage,
+    });
+  }
+
+  const response = await generateText({ messages });
+  return response || '';
 }
