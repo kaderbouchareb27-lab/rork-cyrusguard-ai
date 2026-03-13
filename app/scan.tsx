@@ -200,15 +200,32 @@ export default function ScanScreen() {
       handleAnalysisResult(analysis, imageUri);
     } catch (error: any) {
       if (!isMountedRef.current) return;
-      console.log('[Scan] Image analysis error:', error?.message);
+      console.log('[Scan] Image analysis error:', error?.message, error);
       setIsAnalyzing(false);
       stopLoadingAnimation();
-      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
+      const msg = error?.message ?? '';
+      const isNetwork = error?.name === 'AbortError' || msg.includes('timeout') || msg.includes('Network');
+      const isRateLimit = msg.includes('Rate limit') || msg.includes('429');
+      const isServerError = msg.includes('temporarily unavailable') || msg.includes('500');
+      const isApiKey = msg.includes('API key');
+      const isImageError = msg.includes('Failed to read image') || msg.includes('too large') || msg.includes('empty');
+      let alertMsg: string;
+      if (isNetwork) {
+        alertMsg = language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.';
+      } else if (isRateLimit) {
+        alertMsg = language === 'fr' ? 'Service surchargé. Veuillez patienter un moment et réessayer.' : 'Service overloaded. Please wait a moment and try again.';
+      } else if (isServerError) {
+        alertMsg = language === 'fr' ? 'Le service d\'analyse est temporairement indisponible. Réessayez dans quelques instants.' : 'Analysis service is temporarily unavailable. Please try again shortly.';
+      } else if (isApiKey) {
+        alertMsg = language === 'fr' ? 'Configuration de l\'API manquante. Contactez le support.' : 'API configuration missing. Please contact support.';
+      } else if (isImageError) {
+        alertMsg = language === 'fr' ? 'Impossible de lire l\'image. Essayez avec une autre image ou prenez une nouvelle photo.' : 'Unable to read the image. Try another image or take a new photo.';
+      } else {
+        alertMsg = language === 'fr' ? 'Erreur lors de l\'analyse : ' + msg : 'Analysis error: ' + msg;
+      }
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
-        isNetwork
-          ? (language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.')
-          : (language === 'fr' ? 'Impossible d\'analyser l\'image. Veuillez réessayer.' : 'Unable to analyze the image. Please try again.')
+        alertMsg
       );
     }
   };
@@ -228,15 +245,26 @@ export default function ScanScreen() {
       handleAnalysisResult(analysis);
     } catch (error: any) {
       if (!isMountedRef.current) return;
-      console.log('[Scan] Text analysis error:', error?.message);
+      console.log('[Scan] Text analysis error:', error?.message, error);
       setIsAnalyzing(false);
       stopLoadingAnimation();
-      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
+      const msg = error?.message ?? '';
+      const isNetwork = error?.name === 'AbortError' || msg.includes('timeout') || msg.includes('Network');
+      const isRateLimit = msg.includes('Rate limit') || msg.includes('429');
+      const isServerError = msg.includes('temporarily unavailable') || msg.includes('500');
+      let alertMsg: string;
+      if (isNetwork) {
+        alertMsg = language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.';
+      } else if (isRateLimit) {
+        alertMsg = language === 'fr' ? 'Service surchargé. Veuillez patienter un moment et réessayer.' : 'Service overloaded. Please wait a moment and try again.';
+      } else if (isServerError) {
+        alertMsg = language === 'fr' ? 'Le service d\'analyse est temporairement indisponible. Réessayez dans quelques instants.' : 'Analysis service is temporarily unavailable. Please try again shortly.';
+      } else {
+        alertMsg = language === 'fr' ? 'Erreur lors de l\'analyse : ' + msg : 'Analysis error: ' + msg;
+      }
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
-        isNetwork
-          ? (language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.')
-          : (language === 'fr' ? 'Impossible d\'analyser le contenu. Veuillez réessayer.' : 'Unable to analyze content. Please try again.')
+        alertMsg
       );
     }
   };

@@ -261,15 +261,15 @@ export function cancelActiveRequests() {
   }
 }
 
-async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500): Promise<string> {
-  console.log('[OpenAI] Calling API');
+async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500, timeoutMs: number = 60000): Promise<string> {
+  console.log('[OpenAI] Calling API, timeout:', timeoutMs, 'ms');
 
   if (!validateApiKeyAccess()) {
     throw new Error('OpenAI API key is not properly configured');
   }
 
   cancelActiveRequests();
-  const controller = createAbortController(60000);
+  const controller = createAbortController(timeoutMs);
   activeController = controller;
 
   try {
@@ -289,15 +289,21 @@ async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500): Pr
     });
 
     if (!response.ok) {
-      const _errorText = await response.text().catch(() => 'Unknown error');
-      console.log('[OpenAI] API error:', response.status);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.log('[OpenAI] API error:', response.status, errorText);
       if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+      }
+      if (response.status === 401) {
+        throw new Error('API key is invalid or expired. Please contact support.');
+      }
+      if (response.status === 413) {
+        throw new Error('Image is too large for the API. Please try with a smaller image.');
       }
       if (response.status >= 500) {
         throw new Error('OpenAI service is temporarily unavailable. Please try again later.');
       }
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`OpenAI API error (${response.status}): ${errorText.substring(0, 200)}`);
     }
 
     const data = await response.json();
@@ -456,7 +462,7 @@ Explain WHY with concrete country-specific examples when relevant.`;
     },
   ];
 
-  const response = await callOpenAI(messages, 2000);
+  const response = await callOpenAI(messages, 2000, 120000);
   console.log('[OpenAI] Image analysis response received');
 
   try {
