@@ -45,7 +45,7 @@ const PLATFORM_KEYS: Record<string, string> = {
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { t, addScan, language, country, canScan, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
+  const { t, addScan, language, country, canScan, consumeCredit, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [selectedType, setSelectedType] = useState<ContentType>('sms');
@@ -191,6 +191,7 @@ export default function ScanScreen() {
       imageUri,
     };
     addScan(newScan);
+    consumeCredit();
     setIsAnalyzing(false);
     stopLoadingAnimation();
     router.replace({ pathname: '/result' as any, params: { scanId: newScan.id } });

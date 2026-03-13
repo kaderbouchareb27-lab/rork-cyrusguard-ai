@@ -215,7 +215,7 @@ export default function PremiumScreen() {
             ))}
           </View>
 
-          <Text style={styles.sectionTitle}>Testimonials</Text>
+          <Text style={styles.sectionTitle}>{t('testimonialsTitle')}</Text>
           {testimonials.map((testimonial, idx) => (
             <View key={idx} style={styles.testimonialCard}>
               <Text style={styles.testimonialText}>{testimonial}</Text>
