@@ -105,23 +105,41 @@ export default function ScanScreen() {
   const pickImage = async (useCamera: boolean) => {
     try {
       let result: ImagePicker.ImagePickerResult;
+      const pickerOptions: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ['images'],
+        quality: 0.3,
+        base64: true,
+        exif: false,
+        allowsEditing: false,
+      };
+
       if (useCamera) {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
           Alert.alert('Permission', language === 'fr' ? 'Permission caméra requise' : 'Camera permission required');
           return;
         }
-        result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.5, base64: true, exif: false });
+        result = await ImagePicker.launchCameraAsync(pickerOptions);
       } else {
-        result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.5, base64: true, exif: false });
+        result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
       }
+
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        console.log('[Scan] Image selected, uri:', asset.uri?.substring(0, 50), 'base64 length:', asset.base64?.length ?? 0, 'mimeType:', asset.mimeType);
+        console.log('[Scan] Image selected, uri:', asset.uri?.substring(0, 80), 'base64 length:', asset.base64?.length ?? 0, 'mimeType:', asset.mimeType, 'width:', asset.width, 'height:', asset.height);
+
+        if (!asset.base64 || asset.base64.length < 100) {
+          console.log('[Scan] Base64 not available from picker, will convert from URI');
+        }
+
         void startImageAnalysis(asset.uri, asset.base64 ?? undefined, asset.mimeType ?? undefined);
       }
-    } catch (error) {
-      console.log('Image picker error:', error);
+    } catch (error: any) {
+      console.log('[Scan] Image picker error:', error?.message, error);
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr' ? 'Impossible de sélectionner l\'image. Veuillez réessayer.' : 'Unable to select image. Please try again.'
+      );
     }
   };
 

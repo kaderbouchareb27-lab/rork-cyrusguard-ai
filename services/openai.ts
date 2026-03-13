@@ -316,16 +316,38 @@ async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500): Pr
 }
 
 async function imageUriToBase64(uri: string): Promise<string> {
-  console.log('[OpenAI] Converting image to base64');
+  console.log('[OpenAI] Converting image to base64, uri prefix:', uri.substring(0, 30));
   try {
+    if (uri.startsWith('data:')) {
+      const parts = uri.split(',');
+      if (parts[1] && parts[1].length > 100) {
+        console.log('[OpenAI] URI is already a data URL, extracting base64');
+        return parts[1];
+      }
+    }
+
     const response = await fetch(uri);
+    if (!response.ok) {
+      console.log('[OpenAI] Fetch image failed, status:', response.status);
+      throw new Error('Failed to fetch image: HTTP ' + response.status);
+    }
     const blob = await response.blob();
+    console.log('[OpenAI] Blob size:', blob.size, 'type:', blob.type);
+
+    if (blob.size === 0) {
+      throw new Error('Image blob is empty');
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
         const base64 = result.split(',')[1] ?? '';
-        console.log('[OpenAI] Base64 conversion complete');
+        console.log('[OpenAI] Base64 conversion complete, length:', base64.length);
+        if (base64.length < 100) {
+          reject(new Error('Base64 conversion produced empty result'));
+          return;
+        }
         resolve(base64);
       };
       reader.onerror = (err) => {
@@ -334,38 +356,46 @@ async function imageUriToBase64(uri: string): Promise<string> {
       };
       reader.readAsDataURL(blob);
     });
-  } catch (error) {
-    console.log('[OpenAI] imageUriToBase64 error:', error);
-    throw new Error('Failed to read image for analysis');
+  } catch (error: any) {
+    console.log('[OpenAI] imageUriToBase64 error:', error?.message);
+    throw new Error('Failed to read image: ' + (error?.message || 'Unknown error'));
   }
 }
 
 export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA', mimeType?: string): Promise<ScanAnalysisResult> {
-  console.log('[OpenAI] Starting image analysis');
+  console.log('[OpenAI] Starting image analysis, hasBase64:', !!base64Data, 'base64Len:', base64Data?.length ?? 0, 'uri:', imageUri?.substring(0, 50));
 
   if (!validateApiKeyAccess()) {
+    console.log('[OpenAI] API key validation failed');
     throw new Error('OpenAI API key is not configured');
   }
 
   let base64: string;
-  if (base64Data) {
+  if (base64Data && base64Data.length > 100) {
     base64 = base64Data;
+    console.log('[OpenAI] Using provided base64 data, length:', base64.length);
   } else {
-    base64 = await imageUriToBase64(imageUri);
+    console.log('[OpenAI] No base64 provided or too short, converting from URI');
+    try {
+      base64 = await imageUriToBase64(imageUri);
+    } catch (convErr: any) {
+      console.log('[OpenAI] URI conversion failed:', convErr?.message);
+      throw new Error('Failed to read image data: ' + (convErr?.message || 'Unknown'));
+    }
   }
 
   if (!base64 || base64.length < 100) {
     console.log('[OpenAI] Base64 data is too short or empty, length:', base64?.length);
-    throw new Error('Failed to read image data');
+    throw new Error('Failed to read image data - image appears empty');
   }
 
-  const detectedMime = mimeType || (imageUri.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg');
+  const detectedMime = mimeType && mimeType.startsWith('image/') ? mimeType : (imageUri.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg');
   console.log('[OpenAI] Image ready for analysis, mime:', detectedMime, 'base64 length:', base64.length);
 
-  const MAX_BASE64_LENGTH = 2_000_000;
+  const MAX_BASE64_LENGTH = 1_500_000;
   if (base64.length > MAX_BASE64_LENGTH) {
-    console.log('[OpenAI] Base64 too large, truncating from', base64.length, 'to', MAX_BASE64_LENGTH);
-    base64 = base64.substring(0, MAX_BASE64_LENGTH);
+    console.log('[OpenAI] Base64 too large:', base64.length, '- image needs more compression');
+    throw new Error('Image is too large for analysis. Please try with a smaller image.');
   }
 
   const dataUrl = `data:${detectedMime};base64,${base64}`;
