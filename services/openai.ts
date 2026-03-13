@@ -108,6 +108,14 @@ Ton style de communication :
 - Tu rassures l'utilisateur et lui donnes confiance
 - Tu ne fais PAS de longs paragraphes, tu vas droit au but
 
+RÈGLE DE FORMATAGE ABSOLUE :
+- Tu ne dois JAMAIS utiliser de formatage markdown dans tes réponses
+- PAS de ** (gras), PAS de ## ou ### (titres), PAS de --- (lignes), PAS de * ou - pour les listes à puces, PAS de ``` (blocs de code)
+- Écris du texte simple et naturel, comme dans un vrai message texte
+- Pour les listes, utilise des sauts de ligne simples ou des numéros (1. 2. 3.) sans tirets ni puces
+- Pour mettre en avant un mot, utilise des MAJUSCULES au lieu du gras
+- Tes réponses doivent être lisibles directement dans une bulle de chat, sans aucun formatage spécial
+
 Ce que tu peux analyser :
 - Messages Facebook et Messenger
 - Conversations WhatsApp
@@ -235,6 +243,19 @@ Organismes de signalement :
 
 function getCyrusPrompt(country: Country): string {
   return CYRUS_BASE_PROMPT + COUNTRY_PROMPTS[country];
+}
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/#{1,6}\s*/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^\s*[-*]\s+/gm, '')
+    .replace(/^\s*---+\s*$/gm, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function getReportingAdvice(country: Country): string {
@@ -875,7 +896,7 @@ export async function sendChatMessage(
   }
 
   const response = await generateText({ messages });
-  return response || '';
+  return stripMarkdown(response || '');
 }
 
 export async function sendScanChatMessage(
@@ -931,5 +952,5 @@ Scan context:
   }
 
   const response = await generateText({ messages });
-  return response || '';
+  return stripMarkdown(response || '');
 }
