@@ -12,7 +12,7 @@ import { sendChatMessage, cancelActiveRequests } from '@/services/openai';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { t, chatMessages, addChatMessage, canSendMessage, remainingCredits, user, language, country, canChat, consumeCredit, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
+  const { t, chatMessages, addChatMessage, canSendMessage, user, language, country, canChat, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [input, setInput] = useState('');
   const [showDisclosure, setShowDisclosure] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -56,8 +56,6 @@ export default function ChatScreen() {
       const history = chatMessages.map(m => ({ role: m.role, content: m.content }));
       const aiResponse = await sendChatMessage(messageText, history, language, country);
 
-      consumeCredit();
-
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -81,7 +79,7 @@ export default function ChatScreen() {
     } finally {
       if (isMountedRef.current) setIsLoading(false);
     }
-  }, [input, canSendMessage, isLoading, addChatMessage, language, country, chatMessages, consumeCredit]);
+  }, [input, canSendMessage, isLoading, addChatMessage, language, country, chatMessages]);
 
   const handleDisclosureAccept = useCallback(() => {
     void acceptAIDisclosure();
@@ -133,8 +131,8 @@ export default function ChatScreen() {
           </TouchableOpacity>
           <View style={styles.titleSection}>
             <Text style={styles.topTitle}>{t('chatTitle')}</Text>
-            {!user.isPremium && (
-              <Text style={styles.msgCount}>{remainingCredits === Infinity ? '∞' : remainingCredits}/3 {t('creditsRemaining')}</Text>
+            {user.isPremium && (
+              <Text style={styles.msgCount}>Premium</Text>
             )}
           </View>
           <View style={styles.backBtn} />

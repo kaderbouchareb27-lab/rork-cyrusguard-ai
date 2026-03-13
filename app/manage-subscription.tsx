@@ -163,7 +163,7 @@ export default function ManageSubscriptionScreen() {
               <View style={styles.creditsRow}>
                 <CreditCard size={14} color={Colors.accent} />
                 <Text style={styles.creditsText}>
-                  {remainingCredits === Infinity ? '∞' : remainingCredits}/3 {t('creditsRemaining')}
+                  {remainingCredits === Infinity ? '∞' : remainingCredits}/2 {t('creditsRemaining')}
                 </Text>
               </View>
             )}

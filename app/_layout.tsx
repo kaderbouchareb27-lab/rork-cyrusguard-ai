@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
-import { AppProvider } from "@/contexts/AppContext";
+import { AppProvider, useApp } from "@/contexts/AppContext";
 import Colors from "@/constants/colors";
 
 try {
@@ -15,6 +15,27 @@ try {
 }
 
 const queryClient = new QueryClient();
+
+function AccountCreationGuard({ children }: { children: React.ReactNode }) {
+  const { needsAccountCreation, isLoading } = useApp();
+  const router = useRouter();
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    if (!isLoading && needsAccountCreation && !hasRedirected.current) {
+      hasRedirected.current = true;
+      console.log('[Layout] Premium active but no account — redirecting to create-account');
+      setTimeout(() => {
+        router.push('/create-account' as any);
+      }, 500);
+    }
+    if (!needsAccountCreation) {
+      hasRedirected.current = false;
+    }
+  }, [needsAccountCreation, isLoading, router]);
+
+  return <>{children}</>;
+}
 
 function RootLayoutNav() {
   return (
@@ -40,6 +61,7 @@ function RootLayoutNav() {
       <Stack.Screen name="manage-subscription" />
       <Stack.Screen name="quiz" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="create-account" options={{ presentation: 'modal', animation: 'slide_from_bottom', gestureEnabled: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -109,7 +131,9 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <AppProvider>
             <StatusBar style="light" />
-            <RootLayoutNav />
+            <AccountCreationGuard>
+              <RootLayoutNav />
+            </AccountCreationGuard>
           </AppProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

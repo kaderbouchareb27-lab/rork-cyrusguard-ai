@@ -200,11 +200,11 @@ export default function HomeScreen() {
               <View style={styles.creditsBannerLeft}>
                 <Shield size={18} color={remainingCredits > 0 ? Colors.accent : Colors.danger} />
                 <Text style={[styles.creditsBannerText, remainingCredits === 0 && styles.creditsBannerTextUsed]}>
-                  {remainingCredits}/3 {t('creditsRemaining')}
+                  {remainingCredits}/2 {t('creditsRemaining')}
                 </Text>
               </View>
               <View style={styles.creditDots}>
-                {[0, 1, 2].map(i => (
+                {[0, 1].map(i => (
                   <View
                     key={i}
                     style={[
@@ -234,7 +234,12 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               testID="action-scan"
             >
-              {!canScan && <Lock size={12} color={Colors.danger} style={styles.lockIcon} />}
+              {!canScan && (
+                <View style={styles.premiumBadge}>
+                  <Crown size={10} color="#FFD700" />
+                  <Text style={styles.premiumBadgeText}>Premium</Text>
+                </View>
+              )}
               <View style={[styles.actionIcon, { backgroundColor: canScan ? Colors.accentMuted : Colors.dangerMuted }]}>
                 <Camera size={22} color={canScan ? Colors.accent : Colors.danger} />
               </View>
@@ -255,15 +260,26 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, !canChat && styles.actionCardLocked]}
-              onPress={() => router.push('/chat' as any)}
+              onPress={() => {
+                if (canChat) {
+                  router.push('/chat' as any);
+                } else {
+                  router.push('/(tabs)/premium' as any);
+                }
+              }}
               activeOpacity={0.7}
               testID="action-chat"
             >
-              {!canChat && <Lock size={12} color={Colors.danger} style={styles.lockIcon} />}
-              <View style={[styles.actionIcon, { backgroundColor: canChat ? 'rgba(168,85,247,0.15)' : Colors.dangerMuted }]}>
-                <MessageCircle size={22} color={canChat ? '#A855F7' : Colors.danger} />
+              {!canChat && (
+                <View style={styles.premiumBadge}>
+                  <Crown size={10} color="#FFD700" />
+                  <Text style={styles.premiumBadgeText}>Premium</Text>
+                </View>
+              )}
+              <View style={[styles.actionIcon, { backgroundColor: canChat ? 'rgba(168,85,247,0.15)' : 'rgba(255,215,0,0.1)' }]}>
+                <MessageCircle size={22} color={canChat ? '#A855F7' : '#94A3B8'} />
               </View>
-              <Text style={styles.actionLabel}>{t('chatWithCyrus')}</Text>
+              <Text style={[styles.actionLabel, !canChat && styles.actionLabelLocked]}>{t('chatWithCyrus')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -669,12 +685,28 @@ const styles = StyleSheet.create({
     color: '#FFD700',
   },
   actionCardLocked: {
-    opacity: 0.7,
-    borderColor: 'rgba(239,68,68,0.2)',
+    opacity: 0.75,
+    borderColor: 'rgba(255,215,0,0.15)',
   },
-  lockIcon: {
+  premiumBadge: {
     position: 'absolute' as const,
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  premiumBadgeText: {
+    fontSize: 8,
+    fontWeight: '700' as const,
+    color: '#FFD700',
+    letterSpacing: 0.3,
+  },
+  actionLabelLocked: {
+    color: '#94A3B8',
   },
 });

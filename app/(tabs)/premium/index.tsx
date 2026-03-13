@@ -13,7 +13,6 @@ export default function PremiumScreen() {
   const {
     t, country, upgradeToPremium, user, remainingCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
-    auth,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -69,7 +68,7 @@ export default function PremiumScreen() {
 
   const testimonials = [t('testimonial1'), t('testimonial2'), t('testimonial3')];
 
-  const creditsLeft = remainingCredits === Infinity ? 3 : remainingCredits;
+  const creditsLeft = remainingCredits === Infinity ? 2 : remainingCredits;
 
   const handleSubscribe = () => {
     void upgradeToPremium(selectedPlan);
@@ -91,10 +90,10 @@ export default function PremiumScreen() {
             <View style={styles.creditCounter}>
               <Shield size={16} color={creditsLeft > 0 ? Colors.accent : Colors.danger} />
               <Text style={styles.creditCounterText}>
-                {creditsLeft}/3 {t('creditsRemaining')}
+                {creditsLeft}/2 {t('creditsRemaining')}
               </Text>
               <View style={styles.creditDots}>
-                {[0, 1, 2].map(i => (
+                {[0, 1].map(i => (
                   <View
                     key={i}
                     style={[
@@ -174,47 +173,29 @@ export default function PremiumScreen() {
           </TouchableOpacity>
 
           {!user.isPremium ? (
-            auth.isAuthenticated ? (
-              <TouchableOpacity
-                style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
-                onPress={handleSubscribe}
-                activeOpacity={0.8}
-                disabled={isPurchasing || isOfferingsLoading}
-                testID="subscribe-btn"
+            <TouchableOpacity
+              style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
+              onPress={handleSubscribe}
+              activeOpacity={0.8}
+              disabled={isPurchasing || isOfferingsLoading}
+              testID="subscribe-btn"
+            >
+              <LinearGradient
+                colors={[Colors.accent, Colors.accentDark ?? '#1a8a4a']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.subscribeBtnGradient}
               >
-                <LinearGradient
-                  colors={[Colors.accent, Colors.accentDark ?? '#1a8a4a']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.subscribeBtnGradient}
-                >
-                  {isPurchasing ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <>
-                      <Crown size={20} color="#FFFFFF" />
-                      <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.subscribeBtn}
-                onPress={() => router.push('/auth' as any)}
-                activeOpacity={0.8}
-                testID="subscribe-auth-btn"
-              >
-                <LinearGradient
-                  colors={[Colors.info, '#2563EB']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.subscribeBtnGradient}
-                >
-                  <Text style={styles.subscribeBtnText}>{t('createAccountCTA')}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )
+                {isPurchasing ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Crown size={20} color="#FFFFFF" />
+                    <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
           ) : (
             <View style={styles.currentPlanBadge}>
               <Check size={18} color={Colors.accent} />

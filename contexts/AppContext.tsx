@@ -30,7 +30,7 @@ interface AuthState {
   provider: 'apple' | 'guest' | null;
 }
 
-const FREE_CREDITS = 3;
+const FREE_CREDITS = 2;
 const ENTITLEMENT_ID = 'CyrusGuard AI Pro';
 
 const STORAGE_KEYS = {
@@ -289,10 +289,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
-      if (!auth.isAuthenticated) {
-        throw new Error('User must be authenticated before purchasing');
-      }
-      if (!rcLoggedIn && auth.uid) {
+      if (auth.isAuthenticated && !rcLoggedIn && auth.uid) {
         console.log('[RC] Ensuring logIn before purchase...');
         const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
         setRcLoggedIn(true);
@@ -412,17 +409,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return user.isPremium || creditsUsed < FREE_CREDITS;
   }, [user.isPremium, creditsUsed]);
 
-  const needsAuth = useMemo(() => {
-    return !canUseFeature && !auth.isAuthenticated;
-  }, [canUseFeature, auth.isAuthenticated]);
-
   const needsPaywall = useMemo(() => {
-    return !canUseFeature && auth.isAuthenticated;
-  }, [canUseFeature, auth.isAuthenticated]);
+    return !canUseFeature;
+  }, [canUseFeature]);
+
+  const needsAccountCreation = useMemo(() => {
+    return user.isPremium && !auth.isAuthenticated;
+  }, [user.isPremium, auth.isAuthenticated]);
 
   const canScan = canUseFeature;
-  const canChat = canUseFeature;
-  const canSendMessage = canUseFeature;
+  const canChat = user.isPremium;
+  const canSendMessage = user.isPremium;
 
   const acceptAIDisclosure = useCallback(async () => {
     setHasAcceptedAIDisclosureState(true);
@@ -511,17 +508,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, []);
 
   const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
-    if (!auth.isAuthenticated) {
-      console.log('[RC] User not authenticated, cannot purchase');
-      Alert.alert(
-        language === 'fr' ? 'Compte requis' : 'Account Required',
-        language === 'fr'
-          ? 'Veuillez créer un compte avant de souscrire à un abonnement.'
-          : 'Please create an account before subscribing.'
-      );
-      return;
-    }
-
     if (!currentOffering) {
       console.log('[RC] No offering available');
       Alert.alert('Error', language === 'fr'
@@ -539,7 +525,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       return;
     }
     purchaseMutation.mutate(pkg);
-  }, [auth.isAuthenticated, currentOffering, purchaseMutation, language]);
+  }, [currentOffering, purchaseMutation, language]);
 
   const restorePurchases = useCallback(() => {
     restoreMutation.mutate();
@@ -576,8 +562,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     creditsUsed,
     consumeCredit,
     canUseFeature,
-    needsAuth,
     needsPaywall,
+    needsAccountCreation,
     showPaymentSuccess,
     hasAcceptedAIDisclosure,
     acceptAIDisclosure,
@@ -603,7 +589,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     language, country, currency, currencySymbol, availableLanguages,
     user, scans, chatMessages, dailyMessageCount, canScan, canChat,
     canSendMessage, remainingCredits, creditsUsed, consumeCredit,
-    canUseFeature, needsAuth, needsPaywall, showPaymentSuccess,
+    canUseFeature, needsPaywall, needsAccountCreation, showPaymentSuccess,
     hasAcceptedAIDisclosure, acceptAIDisclosure,
     auth, loginUser, logoutUser,
     t, setLanguage, setLanguageSafe,
