@@ -120,15 +120,15 @@ export default function UrlAnalyzeScreen() {
       if (isNetwork) {
         alertMsg = language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.';
       } else if (isQuota) {
-        alertMsg = language === 'fr' ? 'Quota OpenAI épuisé. Ajoutez des crédits sur platform.openai.com.' : 'OpenAI quota exceeded. Add credits at platform.openai.com.';
+        alertMsg = language === 'fr' ? 'Service temporairement indisponible. Réessayez plus tard.' : 'Service temporarily unavailable. Try again later.';
       } else if (isRateLimit) {
         alertMsg = language === 'fr' ? 'Service surchargé. Veuillez patienter un moment et réessayer.' : 'Service overloaded. Please wait a moment and try again.';
       } else if (isApiKey) {
-        alertMsg = language === 'fr' ? 'Clé API invalide ou expirée. Contactez le support.' : 'API key invalid or expired. Contact support.';
+        alertMsg = language === 'fr' ? 'Service temporairement indisponible. Contactez le support.' : 'Service temporarily unavailable. Contact support.';
       } else if (isForbidden) {
-        alertMsg = language === 'fr' ? 'Accès refusé à l\'API. Contactez le support.' : 'API access forbidden. Contact support.';
+        alertMsg = language === 'fr' ? 'Accès au service refusé. Contactez le support.' : 'Service access denied. Contact support.';
       } else if (isServerError) {
-        alertMsg = language === 'fr' ? 'Service OpenAI temporairement indisponible. Réessayez dans quelques instants.' : 'OpenAI service temporarily unavailable. Try again shortly.';
+        alertMsg = language === 'fr' ? 'Service d\'analyse temporairement indisponible. Réessayez dans quelques instants.' : 'Analysis service temporarily unavailable. Try again shortly.';
       } else {
         alertMsg = language === 'fr' ? 'Erreur : ' + msg : 'Error: ' + msg;
       }
@@ -214,7 +214,7 @@ export default function UrlAnalyzeScreen() {
           <PaywallGate type="url" />
         ) : (
         <>
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
             <View style={styles.inputRow}>

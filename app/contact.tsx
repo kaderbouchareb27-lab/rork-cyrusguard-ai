@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, Mail, Globe, MessageCircle, MapPin } from 'lucide-react-native';
@@ -31,25 +31,33 @@ export default function ContactScreen() {
               : 'Our team is available to answer your questions and help you.'}
           </Text>
 
-          <View style={styles.contactCard}>
+          <TouchableOpacity
+            style={styles.contactCard}
+            onPress={() => Linking.openURL('mailto:support@cyrusguard.ai')}
+            activeOpacity={0.7}
+          >
             <View style={[styles.iconBg, { backgroundColor: Colors.accentMuted }]}>
               <Mail size={22} color={Colors.accent} />
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Email</Text>
-              <Text style={styles.contactValue}>support@cyrusguard.ai</Text>
+              <Text style={[styles.contactValue, styles.contactLink]}>support@cyrusguard.ai</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.contactCard}>
+          <TouchableOpacity
+            style={styles.contactCard}
+            onPress={() => Linking.openURL('https://www.cyrusguard.ai')}
+            activeOpacity={0.7}
+          >
             <View style={[styles.iconBg, { backgroundColor: Colors.infoMuted }]}>
               <Globe size={22} color={Colors.info} />
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>{language === 'fr' ? 'Site web' : 'Website'}</Text>
-              <Text style={styles.contactValue}>www.cyrusguard.ai</Text>
+              <Text style={[styles.contactValue, styles.contactLink]}>www.cyrusguard.ai</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.contactCard}>
             <View style={[styles.iconBg, { backgroundColor: 'rgba(168,85,247,0.15)' }]}>
@@ -115,6 +123,7 @@ const styles = StyleSheet.create({
   contactInfo: { flex: 1 },
   contactLabel: { fontSize: 12, fontWeight: '600' as const, color: Colors.textMuted, marginBottom: 2 },
   contactValue: { fontSize: 14, fontWeight: '500' as const, color: Colors.textPrimary },
+  contactLink: { color: Colors.accent, textDecorationLine: 'underline' as const },
   responseTime: {
     fontSize: 13, color: Colors.textMuted, textAlign: 'center' as const,
     marginTop: 20, fontStyle: 'italic' as const,

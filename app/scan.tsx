@@ -17,7 +17,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { analyzeImage, analyzeText, cancelActiveRequests, pingOpenAI, type ContentType } from '@/services/openai';
+import { analyzeImage, analyzeText, cancelActiveRequests, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
   type: ContentType;
@@ -63,11 +63,7 @@ export default function ScanScreen() {
   useEffect(() => {
     isMountedRef.current = true;
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    pingOpenAI().then(r => {
-      console.log('[Scan] OpenAI ping result:', JSON.stringify(r));
-    }).catch(e => {
-      console.error('[Scan] OpenAI ping failed:', e);
-    });
+
     return () => {
       isMountedRef.current = false;
       cancelActiveRequests();
@@ -505,7 +501,7 @@ export default function ScanScreen() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
       </SafeAreaView>
     </View>
   );

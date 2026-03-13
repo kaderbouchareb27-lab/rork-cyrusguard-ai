@@ -49,13 +49,14 @@ export default function ChatScreen() {
       timestamp: new Date().toISOString(),
     };
     addChatMessage(userMsg);
-    consumeCredit();
     setInput('');
     setIsLoading(true);
 
     try {
       const history = chatMessages.map(m => ({ role: m.role, content: m.content }));
       const aiResponse = await sendChatMessage(messageText, history, language, country);
+
+      consumeCredit();
 
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -195,7 +196,7 @@ export default function ChatScreen() {
             </KeyboardAvoidingView>
           </>
         )}
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
       </SafeAreaView>
     </View>
   );

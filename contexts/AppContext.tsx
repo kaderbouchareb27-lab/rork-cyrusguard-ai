@@ -120,13 +120,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
     queryKey: ['app-settings'],
     queryFn: async () => {
       try {
-        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr] = await Promise.all([
+        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr, scansStr, chatStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.language),
           AsyncStorage.getItem(STORAGE_KEYS.country),
           AsyncStorage.getItem(STORAGE_KEYS.user),
           AsyncStorage.getItem(STORAGE_KEYS.creditsUsed),
           AsyncStorage.getItem(STORAGE_KEYS.aiDisclosure),
           AsyncStorage.getItem(STORAGE_KEYS.auth),
+          AsyncStorage.getItem(STORAGE_KEYS.scans),
+          AsyncStorage.getItem(STORAGE_KEYS.chatMessages),
         ]);
         let parsedUser = null;
         if (userStr) {
@@ -144,6 +146,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
             console.log('[AppContext] Failed to parse auth data:', e);
           }
         }
+        let parsedScans: ScanResult[] = [];
+        if (scansStr) {
+          try { parsedScans = JSON.parse(scansStr); } catch (e) { console.log('[AppContext] Failed to parse scans:', e); }
+        }
+        let parsedChat: ChatMessage[] = [];
+        if (chatStr) {
+          try { parsedChat = JSON.parse(chatStr); } catch (e) { console.log('[AppContext] Failed to parse chat:', e); }
+        }
         return {
           language: (langStr as Language) || 'fr',
           country: (countryStr as Country) || 'CA',
@@ -151,6 +161,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
           creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
           hasAcceptedAIDisclosure: disclosureStr === 'true',
           auth: parsedAuth,
+          scans: parsedScans,
+          chatMessages: parsedChat,
         };
       } catch (e) {
         console.log('[AppContext] Error loading settings:', e);
@@ -161,6 +173,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
           creditsUsed: 0,
           hasAcceptedAIDisclosure: false,
           auth: null,
+          scans: [] as ScanResult[],
+          chatMessages: [] as ChatMessage[],
         };
       }
     },
@@ -175,6 +189,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setHasAcceptedAIDisclosureState(settingsQuery.data.hasAcceptedAIDisclosure ?? false);
       if (settingsQuery.data.auth) {
         setAuth(settingsQuery.data.auth);
+      }
+      if (settingsQuery.data.scans && settingsQuery.data.scans.length > 0) {
+        setScans(settingsQuery.data.scans);
+      }
+      if (settingsQuery.data.chatMessages && settingsQuery.data.chatMessages.length > 0) {
+        setChatMessages(settingsQuery.data.chatMessages);
       }
     }
   }, [settingsQuery.data]);
@@ -361,22 +381,27 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [country]);
 
   const addScan = useCallback((scan: ScanResult) => {
-    setScans(prev => [scan, ...prev]);
-    if (!user.isPremium) {
-      setCreditsUsed(prev => {
-        const next = prev + 1;
-        void AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, String(next));
-        return next;
-      });
-    }
-  }, [user.isPremium]);
+    setScans(prev => {
+      const updated = [scan, ...prev];
+      void AsyncStorage.setItem(STORAGE_KEYS.scans, JSON.stringify(updated.slice(0, 50)));
+      return updated;
+    });
+  }, []);
+
+  const addChatMessageToStorage = useCallback((msgs: ChatMessage[]) => {
+    void AsyncStorage.setItem(STORAGE_KEYS.chatMessages, JSON.stringify(msgs.slice(-100)));
+  }, []);
 
   const addChatMessage = useCallback((msg: ChatMessage) => {
-    setChatMessages(prev => [...prev, msg]);
+    setChatMessages(prev => {
+      const updated = [...prev, msg];
+      addChatMessageToStorage(updated);
+      return updated;
+    });
     if (msg.role === 'user') {
       setDailyMessageCount(prev => prev + 1);
     }
-  }, []);
+  }, [addChatMessageToStorage]);
 
   const remainingCredits = useMemo(() => {
     if (user.isPremium) return Infinity;
