@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { sendScanChatMessage } from '@/services/openai';
+import { sendScanChatMessage, cancelActiveRequests } from '@/services/openai';
 
 export default function ScanChatScreen() {
   const router = useRouter();
@@ -21,6 +21,15 @@ export default function ScanChatScreen() {
   const pendingAfterDisclosureRef = useRef(false);
 
   const [isLoading, setIsLoading] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      cancelActiveRequests();
+    };
+  }, []);
 
   const scan = useMemo(() => scans.find(s => s.id === scanId), [scans, scanId]);
 
@@ -70,19 +79,21 @@ export default function ScanChatScreen() {
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (error) {
-      console.log('[ScanChat] OpenAI error:', error);
+    } catch (error: any) {
+      if (!isMountedRef.current) return;
+      console.log('[ScanChat] Error:', error?.message);
+      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: language === 'fr'
-          ? 'Désolé, une erreur est survenue. Veuillez réessayer.'
-          : 'Sorry, an error occurred. Please try again.',
+        content: isNetwork
+          ? (language === 'fr' ? 'Connexion perdue. Vérifiez votre Internet et réessayez.' : 'Connection lost. Check your Internet and try again.')
+          : (language === 'fr' ? 'Désolé, une erreur est survenue. Veuillez réessayer.' : 'Sorry, an error occurred. Please try again.'),
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) setIsLoading(false);
     }
   }, [input, isLoading, language, country, scan, messages]);
 

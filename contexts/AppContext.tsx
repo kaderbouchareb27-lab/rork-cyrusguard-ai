@@ -185,7 +185,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         console.log('[RC] Not configured, skipping logIn');
         return null;
       }
-      console.log('[RC] Logging in with UID:', uid);
+      console.log('[RC] Logging in with RevenueCat');
       const { customerInfo } = await Purchases.logIn(uid);
       return customerInfo;
     },
@@ -203,10 +203,11 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   useEffect(() => {
     if (auth.isAuthenticated && auth.uid && rcConfigured && !rcLoggedIn) {
-      console.log('[RC] Auto-login for authenticated user:', auth.uid);
+      console.log('[RC] Auto-login for authenticated user');
       rcLoginMutation.mutate(auth.uid);
     }
-  }, [auth.isAuthenticated, auth.uid, rcLoggedIn, rcLoginMutation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.isAuthenticated, auth.uid, rcLoggedIn]);
 
   const customerInfoQuery = useQuery({
     queryKey: ['rc-customer-info'],
@@ -214,7 +215,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       if (!rcConfigured) return null;
       try {
         const info = await Purchases.getCustomerInfo();
-        console.log('[RC] Customer info fetched:', JSON.stringify(info.entitlements.active));
+        console.log('[RC] Customer info fetched');
         return info;
       } catch (e) {
         console.log('[RC] Error fetching customer info:', e);
@@ -245,7 +246,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     if (!info) return;
     const isPremium = checkPremiumFromCustomerInfo(info);
     const plan = getPlanFromCustomerInfo(info);
-    console.log('[RC] Syncing premium status: isPremium=', isPremium, 'plan=', plan);
+    console.log('[RC] Syncing premium status');
     setUser(prev => {
       if (prev.isPremium === isPremium && prev.plan === plan) return prev;
       const updated = { ...prev, isPremium, plan };
@@ -419,7 +420,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     fullName: string | null;
     provider: 'apple' | 'guest';
   }) => {
-    console.log('[Auth] Logging in user:', params.uid, params.provider);
+    console.log('[Auth] Logging in user:', params.provider);
     const newAuth: AuthState = {
       isAuthenticated: true,
       uid: params.uid,

@@ -1,17 +1,16 @@
-import { Platform } from 'react-native';
+
 import type { Country } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 
-const _k = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
 const API_URL = 'https://api.openai.com/v1/chat/completions';
 
 function getApiKey(): string {
-  if (!_k) {
+  const k = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
+  if (!k) {
     console.log('[OpenAI] API key not configured');
     return '';
   }
-  const parts = _k.split('');
-  return parts.join('');
+  return k;
 }
 
 function validateApiKeyAccess(): boolean {
@@ -242,40 +241,82 @@ export interface UrlAnalysisResult {
   personalizedAdviceEn: string[];
 }
 
+let activeController: AbortController | null = null;
+
+function createAbortController(timeoutMs: number = 60000): AbortController {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const origAbort = controller.abort.bind(controller);
+  controller.abort = () => {
+    clearTimeout(timeout);
+    origAbort();
+  };
+  return controller;
+}
+
+export function cancelActiveRequests() {
+  if (activeController) {
+    activeController.abort();
+    activeController = null;
+  }
+}
+
 async function callOpenAI(messages: ChatMessage[], maxTokens: number = 1500): Promise<string> {
-  console.log('[OpenAI] Calling API with', messages.length, 'messages');
+  console.log('[OpenAI] Calling API');
 
   if (!validateApiKeyAccess()) {
     throw new Error('OpenAI API key is not properly configured');
   }
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getApiKey()}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-    }),
-  });
+  cancelActiveRequests();
+  const controller = createAbortController(60000);
+  activeController = controller;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.log('[OpenAI] API error:', response.status, errorText);
-    throw new Error(`OpenAI API error: ${response.status}`);
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getApiKey()}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages,
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const _errorText = await response.text().catch(() => 'Unknown error');
+      console.log('[OpenAI] API error:', response.status);
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+      }
+      if (response.status >= 500) {
+        throw new Error('OpenAI service is temporarily unavailable. Please try again later.');
+      }
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[OpenAI] Response received');
+    return data.choices[0]?.message?.content ?? '';
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw error;
+  } finally {
+    if (activeController === controller) {
+      activeController = null;
+    }
   }
-
-  const data = await response.json();
-  console.log('[OpenAI] Response received, tokens used:', data.usage?.total_tokens);
-  return data.choices[0]?.message?.content ?? '';
 }
 
 async function imageUriToBase64(uri: string): Promise<string> {
-  console.log('[OpenAI] Converting image URI to base64, platform:', Platform.OS);
+  console.log('[OpenAI] Converting image to base64');
   try {
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -284,7 +325,7 @@ async function imageUriToBase64(uri: string): Promise<string> {
       reader.onloadend = () => {
         const result = reader.result as string;
         const base64 = result.split(',')[1] ?? '';
-        console.log('[OpenAI] Base64 conversion complete, length:', base64.length);
+        console.log('[OpenAI] Base64 conversion complete');
         resolve(base64);
       };
       reader.onerror = (err) => {
@@ -300,9 +341,7 @@ async function imageUriToBase64(uri: string): Promise<string> {
 }
 
 export async function analyzeImage(imageUri: string, language: string, base64Data?: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
-  console.log('[OpenAI] Starting image analysis, language:', language);
-  console.log('[OpenAI] API key present:', validateApiKeyAccess());
-  console.log('[OpenAI] Base64 data provided directly:', !!base64Data);
+  console.log('[OpenAI] Starting image analysis');
 
   if (!validateApiKeyAccess()) {
     throw new Error('OpenAI API key is not configured');
@@ -320,7 +359,7 @@ export async function analyzeImage(imageUri: string, language: string, base64Dat
     throw new Error('Failed to read image data');
   }
 
-  console.log('[OpenAI] Base64 image size:', base64.length, 'chars');
+  console.log('[OpenAI] Image ready for analysis');
   const dataUrl = `data:image/jpeg;base64,${base64}`;
 
   const reportingOrgs = getReportingAdvice(country);
@@ -380,7 +419,7 @@ Explain WHY with concrete country-specific examples when relevant.`;
   ];
 
   const response = await callOpenAI(messages, 2000);
-  console.log('[OpenAI] Image analysis raw response:', response.substring(0, 200));
+  console.log('[OpenAI] Image analysis response received');
 
   try {
     const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -437,7 +476,7 @@ export interface TextAnalysisInput {
 }
 
 export async function analyzeText(input: TextAnalysisInput, language: string, country: Country = 'CA'): Promise<ScanAnalysisResult> {
-  console.log('[OpenAI] Starting text analysis, type:', input.contentType, 'language:', language);
+  console.log('[OpenAI] Starting text analysis, type:', input.contentType);
 
   if (!validateApiKeyAccess()) {
     throw new Error('OpenAI API key is not configured');
@@ -516,7 +555,7 @@ Explain WHY with concrete country-specific examples when relevant.`;
   ];
 
   const response = await callOpenAI(messages, 2000);
-  console.log('[OpenAI] Text analysis raw response:', response.substring(0, 200));
+  console.log('[OpenAI] Text analysis response received');
 
   try {
     const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -941,7 +980,7 @@ Provide 3-5 advice items. Both FR and EN versions.`;
   ];
 
   const response = await callOpenAI(messages, 3000);
-  console.log('[OpenAI] Deep URL analysis raw response:', response.substring(0, 300));
+  console.log('[OpenAI] URL analysis response received');
 
   try {
     const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -960,7 +999,7 @@ export async function sendChatMessage(
   language: string,
   country: Country = 'CA',
 ): Promise<string> {
-  console.log('[OpenAI] Sending chat message, history length:', conversationHistory.length);
+  console.log('[OpenAI] Sending chat message');
 
   const langInstruction = language === 'fr'
     ? 'L\'utilisateur parle français. Réponds en français.'
@@ -994,7 +1033,7 @@ export async function sendScanChatMessage(
   language: string,
   country: Country = 'CA',
 ): Promise<string> {
-  console.log('[OpenAI] Sending scan chat message, scan score:', scanContext.riskScore);
+  console.log('[OpenAI] Sending scan chat message');
 
   const langInstruction = language === 'fr'
     ? 'L\'utilisateur parle français. Réponds en français.'

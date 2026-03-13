@@ -13,7 +13,7 @@ import { useApp } from '@/contexts/AppContext';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
 import RiskCircle from '@/components/RiskCircle';
-import { analyzeUrl as analyzeUrlApi } from '@/services/openai';
+import { analyzeUrl as analyzeUrlApi, cancelActiveRequests } from '@/services/openai';
 import type { UrlAnalysisResult } from '@/services/openai';
 
 const ANALYSIS_STEPS_FR = [
@@ -46,8 +46,13 @@ export default function UrlAnalyzeScreen() {
 
   const steps = language === 'fr' ? ANALYSIS_STEPS_FR : ANALYSIS_STEPS_EN;
 
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
+      cancelActiveRequests();
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
     };
   }, []);
@@ -85,9 +90,9 @@ export default function UrlAnalyzeScreen() {
     Animated.timing(progressAnim, { toValue: 0.85, duration: 14000, useNativeDriver: false }).start();
 
     try {
-      consumeCredit();
       const apiResult = await analyzeUrlApi(url.trim(), language, country);
-      console.log('[URL] Deep analysis result:', apiResult.score);
+      consumeCredit();
+      console.log('[URL] Analysis complete, score:', apiResult.score);
 
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
 
@@ -96,16 +101,18 @@ export default function UrlAnalyzeScreen() {
         setIsAnalyzing(false);
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
       });
-    } catch (error) {
-      console.log('[URL] Analysis error:', error);
+    } catch (error: any) {
+      if (!isMountedRef.current) return;
+      console.log('[URL] Analysis error:', error?.message);
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
       setIsAnalyzing(false);
       progressAnim.setValue(0);
+      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
-        language === 'fr'
-          ? 'Impossible d\'analyser l\'URL. Veuillez réessayer.'
-          : 'Unable to analyze the URL. Please try again.'
+        isNetwork
+          ? (language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.')
+          : (language === 'fr' ? 'Impossible d\'analyser l\'URL. Veuillez réessayer.' : 'Unable to analyze the URL. Please try again.')
       );
     }
   };

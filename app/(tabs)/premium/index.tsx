@@ -21,23 +21,27 @@ export default function PremiumScreen() {
   const badgePulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const shineLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(shineAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
         Animated.timing(shineAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    shineLoop.start();
 
-    Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(badgePulse, { toValue: 1.06, duration: 1000, useNativeDriver: true }),
         Animated.timing(badgePulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ])
-    ).start();
-  }, [shineAnim, badgePulse]);
+    );
+    pulseLoop.start();
 
-  void shineAnim;
-  void badgePulse;
+    return () => {
+      shineLoop.stop();
+      pulseLoop.stop();
+    };
+  }, [shineAnim, badgePulse]);
 
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;

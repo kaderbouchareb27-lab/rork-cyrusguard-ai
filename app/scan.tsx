@@ -17,7 +17,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { analyzeImage, analyzeText, type ContentType } from '@/services/openai';
+import { analyzeImage, analyzeText, cancelActiveRequests, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
   type: ContentType;
@@ -57,9 +57,20 @@ export default function ScanScreen() {
   const scanAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    return () => {
+      isMountedRef.current = false;
+      cancelActiveRequests();
+      if (loopRef.current) {
+        loopRef.current.stop();
+        loopRef.current = null;
+      }
+    };
   }, [fadeAnim]);
 
   const getPlaceholder = useCallback((): string => {
@@ -115,21 +126,29 @@ export default function ScanScreen() {
   };
 
   const startLoadingAnimation = () => {
-    Animated.loop(
+    if (loopRef.current) loopRef.current.stop();
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(scanAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
         Animated.timing(scanAnim, { toValue: 0, duration: 1500, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    loopRef.current = loop;
+    loop.start();
     Animated.timing(progressAnim, { toValue: 0.9, duration: 15000, useNativeDriver: false }).start();
   };
 
   const stopLoadingAnimation = () => {
+    if (loopRef.current) {
+      loopRef.current.stop();
+      loopRef.current = null;
+    }
     scanAnim.stopAnimation();
     progressAnim.setValue(0);
   };
 
   const handleAnalysisResult = (analysis: any, imageUri?: string) => {
+    if (!isMountedRef.current) return;
     const newScan: ScanResult = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
@@ -159,14 +178,19 @@ export default function ScanScreen() {
     startLoadingAnimation();
     try {
       const analysis = await analyzeImage(imageUri, language, base64, country);
+      if (!isMountedRef.current) return;
       handleAnalysisResult(analysis, imageUri);
-    } catch (error) {
-      console.log('[Scan] Image analysis error:', error);
+    } catch (error: any) {
+      if (!isMountedRef.current) return;
+      console.log('[Scan] Image analysis error:', error?.message);
       setIsAnalyzing(false);
       stopLoadingAnimation();
+      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
-        language === 'fr' ? 'Impossible d\'analyser l\'image. Veuillez réessayer.' : 'Unable to analyze the image. Please try again.'
+        isNetwork
+          ? (language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.')
+          : (language === 'fr' ? 'Impossible d\'analyser l\'image. Veuillez réessayer.' : 'Unable to analyze the image. Please try again.')
       );
     }
   };
@@ -182,14 +206,19 @@ export default function ScanScreen() {
         phoneNumber: selectedType === 'phone' ? phoneNumber.trim() || undefined : undefined,
         platform: selectedType === 'social' ? selectedPlatform : undefined,
       }, language, country);
+      if (!isMountedRef.current) return;
       handleAnalysisResult(analysis);
-    } catch (error) {
-      console.log('[Scan] Text analysis error:', error);
+    } catch (error: any) {
+      if (!isMountedRef.current) return;
+      console.log('[Scan] Text analysis error:', error?.message);
       setIsAnalyzing(false);
       stopLoadingAnimation();
+      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
-        language === 'fr' ? 'Impossible d\'analyser le contenu. Veuillez réessayer.' : 'Unable to analyze content. Please try again.'
+        isNetwork
+          ? (language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.')
+          : (language === 'fr' ? 'Impossible d\'analyser le contenu. Veuillez réessayer.' : 'Unable to analyze content. Please try again.')
       );
     }
   };

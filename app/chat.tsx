@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { sendChatMessage } from '@/services/openai';
+import { sendChatMessage, cancelActiveRequests } from '@/services/openai';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -28,6 +28,15 @@ export default function ChatScreen() {
 
   const [isLoading, setIsLoading] = useState(false);
   const pendingAfterDisclosureRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      cancelActiveRequests();
+    };
+  }, []);
 
   const doSendMessage = useCallback(async () => {
     if (!input.trim() || !canSendMessage || isLoading) return;
@@ -55,19 +64,21 @@ export default function ChatScreen() {
         timestamp: new Date().toISOString(),
       };
       addChatMessage(aiMsg);
-    } catch (error) {
-      console.log('[Chat] OpenAI error:', error);
+    } catch (error: any) {
+      if (!isMountedRef.current) return;
+      console.log('[Chat] Error:', error?.message);
+      const isNetwork = error?.name === 'AbortError' || error?.message?.includes('timeout') || error?.message?.includes('Network');
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: language === 'fr'
-          ? 'Désolé, une erreur est survenue. Veuillez réessayer.'
-          : 'Sorry, an error occurred. Please try again.',
+        content: isNetwork
+          ? (language === 'fr' ? 'Connexion perdue. Vérifiez votre Internet et réessayez.' : 'Connection lost. Check your Internet and try again.')
+          : (language === 'fr' ? 'Désolé, une erreur est survenue. Veuillez réessayer.' : 'Sorry, an error occurred. Please try again.'),
         timestamp: new Date().toISOString(),
       };
       addChatMessage(errorMsg);
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) setIsLoading(false);
     }
   }, [input, canSendMessage, isLoading, addChatMessage, language, country, chatMessages, consumeCredit]);
 
