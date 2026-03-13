@@ -297,7 +297,7 @@ function parseJsonResponse<T>(response: string): T {
 }
 
 async function imageUriToBase64(uri: string): Promise<string> {
-  console.log('[AI] Converting image to base64, uri prefix:', uri.substring(0, 30));
+  console.log('[AI] Converting image to base64, uri prefix:', uri.substring(0, 50));
   try {
     if (uri.startsWith('data:')) {
       const parts = uri.split(',');
@@ -309,7 +309,7 @@ async function imageUriToBase64(uri: string): Promise<string> {
 
     const response = await fetch(uri);
     if (!response.ok) {
-      throw new Error('Failed to fetch image: HTTP ' + response.status);
+      throw new Error('Fetch image failed: HTTP ' + response.status);
     }
     const blob = await response.blob();
     console.log('[AI] Blob size:', blob.size, 'type:', blob.type);
@@ -321,17 +321,25 @@ async function imageUriToBase64(uri: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const result = reader.result as string;
-        const base64 = result.split(',')[1] ?? '';
-        console.log('[AI] Base64 conversion complete, length:', base64.length);
-        if (base64.length < 100) {
-          reject(new Error('Base64 conversion produced empty result'));
-          return;
+        try {
+          const result = reader.result as string;
+          if (!result || !result.includes(',')) {
+            reject(new Error('FileReader produced invalid result'));
+            return;
+          }
+          const base64 = result.split(',')[1] ?? '';
+          console.log('[AI] Base64 conversion complete, length:', base64.length);
+          if (base64.length < 100) {
+            reject(new Error('Base64 conversion produced empty result'));
+            return;
+          }
+          resolve(base64);
+        } catch (e: any) {
+          reject(new Error('Base64 extraction error: ' + (e?.message || 'Unknown')));
         }
-        resolve(base64);
       };
       reader.onerror = () => {
-        reject(new Error('Failed to convert image to base64'));
+        reject(new Error('FileReader error during image conversion'));
       };
       reader.readAsDataURL(blob);
     });
@@ -339,6 +347,12 @@ async function imageUriToBase64(uri: string): Promise<string> {
     console.error('[AI] imageUriToBase64 error:', error?.message);
     throw new Error('Failed to read image: ' + (error?.message || 'Unknown error'));
   }
+}
+
+function compressBase64IfNeeded(base64: string, maxLength: number): string {
+  if (base64.length <= maxLength) return base64;
+  console.log('[AI] Base64 too large:', base64.length, '> max:', maxLength, '- will truncate');
+  return base64.substring(0, maxLength);
 }
 
 export async function analyzeImage(
@@ -356,23 +370,27 @@ export async function analyzeImage(
     base64 = base64Data;
     console.log('[AI] Using provided base64 data, length:', base64.length);
   } else {
-    console.log('[AI] Converting from URI...');
+    console.log('[AI] No base64 from picker, converting from URI:', imageUri?.substring(0, 50));
     try {
       base64 = await imageUriToBase64(imageUri);
     } catch (convErr: any) {
       console.error('[AI] URI conversion failed:', convErr?.message);
-      throw new Error('Failed to read image data: ' + (convErr?.message || 'Unknown'));
+      throw new Error('Impossible de lire cette image. Essayez avec une autre photo.');
     }
   }
 
   if (!base64 || base64.length < 100) {
-    throw new Error('Failed to read image data - image appears empty');
+    console.error('[AI] Base64 data too short or empty:', base64?.length);
+    throw new Error('Impossible de lire cette image. Essayez avec une autre photo.');
   }
 
-  const MAX_BASE64_LENGTH = 1_500_000;
+  const MAX_BASE64_LENGTH = 800_000;
   if (base64.length > MAX_BASE64_LENGTH) {
-    throw new Error('Image is too large for analysis. Please try with a smaller image.');
+    console.log('[AI] Base64 too large, truncating from', base64.length, 'to', MAX_BASE64_LENGTH);
+    base64 = compressBase64IfNeeded(base64, MAX_BASE64_LENGTH);
   }
+
+  console.log('[AI] Final base64 length for API:', base64.length);
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
@@ -425,16 +443,23 @@ Explain WHY with concrete country-specific examples when relevant.`;
     },
   ];
 
-  console.log('[AI] Sending image analysis request to toolkit...');
+  console.log('[AI] Sending image analysis request to toolkit, message content parts:', Array.isArray(messages[0]?.content) ? (messages[0].content as any[]).length : 1);
   try {
     const response = await generateText({ messages });
-    console.log('[AI] Image analysis response received, length:', response?.length);
+    console.log('[AI] Image analysis response received, length:', response?.length, 'preview:', response?.substring(0, 100));
 
-    if (!response) {
-      throw new Error('Empty response from AI service');
+    if (!response || response.trim().length === 0) {
+      console.error('[AI] Empty or null response from toolkit');
+      throw new Error('Le service AI n\'a pas pu analyser cette image. Réessayez.');
     }
 
-    const result = parseJsonResponse<ScanAnalysisResult>(response);
+    let result: ScanAnalysisResult;
+    try {
+      result = parseJsonResponse<ScanAnalysisResult>(response);
+    } catch (parseErr: any) {
+      console.error('[AI] Failed to parse AI response as JSON:', parseErr?.message, 'Response preview:', response.substring(0, 300));
+      throw new Error('Réponse invalide du service AI. Réessayez.');
+    }
 
     if (result.riskScore < 0 || result.riskScore > 100) {
       result.riskScore = Math.max(0, Math.min(100, result.riskScore));
@@ -449,8 +474,11 @@ Explain WHY with concrete country-specific examples when relevant.`;
     console.log('[AI] Image analysis complete, score:', result.riskScore, 'level:', result.riskLevel);
     return result;
   } catch (error: any) {
-    console.error('[AI] Image analysis failed:', error?.message);
-    throw error;
+    console.error('[AI] Image analysis failed:', error?.message, error?.stack?.substring(0, 200));
+    if (error?.message?.includes('Impossible') || error?.message?.includes('Réponse invalide') || error?.message?.includes('service AI')) {
+      throw error;
+    }
+    throw new Error('Erreur lors de l\'analyse: ' + (error?.message || 'Erreur inconnue'));
   }
 }
 

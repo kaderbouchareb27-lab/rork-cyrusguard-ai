@@ -112,7 +112,7 @@ export default function ScanScreen() {
       let result: ImagePicker.ImagePickerResult;
       const pickerOptions: ImagePicker.ImagePickerOptions = {
         mediaTypes: ['images'],
-        quality: 0.3,
+        quality: 0.2,
         base64: true,
         exif: false,
         allowsEditing: false,
@@ -133,8 +133,12 @@ export default function ScanScreen() {
         const asset = result.assets[0];
         console.log('[Scan] Image selected, uri:', asset.uri?.substring(0, 80), 'base64 length:', asset.base64?.length ?? 0, 'mimeType:', asset.mimeType, 'width:', asset.width, 'height:', asset.height);
 
-        if (!asset.base64 || asset.base64.length < 100) {
-          console.log('[Scan] Base64 not available from picker, will convert from URI');
+        if (!asset.uri && !asset.base64) {
+          Alert.alert(
+            language === 'fr' ? 'Erreur' : 'Error',
+            language === 'fr' ? 'Impossible de charger l\'image. Veuillez réessayer.' : 'Unable to load image. Please try again.'
+          );
+          return;
         }
 
         void startImageAnalysis(asset.uri, asset.base64 ?? undefined, asset.mimeType ?? undefined);
@@ -209,30 +213,23 @@ export default function ScanScreen() {
       setIsAnalyzing(false);
       stopLoadingAnimation();
       const msg = error?.message ?? '';
-      const isNetwork = error?.name === 'AbortError' || msg.includes('timeout') || msg.includes('Network');
+      const isNetwork = error?.name === 'AbortError' || msg.includes('timeout') || msg.includes('Network') || msg.includes('network');
       const isQuota = msg.includes('quota') || msg.includes('billing');
-      const isRateLimit = msg.includes('429');
+      const isRateLimit = msg.includes('429') || msg.includes('rate limit');
       const isServerError = msg.includes('500') || msg.includes('server error') || msg.includes('unavailable');
-      const isApiKey = msg.includes('401') || msg.includes('API key') || msg.includes('not configured');
-      const isForbidden = msg.includes('403');
-      const isImageError = msg.includes('Failed to read image') || msg.includes('too large') || msg.includes('empty') || msg.includes('413');
       let alertMsg: string;
       if (isNetwork) {
         alertMsg = language === 'fr' ? 'Vérifiez votre connexion Internet et réessayez.' : 'Check your Internet connection and try again.';
       } else if (isQuota) {
-        alertMsg = language === 'fr' ? 'Quota OpenAI épuisé. Ajoutez des crédits sur platform.openai.com.' : 'OpenAI quota exceeded. Add credits at platform.openai.com.';
+        alertMsg = language === 'fr' ? 'Service temporairement indisponible. Réessayez plus tard.' : 'Service temporarily unavailable. Try again later.';
       } else if (isRateLimit) {
         alertMsg = language === 'fr' ? 'Service surchargé. Veuillez patienter un moment et réessayer.' : 'Service overloaded. Please wait a moment and try again.';
-      } else if (isApiKey) {
-        alertMsg = language === 'fr' ? 'Clé API invalide ou expirée. Contactez le support.' : 'API key invalid or expired. Contact support.';
-      } else if (isForbidden) {
-        alertMsg = language === 'fr' ? 'Accès refusé à l\'API. Contactez le support.' : 'API access forbidden. Contact support.';
       } else if (isServerError) {
-        alertMsg = language === 'fr' ? 'Service OpenAI temporairement indisponible. Réessayez dans quelques instants.' : 'OpenAI service temporarily unavailable. Try again shortly.';
-      } else if (isImageError) {
-        alertMsg = language === 'fr' ? 'Impossible de lire l\'image. Essayez avec une autre image ou prenez une nouvelle photo.' : 'Unable to read the image. Try another image or take a new photo.';
+        alertMsg = language === 'fr' ? 'Service temporairement indisponible. Réessayez dans quelques instants.' : 'Service temporarily unavailable. Try again shortly.';
+      } else if (msg.includes('Impossible') || msg.includes('Réponse invalide') || msg.includes('service AI') || msg.includes('Erreur lors')) {
+        alertMsg = msg;
       } else {
-        alertMsg = language === 'fr' ? 'Erreur : ' + msg : 'Error: ' + msg;
+        alertMsg = language === 'fr' ? 'Une erreur est survenue. Réessayez avec une autre image.' : 'An error occurred. Try again with another image.';
       }
       Alert.alert(
         language === 'fr' ? 'Erreur d\'analyse' : 'Analysis Error',
