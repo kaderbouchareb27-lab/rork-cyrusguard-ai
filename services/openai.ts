@@ -296,14 +296,13 @@ function parseJsonResponse<T>(response: string): T {
   return JSON.parse(jsonMatch[0]) as T;
 }
 
-async function imageUriToBase64(uri: string): Promise<string> {
-  console.log('[AI] Converting image to base64, uri prefix:', uri.substring(0, 50));
+async function imageUriToDataUrl(uri: string): Promise<string> {
+  console.log('[AI] Converting image to data URL, uri prefix:', uri.substring(0, 50));
   try {
     if (uri.startsWith('data:')) {
-      const parts = uri.split(',');
-      if (parts[1] && parts[1].length > 100) {
-        console.log('[AI] URI is already a data URL, extracting base64');
-        return parts[1];
+      if (uri.length > 200) {
+        console.log('[AI] URI is already a data URL, length:', uri.length);
+        return uri;
       }
     }
 
@@ -312,7 +311,8 @@ async function imageUriToBase64(uri: string): Promise<string> {
       throw new Error('Fetch image failed: HTTP ' + response.status);
     }
     const blob = await response.blob();
-    console.log('[AI] Blob size:', blob.size, 'type:', blob.type);
+    const mimeType = blob.type || 'image/jpeg';
+    console.log('[AI] Blob size:', blob.size, 'type:', mimeType);
 
     if (blob.size === 0) {
       throw new Error('Image blob is empty');
@@ -327,15 +327,14 @@ async function imageUriToBase64(uri: string): Promise<string> {
             reject(new Error('FileReader produced invalid result'));
             return;
           }
-          const base64 = result.split(',')[1] ?? '';
-          console.log('[AI] Base64 conversion complete, length:', base64.length);
-          if (base64.length < 100) {
-            reject(new Error('Base64 conversion produced empty result'));
+          console.log('[AI] Data URL conversion complete, length:', result.length);
+          if (result.length < 200) {
+            reject(new Error('Data URL conversion produced empty result'));
             return;
           }
-          resolve(base64);
+          resolve(result);
         } catch (e: any) {
-          reject(new Error('Base64 extraction error: ' + (e?.message || 'Unknown')));
+          reject(new Error('Data URL extraction error: ' + (e?.message || 'Unknown')));
         }
       };
       reader.onerror = () => {
@@ -344,15 +343,15 @@ async function imageUriToBase64(uri: string): Promise<string> {
       reader.readAsDataURL(blob);
     });
   } catch (error: any) {
-    console.error('[AI] imageUriToBase64 error:', error?.message);
+    console.error('[AI] imageUriToDataUrl error:', error?.message);
     throw new Error('Failed to read image: ' + (error?.message || 'Unknown error'));
   }
 }
 
-function compressBase64IfNeeded(base64: string, maxLength: number): string {
-  if (base64.length <= maxLength) return base64;
-  console.log('[AI] Base64 too large:', base64.length, '> max:', maxLength, '- will truncate');
-  return base64.substring(0, maxLength);
+function buildDataUrl(base64: string, mimeType?: string): string {
+  if (base64.startsWith('data:')) return base64;
+  const mime = mimeType || 'image/jpeg';
+  return `data:${mime};base64,${base64}`;
 }
 
 export async function analyzeImage(
@@ -360,37 +359,40 @@ export async function analyzeImage(
   language: string,
   base64Data?: string,
   country: Country = 'CA',
-  _mimeType?: string,
+  mimeType?: string,
 ): Promise<ScanAnalysisResult> {
   console.log('[AI] Starting image analysis via Rork Toolkit');
-  console.log('[AI] hasBase64:', !!base64Data, 'base64Len:', base64Data?.length ?? 0);
+  console.log('[AI] hasBase64:', !!base64Data, 'base64Len:', base64Data?.length ?? 0, 'mimeType:', mimeType);
 
-  let base64: string;
+  let dataUrl: string;
+
   if (base64Data && base64Data.length > 100) {
-    base64 = base64Data;
-    console.log('[AI] Using provided base64 data, length:', base64.length);
-  } else {
-    console.log('[AI] No base64 from picker, converting from URI:', imageUri?.substring(0, 50));
+    dataUrl = buildDataUrl(base64Data, mimeType);
+    console.log('[AI] Built data URL from provided base64, length:', dataUrl.length);
+  } else if (imageUri) {
+    console.log('[AI] No base64 from picker, converting from URI:', imageUri?.substring(0, 80));
     try {
-      base64 = await imageUriToBase64(imageUri);
+      dataUrl = await imageUriToDataUrl(imageUri);
     } catch (convErr: any) {
       console.error('[AI] URI conversion failed:', convErr?.message);
-      throw new Error('Impossible de lire cette image. Essayez avec une autre photo.');
+      throw new Error(language === 'fr'
+        ? 'Impossible de lire cette image. Essayez avec une autre photo.'
+        : 'Unable to read this image. Please try with another photo.');
     }
+  } else {
+    throw new Error(language === 'fr'
+      ? 'Aucune image fournie. Veuillez sélectionner une image.'
+      : 'No image provided. Please select an image.');
   }
 
-  if (!base64 || base64.length < 100) {
-    console.error('[AI] Base64 data too short or empty:', base64?.length);
-    throw new Error('Impossible de lire cette image. Essayez avec une autre photo.');
+  if (!dataUrl || dataUrl.length < 200) {
+    console.error('[AI] Data URL too short or empty:', dataUrl?.length);
+    throw new Error(language === 'fr'
+      ? 'Impossible de lire cette image. Essayez avec une autre photo.'
+      : 'Unable to read this image. Please try with another photo.');
   }
 
-  const MAX_BASE64_LENGTH = 800_000;
-  if (base64.length > MAX_BASE64_LENGTH) {
-    console.log('[AI] Base64 too large, truncating from', base64.length, 'to', MAX_BASE64_LENGTH);
-    base64 = compressBase64IfNeeded(base64, MAX_BASE64_LENGTH);
-  }
-
-  console.log('[AI] Final base64 length for API:', base64.length);
+  console.log('[AI] Final data URL length for API:', dataUrl.length, 'prefix:', dataUrl.substring(0, 40));
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
@@ -426,11 +428,11 @@ Urgency + unknown sender + suspicious link = HIGH risk always.
 Always include country-specific reporting organizations in advice:
 ${reportingOrgs}
 
-Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected
+Give a clear verdict: Safe / Suspicious / Scam detected
 Explain WHY with concrete country-specific examples when relevant.`;
 
   const userText = language === 'fr'
-    ? 'Analyse cette image pour détecter des signes de fraude ou d\'arnaque. Retourne uniquement le JSON.'
+    ? 'Analyse cette image pour detecter des signes de fraude ou d\'arnaque. Retourne uniquement le JSON.'
     : 'Analyze this image to detect signs of fraud or scam. Return only the JSON.';
 
   const messages: ToolkitMessage[] = [
@@ -438,19 +440,21 @@ Explain WHY with concrete country-specific examples when relevant.`;
       role: 'user',
       content: [
         { type: 'text', text: systemPrompt + '\n\n' + userText },
-        { type: 'image', image: base64 },
+        { type: 'image', image: dataUrl },
       ],
     },
   ];
 
-  console.log('[AI] Sending image analysis request to toolkit, message content parts:', Array.isArray(messages[0]?.content) ? (messages[0].content as any[]).length : 1);
+  console.log('[AI] Sending image analysis request to toolkit, data URL length:', dataUrl.length);
   try {
     const response = await generateText({ messages });
-    console.log('[AI] Image analysis response received, length:', response?.length, 'preview:', response?.substring(0, 100));
+    console.log('[AI] Image analysis response received, length:', response?.length, 'preview:', response?.substring(0, 150));
 
     if (!response || response.trim().length === 0) {
       console.error('[AI] Empty or null response from toolkit');
-      throw new Error('Le service AI n\'a pas pu analyser cette image. Réessayez.');
+      throw new Error(language === 'fr'
+        ? 'Le service AI n\'a pas pu analyser cette image. Reessayez.'
+        : 'AI service could not analyze this image. Please try again.');
     }
 
     let result: ScanAnalysisResult;
@@ -458,7 +462,9 @@ Explain WHY with concrete country-specific examples when relevant.`;
       result = parseJsonResponse<ScanAnalysisResult>(response);
     } catch (parseErr: any) {
       console.error('[AI] Failed to parse AI response as JSON:', parseErr?.message, 'Response preview:', response.substring(0, 300));
-      throw new Error('Réponse invalide du service AI. Réessayez.');
+      throw new Error(language === 'fr'
+        ? 'Reponse invalide du service AI. Reessayez.'
+        : 'Invalid response from AI service. Please try again.');
     }
 
     if (result.riskScore < 0 || result.riskScore > 100) {
@@ -474,11 +480,29 @@ Explain WHY with concrete country-specific examples when relevant.`;
     console.log('[AI] Image analysis complete, score:', result.riskScore, 'level:', result.riskLevel);
     return result;
   } catch (error: any) {
-    console.error('[AI] Image analysis failed:', error?.message, error?.stack?.substring(0, 200));
-    if (error?.message?.includes('Impossible') || error?.message?.includes('Réponse invalide') || error?.message?.includes('service AI')) {
+    console.error('[AI] Image analysis failed:', error?.message, error?.stack?.substring(0, 300));
+
+    const msg = error?.message ?? '';
+    if (msg.includes('Impossible') || msg.includes('Unable to read') || msg.includes('Reponse invalide') || msg.includes('Invalid response') || msg.includes('service AI') || msg.includes('Aucune image') || msg.includes('No image')) {
       throw error;
     }
-    throw new Error('Erreur lors de l\'analyse: ' + (error?.message || 'Erreur inconnue'));
+
+    if (msg.includes('pattern') || msg.includes('Pattern') || msg.includes('did not match')) {
+      console.error('[AI] Pattern match error - likely base64/data URL format issue');
+      throw new Error(language === 'fr'
+        ? 'Format d\'image non supporte. Essayez avec une capture d\'ecran au format JPG ou PNG.'
+        : 'Unsupported image format. Try with a JPG or PNG screenshot.');
+    }
+
+    if (msg.includes('413') || msg.includes('too large') || msg.includes('payload')) {
+      throw new Error(language === 'fr'
+        ? 'Image trop volumineuse. Essayez avec une image plus petite.'
+        : 'Image too large. Try with a smaller image.');
+    }
+
+    throw new Error(language === 'fr'
+      ? 'Erreur lors de l\'analyse: ' + (msg || 'Erreur inconnue')
+      : 'Analysis error: ' + (msg || 'Unknown error'));
   }
 }
 
