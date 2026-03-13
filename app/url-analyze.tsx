@@ -130,7 +130,7 @@ export default function UrlAnalyzeScreen() {
       } else if (isServerError) {
         alertMsg = language === 'fr' ? 'Service d\'analyse temporairement indisponible. Réessayez dans quelques instants.' : 'Analysis service temporarily unavailable. Try again shortly.';
       } else {
-        alertMsg = language === 'fr' ? 'Erreur : ' + msg : 'Error: ' + msg;
+        alertMsg = language === 'fr' ? 'Erreur lors de l\'analyse. Veuillez réessayer.' : 'Error during analysis. Please try again.';
       }
 
       Alert.alert(
