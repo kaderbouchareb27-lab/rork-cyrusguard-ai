@@ -286,6 +286,17 @@ const fr: Translations = {
   createAccountCTA: 'Créer un compte',
   accountConnected: 'Compte connecté',
   notConnected: 'Non connecté',
+  twoMonthsFree: '2 mois offerts',
+  mostPopular: 'Le plus populaire',
+  bestValue: 'Meilleur rapport qualité-prix',
+  monthlyPlan: 'Mensuel',
+  annualPlan: 'Annuel',
+  selectPlan: 'Choisir ce plan',
+  perMonthBilled: '/mois',
+  perYearBilled: '/an',
+  annualSavingsNote: 'Économisez avec le forfait annuel',
+  subscriptionLegalApple: 'Le paiement sera débité sur votre compte Apple ID lors de la confirmation de l\'achat. L\'abonnement se renouvelle automatiquement sauf annulation au moins 24 heures avant la fin de la période en cours. Votre compte sera débité pour le renouvellement dans les 24 heures précédant la fin de la période en cours. Vous pouvez gérer et annuler vos abonnements dans les réglages de votre compte Apple (Réglages > Apple ID > Abonnements).',
+  orPayMonthly: 'Ou payez mensuellement',
 };
 
 
@@ -571,6 +582,17 @@ const en: Translations = {
   createAccountCTA: 'Create an account',
   accountConnected: 'Account connected',
   notConnected: 'Not connected',
+  twoMonthsFree: '2 months free',
+  mostPopular: 'Most popular',
+  bestValue: 'Best value',
+  monthlyPlan: 'Monthly',
+  annualPlan: 'Annual',
+  selectPlan: 'Select this plan',
+  perMonthBilled: '/mo',
+  perYearBilled: '/yr',
+  annualSavingsNote: 'Save with the annual plan',
+  subscriptionLegalApple: 'Payment will be charged to your Apple ID account at confirmation of purchase. Subscription automatically renews unless it is cancelled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions in your Apple account settings (Settings > Apple ID > Subscriptions).',
+  orPayMonthly: 'Or pay monthly',
 };
 
 

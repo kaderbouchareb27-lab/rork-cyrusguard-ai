@@ -282,7 +282,7 @@ export default function ManageSubscriptionScreen() {
 
         <View style={styles.legalFooter}>
           <Text style={styles.legalDisclaimerText}>
-            {t('subscriptionDisclaimer')}
+            {t('subscriptionLegalApple')}
           </Text>
           <View style={styles.legalLinksRow}>
             <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7}>

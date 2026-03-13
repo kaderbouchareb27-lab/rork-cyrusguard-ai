@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Check, X, Star, Users, Target, ChevronDown, ChevronUp, Zap, RotateCcw } from 'lucide-react-native';
+import { Crown, Check, Users, Target, ChevronDown, ChevronUp, Zap, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -11,13 +11,14 @@ import { countryConfigs } from '@/constants/countries';
 export default function PremiumScreen() {
   const router = useRouter();
   const {
-    t, currency, country, upgradeToPremium, user, remainingCredits,
+    t, country, upgradeToPremium, user, remainingCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
     auth,
   } = useApp();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const shineAnim = useRef(new Animated.Value(0)).current;
+  const badgePulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.loop(
@@ -26,16 +27,29 @@ export default function PremiumScreen() {
         Animated.timing(shineAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
       ])
     ).start();
-  }, [shineAnim]);
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(badgePulse, { toValue: 1.06, duration: 1000, useNativeDriver: true }),
+        Animated.timing(badgePulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [shineAnim, badgePulse]);
+
+  void shineAnim;
+  void badgePulse;
 
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
 
   const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly');
   const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual');
+
   const monthlyPrice = monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`;
   const annualPrice = annualPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.annual}`;
-  const displayPrice = billingCycle === 'monthly' ? monthlyPrice : annualPrice;
+  const monthlyEquivalent = annualPkg?.product?.price
+    ? `${currencySymbol}${(annualPkg.product.price / 12).toFixed(2)}`
+    : `${currencySymbol}${config.pricing.monthlyEquivalent}`;
 
   const faqs = [
     { q: t('faq1Q'), a: t('faq1A') },
@@ -43,7 +57,6 @@ export default function PremiumScreen() {
     { q: t('faq3Q'), a: t('faq3A') },
   ];
 
-  const freeFeatures = [t('freeFeature1'), t('freeFeature2'), t('freeFeature3')];
   const premiumFeatures = [
     t('premiumFeature1'), t('premiumFeature2'), t('premiumFeature3'),
     t('premiumFeature4'), t('premiumFeature5'), t('premiumFeature6'),
@@ -58,6 +71,10 @@ export default function PremiumScreen() {
   ];
 
   const creditsLeft = remainingCredits === Infinity ? 3 : remainingCredits;
+
+  const handleSubscribe = () => {
+    void upgradeToPremium(selectedPlan);
+  };
 
   return (
     <View style={styles.root}>
@@ -80,119 +97,151 @@ export default function PremiumScreen() {
             ))}
           </View>
 
-          <View style={styles.toggleRow}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, billingCycle === 'monthly' && styles.toggleActive]}
-              onPress={() => setBillingCycle('monthly')}
-            >
-              <Text style={[styles.toggleText, billingCycle === 'monthly' && styles.toggleTextActive]}>
-                {t('monthly')}
+          {!user.isPremium && (
+            <View style={styles.creditCounter}>
+              <Shield size={16} color={creditsLeft > 0 ? Colors.accent : Colors.danger} />
+              <Text style={styles.creditCounterText}>
+                {creditsLeft}/3 {t('creditsRemaining')}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, billingCycle === 'annual' && styles.toggleActive]}
-              onPress={() => setBillingCycle('annual')}
-            >
-              <Text style={[styles.toggleText, billingCycle === 'annual' && styles.toggleTextActive]}>
-                {t('annual')}
-              </Text>
-              <View style={styles.saveBadge}>
-                <Text style={styles.saveText}>{t('save42')}</Text>
+              <View style={styles.creditDots}>
+                {[0, 1, 2].map(i => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.creditDot,
+                      i < creditsLeft ? styles.creditDotActive : styles.creditDotUsed,
+                    ]}
+                  />
+                ))}
               </View>
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
 
-          <View style={styles.plansRow}>
-            <View style={styles.planCard}>
-              <Text style={styles.planName}>{t('freePlan')}</Text>
-              <Text style={styles.planPrice}>{currencySymbol}0</Text>
-              {!user.isPremium && (
-                <View style={styles.creditCounter}>
-                  <Text style={styles.creditCounterText}>
-                    {creditsLeft}/3 {t('creditsRemaining')}
-                  </Text>
-                  <View style={styles.creditDots}>
-                    {[0, 1, 2].map(i => (
-                      <View
-                        key={i}
-                        style={[
-                          styles.creditDot,
-                          i < creditsLeft ? styles.creditDotActive : styles.creditDotUsed,
-                        ]}
-                      />
-                    ))}
+          <Animated.View style={{ transform: [{ scale: badgePulse }] }}>
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                selectedPlan === 'annual' && styles.planCardSelected,
+              ]}
+              onPress={() => setSelectedPlan('annual')}
+              activeOpacity={0.8}
+              testID="plan-annual"
+            >
+              <View style={styles.planBadgeRow}>
+                <View style={styles.bestValueBadge}>
+                  <Sparkles size={12} color="#FFFFFF" />
+                  <Text style={styles.bestValueText}>{t('bestValue')}</Text>
+                </View>
+                <View style={styles.twoMonthsBadge}>
+                  <Text style={styles.twoMonthsText}>{t('twoMonthsFree')}</Text>
+                </View>
+              </View>
+
+              <View style={styles.planContent}>
+                <View style={styles.planRadio}>
+                  <View style={[styles.radioOuter, selectedPlan === 'annual' && styles.radioOuterActive]}>
+                    {selectedPlan === 'annual' && <View style={styles.radioInner} />}
                   </View>
                 </View>
-              )}
-              {freeFeatures.map((f, i) => (
-                <View key={i} style={styles.featureRow}>
-                  <Check size={14} color={Colors.accent} />
-                  <Text style={styles.featureText}>{f}</Text>
+                <View style={styles.planInfo}>
+                  <Text style={styles.planName}>{t('annualPlan')}</Text>
+                  <Text style={styles.planEquivalent}>
+                    {monthlyEquivalent}{t('perMonthBilled')}
+                  </Text>
                 </View>
-              ))}
-              {premiumFeatures.slice(3).map((f, i) => (
-                <View key={i} style={styles.featureRow}>
-                  <X size={14} color={Colors.textMuted} />
-                  <Text style={styles.featureTextDisabled}>{f}</Text>
+                <View style={styles.planPriceBlock}>
+                  <Text style={styles.planPriceMain}>{annualPrice}</Text>
+                  <Text style={styles.planPricePeriod}>{t('perYearBilled')}</Text>
                 </View>
-              ))}
-            </View>
-
-            <LinearGradient
-              colors={['rgba(34,197,94,0.15)', 'rgba(34,197,94,0.05)']}
-              style={styles.premiumCard}
-            >
-              <View style={styles.premiumBadge}>
-                <Star size={12} color="#FFD700" />
-                <Text style={styles.premiumBadgeText}>PREMIUM</Text>
               </View>
-              <Text style={styles.planName}>{t('premiumPlan')}</Text>
-              <Text style={styles.planPricePremium}>
-                {displayPrice}
-                <Text style={styles.planPeriod}>{billingCycle === 'monthly' ? t('perMonth') : t('perYear')}</Text>
-              </Text>
-              {billingCycle === 'annual' && (
-                <Text style={styles.monthlyEquivalentText}>
-                  ~{currency === 'EUR' ? '' : currencySymbol}{config.pricing.monthlyEquivalent}{currency === 'EUR' ? '€' : ''}{t('perMonth')}
-                </Text>
-              )}
-              {premiumFeatures.map((f, i) => (
-                <View key={i} style={styles.featureRow}>
-                  <Check size={14} color={Colors.accent} />
-                  <Text style={styles.featureText}>{f}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <TouchableOpacity
+            style={[
+              styles.planCard,
+              styles.planCardMonthly,
+              selectedPlan === 'monthly' && styles.planCardSelected,
+            ]}
+            onPress={() => setSelectedPlan('monthly')}
+            activeOpacity={0.8}
+            testID="plan-monthly"
+          >
+            <View style={styles.planContent}>
+              <View style={styles.planRadio}>
+                <View style={[styles.radioOuter, selectedPlan === 'monthly' && styles.radioOuterActive]}>
+                  {selectedPlan === 'monthly' && <View style={styles.radioInner} />}
                 </View>
-              ))}
-              {!user.isPremium ? (
-                auth.isAuthenticated ? (
-                  <TouchableOpacity
-                    style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
-                    onPress={() => upgradeToPremium(billingCycle)}
-                    activeOpacity={0.8}
-                    disabled={isPurchasing || isOfferingsLoading}
-                    testID="subscribe-btn"
-                  >
-                    {isPurchasing ? (
-                      <ActivityIndicator color={Colors.background} size="small" />
-                    ) : (
+              </View>
+              <View style={styles.planInfo}>
+                <Text style={styles.planName}>{t('monthlyPlan')}</Text>
+              </View>
+              <View style={styles.planPriceBlock}>
+                <Text style={styles.planPriceMain}>{monthlyPrice}</Text>
+                <Text style={styles.planPricePeriod}>{t('perMonthBilled')}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {!user.isPremium ? (
+            auth.isAuthenticated ? (
+              <TouchableOpacity
+                style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
+                onPress={handleSubscribe}
+                activeOpacity={0.8}
+                disabled={isPurchasing || isOfferingsLoading}
+                testID="subscribe-btn"
+              >
+                <LinearGradient
+                  colors={[Colors.accent, Colors.accentDark ?? '#1a8a4a']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.subscribeBtnGradient}
+                >
+                  {isPurchasing ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Crown size={20} color="#FFFFFF" />
                       <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.subscribeBtn, { backgroundColor: Colors.info }]}
-                    onPress={() => router.push('/auth' as any)}
-                    activeOpacity={0.8}
-                    testID="subscribe-auth-btn"
-                  >
-                    <Text style={styles.subscribeBtnText}>{t('createAccountCTA')}</Text>
-                  </TouchableOpacity>
-                )
-              ) : (
-                <View style={styles.currentPlanBadge}>
-                  <Text style={styles.currentPlanText}>{t('currentPlan')}</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.subscribeBtn}
+                onPress={() => router.push('/auth' as any)}
+                activeOpacity={0.8}
+                testID="subscribe-auth-btn"
+              >
+                <LinearGradient
+                  colors={[Colors.info, '#2563EB']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.subscribeBtnGradient}
+                >
+                  <Text style={styles.subscribeBtnText}>{t('createAccountCTA')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )
+          ) : (
+            <View style={styles.currentPlanBadge}>
+              <Check size={18} color={Colors.accent} />
+              <Text style={styles.currentPlanText}>{t('currentPlan')}</Text>
+            </View>
+          )}
+
+          <View style={styles.featuresSection}>
+            <Text style={styles.sectionTitle}>Premium</Text>
+            {premiumFeatures.map((f, i) => (
+              <View key={i} style={styles.featureRow}>
+                <View style={styles.featureIcon}>
+                  <Check size={14} color={Colors.accent} />
                 </View>
-              )}
-            </LinearGradient>
+                <Text style={styles.featureText}>{f}</Text>
+              </View>
+            ))}
           </View>
 
           <Text style={styles.sectionTitle}>Testimonials</Text>
@@ -243,7 +292,7 @@ export default function PremiumScreen() {
 
           <View style={styles.legalFooter}>
             <Text style={styles.legalDisclaimerText}>
-              {t('subscriptionDisclaimer')}
+              {t('subscriptionLegalApple')}
             </Text>
             <View style={styles.legalLinksRow}>
               <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7}>
@@ -284,7 +333,7 @@ const styles = StyleSheet.create({
   heroSection: {
     alignItems: 'center',
     paddingTop: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   crownContainer: {
     marginBottom: 12,
@@ -306,7 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundCard,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -320,154 +369,201 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     textAlign: 'center' as const,
   },
-  toggleRow: {
+  creditCounter: {
     flexDirection: 'row' as const,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
     alignItems: 'center',
-    flexDirection: 'row' as const,
     justifyContent: 'center',
-    gap: 6,
+    backgroundColor: 'rgba(34,197,94,0.08)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 8,
   },
-  toggleActive: {
-    backgroundColor: Colors.backgroundCard,
-  },
-  toggleText: {
-    fontSize: 14,
+  creditCounterText: {
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
   },
-  toggleTextActive: {
-    color: Colors.textPrimary,
+  creditDots: {
+    flexDirection: 'row' as const,
+    gap: 5,
   },
-  saveBadge: {
-    backgroundColor: Colors.accentMuted,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+  creditDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  saveText: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    color: Colors.accent,
+  creditDotActive: {
+    backgroundColor: Colors.accent,
   },
-  plansRow: {
-    gap: 12,
-    marginBottom: 28,
+  creditDotUsed: {
+    backgroundColor: Colors.border,
   },
   planCard: {
     backgroundColor: Colors.backgroundCard,
     borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 2,
     borderColor: Colors.border,
   },
-  premiumCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.3)',
+  planCardMonthly: {
+    marginBottom: 16,
   },
-  premiumBadge: {
+  planCardSelected: {
+    borderColor: Colors.accent,
+    backgroundColor: 'rgba(34,197,94,0.06)',
+  },
+  planBadgeRow: {
+    flexDirection: 'row' as const,
+    gap: 8,
+    marginBottom: 12,
+  },
+  bestValueBadge: {
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,215,0,0.15)',
+    backgroundColor: Colors.accent,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    alignSelf: 'flex-start' as const,
-    marginBottom: 8,
   },
-  premiumBadgeText: {
+  bestValueText: {
     fontSize: 11,
     fontWeight: '800' as const,
-    color: '#FFD700',
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
-  planName: {
-    fontSize: 18,
+  twoMonthsBadge: {
+    backgroundColor: 'rgba(255,215,0,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  twoMonthsText: {
+    fontSize: 11,
     fontWeight: '700' as const,
-    color: Colors.textPrimary,
-    marginBottom: 4,
+    color: '#D4A017',
   },
-  planPrice: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: Colors.textPrimary,
-    marginBottom: 16,
-  },
-  planPricePremium: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: Colors.accent,
-    marginBottom: 16,
-  },
-  planPeriod: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: Colors.textSecondary,
-  },
-  monthlyEquivalentText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: -10,
-    marginBottom: 16,
-  },
-  featureRow: {
+  planContent: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
   },
-  featureText: {
-    fontSize: 13,
+  planRadio: {
+    marginRight: 12,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterActive: {
+    borderColor: Colors.accent,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.accent,
+  },
+  planInfo: {
+    flex: 1,
+  },
+  planName: {
+    fontSize: 16,
+    fontWeight: '700' as const,
     color: Colors.textPrimary,
   },
-  featureTextDisabled: {
+  planEquivalent: {
     fontSize: 13,
-    color: Colors.textMuted,
-    textDecorationLine: 'line-through' as const,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  planPriceBlock: {
+    alignItems: 'flex-end' as const,
+  },
+  planPriceMain: {
+    fontSize: 20,
+    fontWeight: '800' as const,
+    color: Colors.textPrimary,
+  },
+  planPricePeriod: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500' as const,
   },
   subscribeBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12,
+    borderRadius: 14,
+    overflow: 'hidden' as const,
+    marginBottom: 24,
   },
   subscribeBtnDisabled: {
     opacity: 0.6,
   },
+  subscribeBtnGradient: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+  },
   subscribeBtnText: {
-    color: Colors.background,
-    fontSize: 16,
-    fontWeight: '700' as const,
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800' as const,
   },
   currentPlanBadge: {
+    flexDirection: 'row' as const,
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 12,
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 24,
   },
   currentPlanText: {
     color: Colors.textSecondary,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600' as const,
+  },
+  featuresSection: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
     color: Colors.textPrimary,
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  featureRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  featureIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(34,197,94,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+    flex: 1,
   },
   testimonialCard: {
     backgroundColor: Colors.backgroundCard,
@@ -529,37 +625,6 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: Colors.accent,
   },
-  bottomSpace: {
-    height: 30,
-  },
-  creditCounter: {
-    backgroundColor: 'rgba(34,197,94,0.08)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    alignItems: 'center' as const,
-    gap: 8,
-  },
-  creditCounterText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: Colors.textSecondary,
-  },
-  creditDots: {
-    flexDirection: 'row' as const,
-    gap: 6,
-  },
-  creditDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  creditDotActive: {
-    backgroundColor: Colors.accent,
-  },
-  creditDotUsed: {
-    backgroundColor: Colors.border,
-  },
   legalFooter: {
     marginTop: 20,
     paddingTop: 16,
@@ -569,11 +634,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   legalDisclaimerText: {
-    fontSize: 11,
+    fontSize: 10,
     color: Colors.textMuted,
     textAlign: 'center' as const,
-    lineHeight: 17,
-    paddingHorizontal: 8,
+    lineHeight: 16,
+    paddingHorizontal: 4,
   },
   legalLinksRow: {
     flexDirection: 'row' as const,
@@ -601,5 +666,8 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center' as const,
     lineHeight: 16,
+  },
+  bottomSpace: {
+    height: 30,
   },
 });
