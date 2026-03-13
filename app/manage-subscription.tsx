@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
@@ -52,14 +52,20 @@ export default function ManageSubscriptionScreen() {
   const handleCancelSubscription = () => {
     Alert.alert(
       t('cancelSubscription'),
-      t('cancelSubConfirm'),
+      t('cancelSubRedirect'),
       [
         { text: t('cancel'), style: 'cancel' },
         {
-          text: t('cancelSubscription'),
-          style: 'destructive',
+          text: t('openSettings'),
+          style: 'default',
           onPress: () => {
-            Alert.alert('', t('cancelSubSuccess'));
+            if (Platform.OS === 'ios') {
+              void Linking.openURL('https://apps.apple.com/account/subscriptions');
+            } else if (Platform.OS === 'android') {
+              void Linking.openURL('https://play.google.com/store/account/subscriptions');
+            } else {
+              Alert.alert('', t('cancelSubManual'));
+            }
           },
         },
       ]
@@ -273,6 +279,21 @@ export default function ManageSubscriptionScreen() {
         </TouchableOpacity>
 
         <Text style={styles.restoreText}>{t('restoreInfo')}</Text>
+
+        <View style={styles.legalFooter}>
+          <Text style={styles.legalDisclaimerText}>
+            {t('subscriptionDisclaimer')}
+          </Text>
+          <View style={styles.legalLinksRow}>
+            <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7}>
+              <Text style={styles.legalLinkText}>{t('terms')}</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>·</Text>
+            <TouchableOpacity onPress={() => router.push('/privacy' as any)} activeOpacity={0.7}>
+              <Text style={styles.legalLinkText}>{t('privacy')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={styles.bottomSpace} />
       </ScrollView>
@@ -527,6 +548,37 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     marginTop: 10,
     lineHeight: 18,
+  },
+  legalFooter: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  legalDisclaimerText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center' as const,
+    lineHeight: 17,
+    paddingHorizontal: 8,
+  },
+  legalLinksRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: Colors.accent,
+    fontWeight: '500' as const,
+    textDecorationLine: 'underline' as const,
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: Colors.textMuted,
   },
   bottomSpace: {
     height: 20,

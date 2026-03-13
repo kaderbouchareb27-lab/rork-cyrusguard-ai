@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Check, X, Star, Users, Target, ChevronDown, ChevronUp, Zap, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +9,7 @@ import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 
 export default function PremiumScreen() {
+  const router = useRouter();
   const {
     t, currency, country, upgradeToPremium, user, remainingCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
@@ -226,6 +228,21 @@ export default function PremiumScreen() {
               {isRestoring ? t('restoringPurchases') : t('restorePurchases')}
             </Text>
           </TouchableOpacity>
+
+          <View style={styles.legalFooter}>
+            <Text style={styles.legalDisclaimerText}>
+              {t('subscriptionDisclaimer')}
+            </Text>
+            <View style={styles.legalLinksRow}>
+              <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7}>
+                <Text style={styles.legalLinkText}>{t('terms')}</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalSeparator}>·</Text>
+              <TouchableOpacity onPress={() => router.push('/privacy' as any)} activeOpacity={0.7}>
+                <Text style={styles.legalLinkText}>{t('privacy')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <View style={styles.addressFooter}>
             <Text style={styles.addressFooterText}>
@@ -531,11 +548,40 @@ const styles = StyleSheet.create({
   creditDotUsed: {
     backgroundColor: Colors.border,
   },
-  addressFooter: {
-    marginTop: 16,
+  legalFooter: {
+    marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  legalDisclaimerText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center' as const,
+    lineHeight: 17,
+    paddingHorizontal: 8,
+  },
+  legalLinksRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: Colors.accent,
+    fontWeight: '500' as const,
+    textDecorationLine: 'underline' as const,
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  addressFooter: {
+    marginTop: 12,
+    paddingTop: 12,
     alignItems: 'center' as const,
   },
   addressFooterText: {

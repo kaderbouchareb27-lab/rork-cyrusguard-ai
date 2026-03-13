@@ -268,6 +268,10 @@ const fr: Translations = {
   restoringPurchases: 'Restauration en cours...',
   restorePurchasesTitle: 'Restauration des achats',
   restorePurchasesResult: 'Aucun achat précédent trouvé pour ce compte Apple.',
+  subscriptionDisclaimer: 'L\'abonnement se renouvelle automatiquement sauf annulation au moins 24h avant la fin de la période en cours. Le paiement est prélevé sur votre compte Apple. Gérez ou annulez vos abonnements dans Réglages > Apple ID > Abonnements.',
+  cancelSubRedirect: 'Pour annuler votre abonnement, vous devez vous rendre dans les réglages de votre compte Apple (Réglages > Apple ID > Abonnements).',
+  openSettings: 'Ouvrir les réglages',
+  cancelSubManual: 'Rendez-vous dans Réglages > Apple ID > Abonnements pour gérer votre abonnement.',
 };
 
 
@@ -535,6 +539,10 @@ const en: Translations = {
   restoringPurchases: 'Restoring...',
   restorePurchasesTitle: 'Restore Purchases',
   restorePurchasesResult: 'No previous purchases found for this Apple account.',
+  subscriptionDisclaimer: 'Subscription automatically renews unless cancelled at least 24 hours before the end of the current period. Payment is charged to your Apple account. Manage or cancel subscriptions in Settings > Apple ID > Subscriptions.',
+  cancelSubRedirect: 'To cancel your subscription, you need to go to your Apple account settings (Settings > Apple ID > Subscriptions).',
+  openSettings: 'Open Settings',
+  cancelSubManual: 'Go to Settings > Apple ID > Subscriptions to manage your subscription.',
 };
 
 
