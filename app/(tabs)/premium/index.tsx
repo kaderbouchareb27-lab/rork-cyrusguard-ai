@@ -45,8 +45,8 @@ export default function PremiumScreen() {
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
 
-  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly');
-  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual');
+  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly' || p.product?.identifier?.includes('monthly'));
+  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual' || p.product?.identifier?.includes('yearly') || p.product?.identifier?.includes('annual'));
 
   const monthlyPrice = monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`;
   const annualPrice = annualPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.annual}`;
