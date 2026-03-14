@@ -42,9 +42,9 @@ export const countryConfigs: Record<Country, CountryConfig> = {
       { name: 'Autorité des marchés financiers (AMF)', nameEn: 'Autorité des marchés financiers (AMF)', url: 'https://lautorite.qc.ca', phone: '' },
     ],
     pricing: {
-      monthly: '2.49',
-      annual: '24.99',
-      monthlyEquivalent: '2.08',
+      monthly: '2.99',
+      annual: '29.99',
+      monthlyEquivalent: '2.50',
     },
   },
   US: {
@@ -61,9 +61,9 @@ export const countryConfigs: Record<Country, CountryConfig> = {
       { name: 'AARP Fraud Watch Network', nameEn: 'AARP Fraud Watch Network', url: 'https://www.aarp.org/money/scams-fraud', phone: '877-908-3360' },
     ],
     pricing: {
-      monthly: '2.49',
-      annual: '24.99',
-      monthlyEquivalent: '2.08',
+      monthly: '2.99',
+      annual: '29.99',
+      monthlyEquivalent: '2.50',
     },
   },
   FR: {
@@ -81,9 +81,9 @@ export const countryConfigs: Record<Country, CountryConfig> = {
       { name: 'Info Escroqueries', nameEn: 'Info Escroqueries', url: 'https://www.service-public.fr', phone: '0 805 805 817' },
     ],
     pricing: {
-      monthly: '2.49',
-      annual: '24.99',
-      monthlyEquivalent: '2.08',
+      monthly: '2.99',
+      annual: '29.99',
+      monthlyEquivalent: '2.50',
     },
   },
 };
