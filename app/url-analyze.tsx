@@ -214,7 +214,7 @@ export default function UrlAnalyzeScreen() {
           <PaywallGate type="url" />
         ) : (
         <>
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
             <View style={styles.inputRow}>

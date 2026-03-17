@@ -7,11 +7,10 @@ import { useApp } from '@/contexts/AppContext';
 interface AIDisclosureModalProps {
   visible: boolean;
   onAccept: () => void;
-  onDecline?: () => void;
 }
 
-export default function AIDisclosureModal({ visible, onAccept, onDecline }: AIDisclosureModalProps) {
-  const { t, language } = useApp();
+export default function AIDisclosureModal({ visible, onAccept }: AIDisclosureModalProps) {
+  const { t } = useApp();
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -59,15 +58,6 @@ export default function AIDisclosureModal({ visible, onAccept, onDecline }: AIDi
             testID="ai-disclosure-accept-btn"
           >
             <Text style={styles.acceptBtnText}>{t('aiDisclosureAccept')}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.declineBtn}
-            onPress={onDecline ?? (() => {})}
-            activeOpacity={0.7}
-            testID="ai-disclosure-decline-btn"
-          >
-            <Text style={styles.declineBtnText}>{t('aiDisclosureDecline') || (language === 'fr' ? 'Refuser' : 'Decline')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -152,13 +142,5 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.background,
   },
-  declineBtn: {
-    paddingVertical: 12,
-    alignItems: 'center' as const,
-  },
-  declineBtnText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.textMuted,
-  },
+
 });

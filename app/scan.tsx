@@ -117,7 +117,30 @@ export default function ScanScreen() {
       if (useCamera) {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-          Alert.alert('Permission', language === 'fr' ? 'Permission caméra requise' : 'Camera permission required');
+          if (Platform.OS !== 'web') {
+            const { Linking } = require('react-native');
+            Alert.alert(
+              language === 'fr' ? 'Accès caméra requis' : 'Camera Access Required',
+              language === 'fr'
+                ? 'La caméra est nécessaire pour scanner du contenu. Veuillez activer l\'accès caméra dans les Réglages de votre appareil.'
+                : 'Camera access is needed to scan content. Please enable camera access in your device Settings.',
+              [
+                {
+                  text: language === 'fr' ? 'Ouvrir les Réglages' : 'Open Settings',
+                  onPress: () => Linking.openSettings(),
+                },
+                {
+                  text: language === 'fr' ? 'Annuler' : 'Cancel',
+                  style: 'cancel' as const,
+                },
+              ]
+            );
+          } else {
+            Alert.alert(
+              language === 'fr' ? 'Accès caméra requis' : 'Camera Access Required',
+              language === 'fr' ? 'Veuillez autoriser l\'accès à la caméra dans votre navigateur.' : 'Please allow camera access in your browser.'
+            );
+          }
           return;
         }
         result = await ImagePicker.launchCameraAsync(pickerOptions);
@@ -502,7 +525,7 @@ export default function ScanScreen() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
       </SafeAreaView>
     </View>
   );
