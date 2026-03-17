@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated, Platform, Alert,
-  TextInput, ScrollView, KeyboardAvoidingView,
+  TextInput, ScrollView, KeyboardAvoidingView, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -118,7 +118,6 @@ export default function ScanScreen() {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
           if (Platform.OS !== 'web') {
-            const { Linking } = require('react-native');
             Alert.alert(
               language === 'fr' ? 'Accès caméra requis' : 'Camera Access Required',
               language === 'fr'
