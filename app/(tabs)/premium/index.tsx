@@ -191,9 +191,7 @@ export default function PremiumScreen() {
                 ) : (
                   <>
                     <Crown size={20} color="#FFFFFF" />
-                    <Text style={styles.subscribeBtnText}>
-                      {t('subscribe')} — {selectedPlan === 'annual' ? `${annualPrice}${t('perYearBilled')}` : `${monthlyPrice}${t('perMonthBilled')}`}
-                    </Text>
+                    <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
                   </>
                 )}
               </LinearGradient>
