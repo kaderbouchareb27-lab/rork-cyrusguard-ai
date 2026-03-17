@@ -81,6 +81,15 @@ function checkPremiumFromCustomerInfo(info: CustomerInfo): boolean {
   return !!entitlement;
 }
 
+function findPackage(packages: PurchasesPackage[], plan: 'monthly' | 'annual'): PurchasesPackage | undefined {
+  if (plan === 'monthly') {
+    return packages.find(p => p.identifier === '$rc_monthly') ??
+      packages.find(p => p.product?.identifier?.includes('monthly'));
+  }
+  return packages.find(p => p.identifier === '$rc_annual') ??
+    packages.find(p => p.product?.identifier?.includes('yearly') || p.product?.identifier?.includes('annual'));
+}
+
 function getPlanFromCustomerInfo(info: CustomerInfo): 'free' | 'monthly' | 'annual' {
   const entitlement = info.entitlements.active[ENTITLEMENT_ID];
   if (!entitlement) return 'free';
@@ -508,24 +517,38 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, []);
 
   const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
-    if (!currentOffering) {
-      console.log('[RC] No offering available');
+    if (!currentOffering || currentOffering.availablePackages.length === 0) {
+      console.log('[RC] No offering available, attempting to refetch...');
+      try {
+        const offerings = await Purchases.getOfferings();
+        if (offerings.current && offerings.current.availablePackages.length > 0) {
+          queryClient.setQueryData(['rc-offerings'], offerings);
+          console.log('[RC] Refetched offerings successfully');
+          const offering = offerings.current;
+          const pkg = findPackage(offering.availablePackages, plan);
+          if (pkg) {
+            purchaseMutation.mutate(pkg);
+            return;
+          }
+        }
+      } catch (e) {
+        console.log('[RC] Error refetching offerings:', e);
+      }
       Alert.alert('Error', language === 'fr'
         ? 'Aucun forfait disponible. Veuillez réessayer plus tard.'
         : 'No subscription packages available. Please try again later.');
       return;
     }
-    const packageId = plan === 'monthly' ? '$rc_monthly' : '$rc_annual';
-    const pkg = currentOffering.availablePackages.find(p => p.identifier === packageId);
+    const pkg = findPackage(currentOffering.availablePackages, plan);
     if (!pkg) {
-      console.log('[RC] Package not found:', packageId);
+      console.log('[RC] Package not found for plan:', plan, 'Available:', currentOffering.availablePackages.map(p => `${p.identifier} / ${p.product?.identifier}`));
       Alert.alert('Error', language === 'fr'
         ? 'Forfait introuvable.'
         : 'Subscription package not found.');
       return;
     }
     purchaseMutation.mutate(pkg);
-  }, [currentOffering, purchaseMutation, language]);
+  }, [currentOffering, purchaseMutation, language, queryClient]);
 
   const restorePurchases = useCallback(() => {
     restoreMutation.mutate();
