@@ -427,8 +427,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [user.isPremium, auth.isAuthenticated]);
 
   const canScan = canUseFeature;
-  const canChat = user.isPremium;
-  const canSendMessage = user.isPremium;
+  const canChat = canUseFeature;
+  const canSendMessage = canUseFeature;
 
   const acceptAIDisclosure = useCallback(async () => {
     setHasAcceptedAIDisclosureState(true);
