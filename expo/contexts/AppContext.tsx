@@ -462,13 +462,19 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setAuth(newAuth);
     await AsyncStorage.setItem(STORAGE_KEYS.auth, JSON.stringify(newAuth));
 
-    const updatedUser: UserProfile = {
-      ...user,
-      email: params.email ?? user.email,
-      name: params.fullName ?? user.name,
-    };
-    setUser(updatedUser);
-    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
+    let updatedUser: UserProfile | null = null;
+    setUser(prev => {
+      updatedUser = {
+        ...prev,
+        email: params.email ?? prev.email,
+        name: params.fullName ?? prev.name,
+      };
+      return updatedUser;
+    });
+
+    if (updatedUser) {
+      await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
+    }
 
     if (rcConfigured && params.uid) {
       try {
@@ -481,15 +487,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
         const isPremium = checkPremiumFromCustomerInfo(customerInfo);
         const plan = getPlanFromCustomerInfo(customerInfo);
         if (isPremium) {
-          const premiumUser = { ...updatedUser, isPremium, plan };
-          setUser(premiumUser);
-          await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(premiumUser));
+          setUser(prev => {
+            const premiumUser = { ...prev, isPremium, plan };
+            void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(premiumUser));
+            return premiumUser;
+          });
         }
       } catch (e) {
         console.log('[RC] logIn after auth error:', e);
       }
     }
-  }, [user, queryClient]);
+  }, [queryClient]);
 
   const logoutUser = useCallback(async () => {
     console.log('[Auth] Logging out user');

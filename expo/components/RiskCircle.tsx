@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Text, Platform } from 'react-native';
+import { View, StyleSheet, Animated, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Colors from '@/constants/colors';
 import type { RiskLevel } from '@/mocks/scans';
@@ -51,13 +51,15 @@ export default function RiskCircle({ score, level, levelLabel, size = 180, anima
         setDisplayScore(Math.round(value));
       });
 
-      Animated.timing(animatedValue, {
+      const anim = Animated.timing(animatedValue, {
         toValue: score,
         duration: 1500,
         useNativeDriver: false,
-      }).start();
+      });
+      anim.start();
 
       return () => {
+        anim.stop();
         animatedValue.removeListener(listener);
       };
     } else {
@@ -65,7 +67,7 @@ export default function RiskCircle({ score, level, levelLabel, size = 180, anima
       setStrokeDashoffset(circumference * (1 - progress));
       setDisplayScore(score);
     }
-  }, [score, animated]);
+  }, [score, animated, circumference, animatedValue]);
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>

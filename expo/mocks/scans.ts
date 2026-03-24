@@ -142,14 +142,23 @@ export const mockScans: ScanResult[] = [
 export const reportingOrganizations = {
   CA: [
     { name: 'Centre antifraude du Canada (CAFC)', nameEn: 'Canadian Anti-Fraud Centre (CAFC)', url: 'https://www.antifraudcentre-centreantifraude.ca', phone: '1-888-495-8501' },
+    { name: 'Sûreté du Québec', nameEn: 'Sûreté du Québec', url: 'https://www.sq.gouv.qc.ca', phone: '' },
+    { name: 'Autorité des marchés financiers (AMF)', nameEn: 'Autorité des marchés financiers (AMF)', url: 'https://lautorite.qc.ca', phone: '' },
   ],
   US: [
-    { name: 'Federal Trade Commission (FTC)', nameEn: 'Federal Trade Commission (FTC)', url: 'https://reportfraud.ftc.gov', phone: '' },
-    { name: 'Internet Crime Complaint Center (IC3)', nameEn: 'Internet Crime Complaint Center (IC3)', url: 'https://www.ic3.gov', phone: '' },
+    { name: 'Federal Trade Commission (FTC)', nameEn: 'Federal Trade Commission (FTC)', url: 'https://reportfraud.ftc.gov', phone: '1-877-382-4357' },
+    { name: 'FBI Internet Crime Complaint Center (IC3)', nameEn: 'FBI Internet Crime Complaint Center (IC3)', url: 'https://www.ic3.gov', phone: '' },
+    { name: 'Social Security Administration OIG', nameEn: 'Social Security Administration OIG', url: 'https://oig.ssa.gov', phone: '1-800-269-0271' },
+    { name: 'AARP Fraud Watch Network', nameEn: 'AARP Fraud Watch Network', url: 'https://www.aarp.org/money/scams-fraud', phone: '877-908-3360' },
+    { name: 'USPS Postal Inspection Service', nameEn: 'USPS Postal Inspection Service', url: 'https://www.uspis.gov', phone: '' },
   ],
   FR: [
-    { name: 'Cybermalveillance.gouv.fr', nameEn: 'Cybermalveillance.gouv.fr', url: 'https://www.cybermalveillance.gouv.fr', phone: '' },
+    { name: 'Cybermalveillance.gouv.fr', nameEn: 'Cybermalveillance.gouv.fr', url: 'https://www.cybermalveillance.gouv.fr', phone: '0 805 805 817' },
     { name: 'Signal Spam', nameEn: 'Signal Spam', url: 'https://www.signal-spam.fr', phone: '' },
+    { name: 'Pharos (Signalement en ligne)', nameEn: 'Pharos (Online Reporting)', url: 'https://www.internet-signalement.gouv.fr', phone: '' },
+    { name: '33700 (Signalement SMS)', nameEn: '33700 (SMS Reporting)', url: 'https://www.33700.fr', phone: '33700' },
+    { name: 'Info Escroqueries', nameEn: 'Info Escroqueries', url: 'https://www.service-public.fr', phone: '0 805 805 817' },
+    { name: 'DGCCRF (Signal Conso)', nameEn: 'DGCCRF (Signal Conso)', url: 'https://signal.conso.gouv.fr', phone: '' },
   ],
 };
 
@@ -168,26 +177,34 @@ export const trendingScams = {
   },
   US: {
     fr: [
-      'Arnaque IRS par téléphone',
-      'Fraude aux cartes cadeaux',
-      'Arnaque romance sur les apps de rencontre',
+      'Arnaque IRS - Appels menaçant d\'arrestation',
+      'Faux colis USPS - "Reprogrammez votre livraison"',
+      'Arnaque Social Security - "Votre numéro est compromis"',
+      'Faux support technique Amazon / Microsoft',
+      'Arnaque Medicare - Offres non sollicitées',
     ],
     en: [
-      'IRS phone scam',
-      'Gift card fraud',
-      'Romance scam on dating apps',
+      'IRS scam - Calls threatening arrest',
+      'Fake USPS package - "Reschedule your delivery"',
+      'Social Security scam - "Your number is compromised"',
+      'Fake Amazon / Microsoft tech support',
+      'Medicare scam - Unsolicited offers',
     ],
   },
   FR: {
     fr: [
-      'Arnaque au CPF (Compte Personnel de Formation)',
+      'Arnaque au CPF - "Votre solde expire bientôt"',
+      'Faux mails Ameli - "Mettez à jour votre carte Vitale"',
+      'Arnaque vignette Crit\'Air - Faux sites officiels',
       'Faux conseillers bancaires par téléphone',
-      'Arnaque à la vignette Crit\'Air',
+      'Faux SMS Chronopost/La Poste - Frais de livraison',
     ],
     en: [
-      'CPF scam (Personal Training Account)',
+      'CPF scam - "Your balance expires soon"',
+      'Fake Ameli emails - "Update your Carte Vitale"',
+      'Crit\'Air sticker scam - Fake official sites',
       'Fake bank advisors by phone',
-      'Crit\'Air sticker scam',
+      'Fake Chronopost/La Poste SMS - Delivery fees',
     ],
   },
 };

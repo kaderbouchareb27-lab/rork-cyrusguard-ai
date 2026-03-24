@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -17,14 +17,14 @@ export default function ChatScreen() {
   const [showDisclosure, setShowDisclosure] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  const welcomeMessage: ChatMessage = {
+  const welcomeMessage = useMemo<ChatMessage>(() => ({
     id: 'welcome',
     role: 'assistant',
     content: t('chatWelcome'),
-    timestamp: new Date().toISOString(),
-  };
+    timestamp: '2026-01-01T00:00:00.000Z',
+  }), [t]);
 
-  const allMessages = [welcomeMessage, ...chatMessages];
+  const allMessages = useMemo(() => [welcomeMessage, ...chatMessages], [welcomeMessage, chatMessages]);
 
   const [isLoading, setIsLoading] = useState(false);
   const pendingAfterDisclosureRef = useRef(false);

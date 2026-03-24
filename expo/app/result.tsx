@@ -9,7 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp, useLocalizedScan } from '@/contexts/AppContext';
-import { reportingOrganizations } from '@/mocks/scans';
+import { reportingOrganizations, type ScanResult } from '@/mocks/scans';
 import RiskCircle from '@/components/RiskCircle';
 
 export default function ResultScreen() {
@@ -18,8 +18,27 @@ export default function ResultScreen() {
   const { t, scans, language, country } = useApp();
 
   const scan = useMemo(() => scans.find(s => s.id === scanId), [scans, scanId]);
-  const localized = useLocalizedScan(scan ?? scans[0]);
   const orgs = reportingOrganizations[country] ?? reportingOrganizations.CA;
+
+  const fallbackScan: ScanResult = useMemo(() => ({
+    id: 'fallback',
+    date: new Date().toISOString(),
+    riskScore: 0,
+    riskLevel: 'low' as const,
+    sourceType: 'sms' as const,
+    summary: '',
+    summaryEn: '',
+    explanation: '',
+    explanationEn: '',
+    suspiciousElements: [],
+    suspiciousElementsEn: [],
+    reassuringElements: [],
+    reassuringElementsEn: [],
+    advice: [],
+    adviceEn: [],
+  }), []);
+
+  const localized = useLocalizedScan(scan ?? fallbackScan);
 
   if (!scan) {
     return (

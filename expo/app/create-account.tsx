@@ -44,6 +44,7 @@ export default function CreateAccountScreen() {
   }, [auth.isAuthenticated, router]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => backHandler.remove();
   }, []);
