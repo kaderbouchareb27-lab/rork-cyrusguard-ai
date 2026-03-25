@@ -3,12 +3,21 @@ import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
-import Purchases, {
-  type CustomerInfo,
-  type PurchasesOffering,
-  type PurchasesPackage,
-  LOG_LEVEL,
-} from 'react-native-purchases';
+type CustomerInfo = any;
+type PurchasesOffering = any;
+type PurchasesPackage = any;
+
+let Purchases: any = null;
+let LOG_LEVEL: any = {};
+
+try {
+  const rc = require('react-native-purchases');
+  Purchases = rc.default ?? rc;
+  LOG_LEVEL = rc.LOG_LEVEL ?? {};
+  console.log('[RC] react-native-purchases loaded successfully');
+} catch (_e) {
+  console.log('[RC] react-native-purchases not available (Expo Go/web), skipping');
+}
 import { translations, type Language } from '@/constants/translations';
 import { type ScanResult, type ChatMessage } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
@@ -59,6 +68,10 @@ function getRCApiKey(): string {
 let rcConfigured = false;
 function configureRC() {
   if (rcConfigured) return;
+  if (!Purchases) {
+    console.log('[RC] Purchases module not available, skipping');
+    return;
+  }
   if (Platform.OS === 'web') {
     console.log('[RC] Skipping RevenueCat on web');
     return;
@@ -553,7 +566,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
     const pkg = findPackage(currentOffering.availablePackages, plan);
     if (!pkg) {
-      console.log('[RC] Package not found for plan:', plan, 'Available:', currentOffering.availablePackages.map(p => `${p.identifier} / ${p.product?.identifier}`));
+      console.log('[RC] Package not found for plan:', plan, 'Available:', currentOffering.availablePackages.map((p: PurchasesPackage) => `${p.identifier} / ${p.product?.identifier}`));
       Alert.alert('Error', language === 'fr'
         ? 'Forfait introuvable.'
         : 'Subscription package not found.');
