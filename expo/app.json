@@ -40,15 +40,7 @@
         }
       ],
       "expo-font",
-      "expo-web-browser",
-      [
-        "react-native-purchases",
-        {
-          "ios": {
-            "usesStoreKit2": true
-          }
-        }
-      ]
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
