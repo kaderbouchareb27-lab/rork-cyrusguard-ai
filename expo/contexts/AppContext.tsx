@@ -72,20 +72,18 @@ function configureRC() {
     console.log('[RC] Purchases module not available, skipping');
     return;
   }
-  if (Platform.OS === 'web') {
-    console.log('[RC] Skipping RevenueCat on web');
-    return;
-  }
   const apiKey = getRCApiKey();
   if (!apiKey) {
     console.log('[RC] No RevenueCat API key found, skipping configuration');
     return;
   }
   try {
-    void Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    if (LOG_LEVEL.DEBUG != null) {
+      void Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    }
     Purchases.configure({ apiKey });
     rcConfigured = true;
-    console.log('[RC] RevenueCat configured successfully');
+    console.log('[RC] RevenueCat configured successfully with key:', apiKey.substring(0, 8) + '...');
   } catch (e) {
     console.log('[RC] Error configuring RevenueCat:', e);
   }
@@ -315,6 +313,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
+      if (!rcConfigured || !Purchases) {
+        console.log('[RC] Not configured, cannot purchase');
+        throw new Error(language === 'fr' ? 'Service d\'achat non disponible.' : 'Purchase service not available.');
+      }
       if (auth.isAuthenticated && !rcLoggedIn && auth.uid) {
         console.log('[RC] Ensuring logIn before purchase...');
         const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
@@ -346,6 +348,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const restoreMutation = useMutation({
     mutationFn: async () => {
+      if (!rcConfigured || !Purchases) {
+        console.log('[RC] Not configured, cannot restore purchases');
+        throw new Error(language === 'fr' ? 'Service d\'achat non disponible.' : 'Purchase service not available.');
+      }
       console.log('[RC] Restoring purchases...');
       const info = await Purchases.restorePurchases();
       return info;
@@ -542,6 +548,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, []);
 
   const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
+    if (!rcConfigured || !Purchases) {
+      console.log('[RC] Not configured, cannot upgrade');
+      Alert.alert('Error', language === 'fr'
+        ? 'Service d\'achat non disponible. Veuillez réessayer plus tard.'
+        : 'Purchase service not available. Please try again later.');
+      return;
+    }
     if (!currentOffering || currentOffering.availablePackages.length === 0) {
       console.log('[RC] No offering available, attempting to refetch...');
       try {
@@ -576,8 +589,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [currentOffering, purchaseMutation, language, queryClient]);
 
   const restorePurchases = useCallback(() => {
+    if (!rcConfigured || !Purchases) {
+      Alert.alert('Info', language === 'fr'
+        ? 'Service d\'achat non disponible dans cet environnement.'
+        : 'Purchase service not available in this environment.');
+      return;
+    }
     restoreMutation.mutate();
-  }, [restoreMutation]);
+  }, [restoreMutation, language]);
 
   const deleteAllData = useCallback(async () => {
     setScans([]);
