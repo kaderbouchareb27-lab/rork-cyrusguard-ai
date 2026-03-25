@@ -1,0 +1,13 @@
+{
+  "name": "cyrusguard-ai",
+  "version": "3.0.0",
+  "private": true,
+  "workspaces": [
+    "expo"
+  ],
+  "scripts": {
+    "start": "cd expo && bun start",
+    "start-web": "cd expo && bun start-web",
+    "lint": "cd expo && bun lint"
+  }
+}
