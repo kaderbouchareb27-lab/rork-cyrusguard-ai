@@ -59,6 +59,10 @@ function getRCApiKey(): string {
 let rcConfigured = false;
 function configureRC() {
   if (rcConfigured) return;
+  if (Platform.OS === 'web') {
+    console.log('[RC] Skipping RevenueCat on web');
+    return;
+  }
   const apiKey = getRCApiKey();
   if (!apiKey) {
     console.log('[RC] No RevenueCat API key found, skipping configuration');
