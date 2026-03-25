@@ -9,7 +9,7 @@ import { useApp } from '@/contexts/AppContext';
 import { countryAlerts, trendingScamsByCountry, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
 
-function AlertCard({ alert }: { alert: AlertData }) {
+function AlertCard({ alert, t }: { alert: AlertData; t: (key: string) => string }) {
   const isHigh = alert.severity === 'high';
 
   return (
@@ -18,7 +18,7 @@ function AlertCard({ alert }: { alert: AlertData }) {
         <View style={[alertStyles.severityBadge, isHigh ? alertStyles.severityHigh : alertStyles.severityMedium]}>
           {isHigh ? <AlertTriangle size={11} color={Colors.danger} /> : <Bell size={11} color={Colors.warning} />}
           <Text style={[alertStyles.severityText, isHigh ? alertStyles.severityTextHigh : alertStyles.severityTextMedium]}>
-            {isHigh ? 'Urgente' : 'Attention'}
+            {isHigh ? t('highSeverity') : t('mediumSeverity')}
           </Text>
         </View>
         <Text style={alertStyles.date}>{alert.date}</Text>
@@ -313,7 +313,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.alertsScroll}
           >
             {topAlerts.map((alert) => (
-              <AlertCard key={alert.id} alert={alert} />
+              <AlertCard key={alert.id} alert={alert} t={t} />
             ))}
           </ScrollView>
 
