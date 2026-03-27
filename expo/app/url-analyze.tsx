@@ -91,7 +91,6 @@ export default function UrlAnalyzeScreen() {
 
     try {
       const apiResult = await analyzeUrlApi(url.trim(), language, country);
-      consumeCredit();
       console.log('[URL] Analysis complete, score:', apiResult.score);
 
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
@@ -99,6 +98,7 @@ export default function UrlAnalyzeScreen() {
       Animated.timing(progressAnim, { toValue: 1, duration: 300, useNativeDriver: false }).start(() => {
         setResult(apiResult);
         setIsAnalyzing(false);
+        consumeCredit();
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
       });
     } catch (error: any) {
@@ -214,7 +214,7 @@ export default function UrlAnalyzeScreen() {
           <PaywallGate type="url" />
         ) : (
         <>
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onClose={() => setShowDisclosure(false)} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
             <View style={styles.inputRow}>

@@ -7,10 +7,11 @@ import { useApp } from '@/contexts/AppContext';
 interface AIDisclosureModalProps {
   visible: boolean;
   onAccept: () => void;
+  onClose?: () => void;
 }
 
-export default function AIDisclosureModal({ visible, onAccept }: AIDisclosureModalProps) {
-  const { t } = useApp();
+export default function AIDisclosureModal({ visible, onAccept, onClose }: AIDisclosureModalProps) {
+  const { t, language } = useApp();
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -59,6 +60,17 @@ export default function AIDisclosureModal({ visible, onAccept }: AIDisclosureMod
           >
             <Text style={styles.acceptBtnText}>{t('aiDisclosureAccept')}</Text>
           </TouchableOpacity>
+
+          {onClose && (
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+              testID="ai-disclosure-close-btn"
+            >
+              <Text style={styles.closeBtnText}>{language === 'fr' ? 'Annuler' : 'Cancel'}</Text>
+            </TouchableOpacity>
+          )}
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -142,5 +154,13 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.background,
   },
-
+  closeBtn: {
+    paddingVertical: 12,
+    alignItems: 'center' as const,
+  },
+  closeBtnText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+  },
 });

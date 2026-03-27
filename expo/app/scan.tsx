@@ -524,7 +524,7 @@ export default function ScanScreen() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onClose={() => { setShowDisclosure(false); setPendingAction(null); }} />
       </SafeAreaView>
     </View>
   );

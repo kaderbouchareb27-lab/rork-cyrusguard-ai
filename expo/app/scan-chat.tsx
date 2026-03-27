@@ -33,16 +33,16 @@ export default function ScanChatScreen() {
 
   const scan = useMemo(() => scans.find(s => s.id === scanId), [scans, scanId]);
 
-  const contextMessage: ChatMessage = {
+  const contextMessage = useMemo<ChatMessage>(() => ({
     id: 'context',
     role: 'assistant',
     content: language === 'fr'
       ? `Je suis prêt à discuter de ce scan (score de risque: ${scan?.riskScore ?? 0}/100). Posez-moi vos questions sur ce résultat.`
       : `I'm ready to discuss this scan (risk score: ${scan?.riskScore ?? 0}/100). Ask me any questions about this result.`,
-    timestamp: new Date().toISOString(),
-  };
+    timestamp: '2026-01-01T00:00:00.000Z',
+  }), [language, scan?.riskScore]);
 
-  const allMessages = [contextMessage, ...messages];
+  const allMessages = useMemo(() => [contextMessage, ...messages], [contextMessage, messages]);
 
   const doSendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;
@@ -192,7 +192,7 @@ export default function ScanChatScreen() {
             </KeyboardAvoidingView>
           </>
         )}
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onClose={() => setShowDisclosure(false)} />
       </SafeAreaView>
     </View>
   );

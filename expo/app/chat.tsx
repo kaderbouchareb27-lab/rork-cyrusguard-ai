@@ -194,7 +194,7 @@ export default function ChatScreen() {
             </KeyboardAvoidingView>
           </>
         )}
-        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} />
+        <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onClose={() => setShowDisclosure(false)} />
       </SafeAreaView>
     </View>
   );
