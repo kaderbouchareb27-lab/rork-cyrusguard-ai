@@ -43,8 +43,8 @@ export const countryConfigs: Record<Country, CountryConfig> = {
     ],
     pricing: {
       monthly: '2.99',
-      annual: '29.99',
-      monthlyEquivalent: '2.50',
+      annual: '19.99',
+      monthlyEquivalent: '1.67',
     },
   },
   US: {
@@ -64,8 +64,8 @@ export const countryConfigs: Record<Country, CountryConfig> = {
     ],
     pricing: {
       monthly: '2.99',
-      annual: '29.99',
-      monthlyEquivalent: '2.50',
+      annual: '19.99',
+      monthlyEquivalent: '1.67',
     },
   },
   FR: {
@@ -86,8 +86,8 @@ export const countryConfigs: Record<Country, CountryConfig> = {
     ],
     pricing: {
       monthly: '2.99',
-      annual: '29.99',
-      monthlyEquivalent: '2.50',
+      annual: '19.99',
+      monthlyEquivalent: '1.67',
     },
   },
 };
