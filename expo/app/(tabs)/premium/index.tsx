@@ -12,7 +12,7 @@ export default function PremiumScreen() {
   const router = useRouter();
   const {
     t, country, upgradeToPremium, user, remainingCredits,
-    restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
+    restorePurchases, isPurchasing, isRestoring, isOfferingsLoading,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -45,14 +45,9 @@ export default function PremiumScreen() {
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
 
-  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly' || p.product?.identifier?.includes('monthly'));
-  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual' || p.product?.identifier?.includes('yearly') || p.product?.identifier?.includes('annual'));
-
-  const monthlyPrice = monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`;
-  const annualPrice = annualPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.annual}`;
-  const monthlyEquivalent = annualPkg?.product?.price
-    ? `${currencySymbol}${(annualPkg.product.price / 12).toFixed(2)}`
-    : `${currencySymbol}${config.pricing.monthlyEquivalent}`;
+  const monthlyPrice = `${currencySymbol}${config.pricing.monthly}`;
+  const annualPrice = `${currencySymbol}${config.pricing.annual}`;
+  const monthlyEquivalent = `${currencySymbol}${config.pricing.monthlyEquivalent}`;
 
   const faqs = [
     { q: t('faq1Q'), a: t('faq1A') },

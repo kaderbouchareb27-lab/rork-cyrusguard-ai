@@ -1,23 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Platform, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
-type CustomerInfo = any;
-type PurchasesOffering = any;
-type PurchasesPackage = any;
-
-let Purchases: any = null;
-let LOG_LEVEL: any = {};
-
-try {
-  const rc = require('react-native-purchases');
-  Purchases = rc.default ?? rc;
-  LOG_LEVEL = rc.LOG_LEVEL ?? {};
-  console.log('[RC] react-native-purchases loaded successfully');
-} catch (_e) {
-  console.log('[RC] react-native-purchases not available (Expo Go/web), skipping');
-}
 import { translations, type Language } from '@/constants/translations';
 import { type ScanResult, type ChatMessage } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
@@ -40,7 +25,6 @@ interface AuthState {
 }
 
 const FREE_CREDITS = 2;
-const ENTITLEMENT_ID = 'CyrusGuard AI Pro';
 
 const STORAGE_KEYS = {
   language: 'cyrusguard_language',
@@ -54,69 +38,9 @@ const STORAGE_KEYS = {
   auth: 'cyrusguard_auth',
 };
 
-function getRCApiKey(): string {
-  if (__DEV__ || Platform.OS === 'web') {
-    return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
-  }
-  return Platform.select({
-    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
-    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
-    default: process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY,
-  }) ?? '';
-}
 
-let rcConfigured = false;
-function configureRC() {
-  if (rcConfigured) return;
-  if (!Purchases) {
-    console.log('[RC] Purchases module not available, skipping');
-    return;
-  }
-  const apiKey = getRCApiKey();
-  if (!apiKey) {
-    console.log('[RC] No RevenueCat API key found, skipping configuration');
-    return;
-  }
-  try {
-    if (LOG_LEVEL.DEBUG != null) {
-      void Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-    }
-    Purchases.configure({ apiKey });
-    rcConfigured = true;
-    console.log('[RC] RevenueCat configured successfully with key:', apiKey.substring(0, 8) + '...');
-  } catch (e) {
-    console.log('[RC] Error configuring RevenueCat:', e);
-  }
-}
-
-configureRC();
-
-function checkPremiumFromCustomerInfo(info: CustomerInfo): boolean {
-  const entitlement = info.entitlements.active[ENTITLEMENT_ID];
-  return !!entitlement;
-}
-
-function findPackage(packages: PurchasesPackage[], plan: 'monthly' | 'annual'): PurchasesPackage | undefined {
-  if (plan === 'monthly') {
-    return packages.find(p => p.identifier === '$rc_monthly') ??
-      packages.find(p => p.product?.identifier?.includes('monthly'));
-  }
-  return packages.find(p => p.identifier === '$rc_annual') ??
-    packages.find(p => p.product?.identifier?.includes('yearly') || p.product?.identifier?.includes('annual'));
-}
-
-function getPlanFromCustomerInfo(info: CustomerInfo): 'free' | 'monthly' | 'annual' {
-  const entitlement = info.entitlements.active[ENTITLEMENT_ID];
-  if (!entitlement) return 'free';
-  const productId = entitlement.productIdentifier ?? '';
-  if (productId.includes('yearly') || productId.includes('annual')) return 'annual';
-  if (productId.includes('monthly')) return 'monthly';
-  if (productId.includes('lifetime')) return 'annual';
-  return 'monthly';
-}
 
 export const [AppProvider, useApp] = createContextHook(() => {
-  const queryClient = useQueryClient();
   const [language, setLanguageState] = useState<Language>('fr');
   const [country, setCountryState] = useState<Country>('CA');
   const [scans, setScans] = useState<ScanResult[]>([]);
@@ -138,7 +62,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     fullName: null,
     provider: null,
   });
-  const [rcLoggedIn, setRcLoggedIn] = useState<boolean>(false);
 
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
@@ -223,161 +146,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   }, [settingsQuery.data]);
 
-  const rcLoginMutation = useMutation({
-    mutationFn: async (uid: string) => {
-      if (!rcConfigured) {
-        console.log('[RC] Not configured, skipping logIn');
-        return null;
-      }
-      console.log('[RC] Logging in with RevenueCat');
-      const { customerInfo } = await Purchases.logIn(uid);
-      return customerInfo;
-    },
-    onSuccess: (info) => {
-      if (info) {
-        console.log('[RC] logIn successful');
-        queryClient.setQueryData(['rc-customer-info'], info);
-        setRcLoggedIn(true);
-      }
-    },
-    onError: (error: any) => {
-      console.log('[RC] logIn error:', error);
-    },
-  });
 
-  useEffect(() => {
-    if (auth.isAuthenticated && auth.uid && rcConfigured && !rcLoggedIn) {
-      console.log('[RC] Auto-login for authenticated user');
-      rcLoginMutation.mutate(auth.uid);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.isAuthenticated, auth.uid, rcLoggedIn]);
-
-  const customerInfoQuery = useQuery({
-    queryKey: ['rc-customer-info'],
-    queryFn: async () => {
-      if (!rcConfigured) return null;
-      try {
-        const info = await Purchases.getCustomerInfo();
-        console.log('[RC] Customer info fetched');
-        return info;
-      } catch (e) {
-        console.log('[RC] Error fetching customer info:', e);
-        return null;
-      }
-    },
-    refetchInterval: 60000,
-  });
-
-  const offeringsQuery = useQuery({
-    queryKey: ['rc-offerings'],
-    queryFn: async () => {
-      if (!rcConfigured) return null;
-      try {
-        const offerings = await Purchases.getOfferings();
-        console.log('[RC] Offerings fetched:', offerings.current?.identifier);
-        return offerings;
-      } catch (e) {
-        console.log('[RC] Error fetching offerings:', e);
-        return null;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  useEffect(() => {
-    const info = customerInfoQuery.data;
-    if (!info) return;
-    const isPremium = checkPremiumFromCustomerInfo(info);
-    const plan = getPlanFromCustomerInfo(info);
-    console.log('[RC] Syncing premium status');
-    setUser(prev => {
-      if (prev.isPremium === isPremium && prev.plan === plan) return prev;
-      const updated = { ...prev, isPremium, plan };
-      void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updated));
-      return updated;
-    });
-  }, [customerInfoQuery.data]);
-
-  useEffect(() => {
-    if (!rcConfigured) return;
-    const listener = (info: CustomerInfo) => {
-      console.log('[RC] CustomerInfo listener triggered');
-      queryClient.setQueryData(['rc-customer-info'], info);
-    };
-    Purchases.addCustomerInfoUpdateListener(listener);
-    return () => {
-      Purchases.removeCustomerInfoUpdateListener(listener);
-    };
-  }, [queryClient]);
-
-  const purchaseMutation = useMutation({
-    mutationFn: async (pkg: PurchasesPackage) => {
-      if (!rcConfigured || !Purchases) {
-        console.log('[RC] Not configured, cannot purchase');
-        throw new Error(language === 'fr' ? 'Service d\'achat non disponible.' : 'Purchase service not available.');
-      }
-      if (auth.isAuthenticated && !rcLoggedIn && auth.uid) {
-        console.log('[RC] Ensuring logIn before purchase...');
-        const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
-        setRcLoggedIn(true);
-        queryClient.setQueryData(['rc-customer-info'], loginInfo);
-      }
-      console.log('[RC] Purchasing package:', pkg.identifier);
-      const { customerInfo } = await Purchases.purchasePackage(pkg);
-      return customerInfo;
-    },
-    onSuccess: (info) => {
-      console.log('[RC] Purchase successful');
-      queryClient.setQueryData(['rc-customer-info'], info);
-      const isPremium = checkPremiumFromCustomerInfo(info);
-      if (isPremium) {
-        setShowPaymentSuccess(true);
-        setTimeout(() => setShowPaymentSuccess(false), 5000);
-      }
-    },
-    onError: (error: any) => {
-      if (error?.userCancelled) {
-        console.log('[RC] Purchase cancelled by user');
-        return;
-      }
-      console.log('[RC] Purchase error:', error);
-      Alert.alert('Error', error?.message ?? 'Purchase failed. Please try again.');
-    },
-  });
-
-  const restoreMutation = useMutation({
-    mutationFn: async () => {
-      if (!rcConfigured || !Purchases) {
-        console.log('[RC] Not configured, cannot restore purchases');
-        throw new Error(language === 'fr' ? 'Service d\'achat non disponible.' : 'Purchase service not available.');
-      }
-      console.log('[RC] Restoring purchases...');
-      const info = await Purchases.restorePurchases();
-      return info;
-    },
-    onSuccess: (info) => {
-      queryClient.setQueryData(['rc-customer-info'], info);
-      const isPremium = checkPremiumFromCustomerInfo(info);
-      if (isPremium) {
-        Alert.alert('✅', language === 'fr'
-          ? 'Votre abonnement Premium a été restauré !'
-          : 'Your premium subscription has been restored!');
-      } else {
-        Alert.alert('ℹ️', language === 'fr'
-          ? 'Aucun abonnement actif trouvé.'
-          : 'No active subscription found.');
-      }
-    },
-    onError: (error: any) => {
-      console.log('[RC] Restore error:', error);
-      Alert.alert('Error', error?.message ?? 'Failed to restore purchases.');
-    },
-  });
-
-  const currentOffering = useMemo<PurchasesOffering | null>(() => {
-    return offeringsQuery.data?.current ?? null;
-  }, [offeringsQuery.data]);
 
   const currency = useMemo<Currency>(() => countryConfigs[country].currency, [country]);
   const currencySymbol = useMemo(() => countryConfigs[country].currencySymbol, [country]);
@@ -499,28 +268,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
     }
 
-    if (rcConfigured && params.uid) {
-      try {
-        console.log('[RC] Calling Purchases.logIn after auth...');
-        const { customerInfo } = await Purchases.logIn(params.uid);
-        setRcLoggedIn(true);
-        queryClient.setQueryData(['rc-customer-info'], customerInfo);
-        console.log('[RC] logIn after auth successful');
-
-        const isPremium = checkPremiumFromCustomerInfo(customerInfo);
-        const plan = getPlanFromCustomerInfo(customerInfo);
-        if (isPremium) {
-          setUser(prev => {
-            const premiumUser = { ...prev, isPremium, plan };
-            void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(premiumUser));
-            return premiumUser;
-          });
-        }
-      } catch (e) {
-        console.log('[RC] logIn after auth error:', e);
-      }
-    }
-  }, [queryClient]);
+  }, []);
 
   const logoutUser = useCallback(async () => {
     console.log('[Auth] Logging out user');
@@ -532,71 +280,24 @@ export const [AppProvider, useApp] = createContextHook(() => {
       provider: null,
     });
     await AsyncStorage.removeItem(STORAGE_KEYS.auth);
-    setRcLoggedIn(false);
-
-    if (rcConfigured) {
-      try {
-        await Purchases.logOut();
-        console.log('[RC] Logged out from RevenueCat');
-      } catch (e) {
-        console.log('[RC] logOut error:', e);
-      }
-    }
 
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
     await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ email: '', name: '', isPremium: false, plan: 'free' }));
   }, []);
 
-  const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
-    if (!rcConfigured || !Purchases) {
-      console.log('[RC] Not configured, cannot upgrade');
-      Alert.alert('Error', language === 'fr'
-        ? 'Service d\'achat non disponible. Veuillez réessayer plus tard.'
-        : 'Purchase service not available. Please try again later.');
-      return;
-    }
-    if (!currentOffering || currentOffering.availablePackages.length === 0) {
-      console.log('[RC] No offering available, attempting to refetch...');
-      try {
-        const offerings = await Purchases.getOfferings();
-        if (offerings.current && offerings.current.availablePackages.length > 0) {
-          queryClient.setQueryData(['rc-offerings'], offerings);
-          console.log('[RC] Refetched offerings successfully');
-          const offering = offerings.current;
-          const pkg = findPackage(offering.availablePackages, plan);
-          if (pkg) {
-            purchaseMutation.mutate(pkg);
-            return;
-          }
-        }
-      } catch (e) {
-        console.log('[RC] Error refetching offerings:', e);
-      }
-      Alert.alert('Error', language === 'fr'
-        ? 'Aucun forfait disponible. Veuillez réessayer plus tard.'
-        : 'No subscription packages available. Please try again later.');
-      return;
-    }
-    const pkg = findPackage(currentOffering.availablePackages, plan);
-    if (!pkg) {
-      console.log('[RC] Package not found for plan:', plan, 'Available:', currentOffering.availablePackages.map((p: PurchasesPackage) => `${p.identifier} / ${p.product?.identifier}`));
-      Alert.alert('Error', language === 'fr'
-        ? 'Forfait introuvable.'
-        : 'Subscription package not found.');
-      return;
-    }
-    purchaseMutation.mutate(pkg);
-  }, [currentOffering, purchaseMutation, language, queryClient]);
+  const upgradeToPremium = useCallback(async (_plan: 'monthly' | 'annual') => {
+    console.log('[IAP] upgradeToPremium called - no purchase provider configured yet');
+    Alert.alert('Info', language === 'fr'
+      ? 'Service d\'achat bientôt disponible.'
+      : 'Purchase service coming soon.');
+  }, [language]);
 
   const restorePurchases = useCallback(() => {
-    if (!rcConfigured || !Purchases) {
-      Alert.alert('Info', language === 'fr'
-        ? 'Service d\'achat non disponible dans cet environnement.'
-        : 'Purchase service not available in this environment.');
-      return;
-    }
-    restoreMutation.mutate();
-  }, [restoreMutation, language]);
+    console.log('[IAP] restorePurchases called - no purchase provider configured yet');
+    Alert.alert('Info', language === 'fr'
+      ? 'Service d\'achat bientôt disponible.'
+      : 'Purchase service coming soon.');
+  }, [language]);
 
   const deleteAllData = useCallback(async () => {
     setScans([]);
@@ -605,11 +306,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setCreditsUsed(0);
     setAuth({ isAuthenticated: false, uid: null, email: null, fullName: null, provider: null });
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
-    setRcLoggedIn(false);
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
-    if (rcConfigured) {
-      try { await Purchases.logOut(); } catch (e) { console.log('[RC] logOut error:', e); }
-    }
   }, []);
 
   return useMemo(() => ({
@@ -648,10 +345,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     deleteAllData,
     setShowPaymentSuccess,
     isLoading: settingsQuery.isLoading,
-    isPurchasing: purchaseMutation.isPending,
-    isRestoring: restoreMutation.isPending,
-    currentOffering,
-    isOfferingsLoading: offeringsQuery.isLoading,
+    isPurchasing: false,
+    isRestoring: false,
+    currentOffering: null as any,
+    isOfferingsLoading: false,
   }), [
     language, country, currency, currencySymbol, availableLanguages,
     user, scans, chatMessages, dailyMessageCount, canScan, canChat,
@@ -662,8 +359,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     t, setLanguage, setLanguageSafe,
     setCountry, addScan, addChatMessage, upgradeToPremium, restorePurchases,
     deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading,
-    purchaseMutation.isPending, restoreMutation.isPending,
-    currentOffering, offeringsQuery.isLoading,
   ]);
 });
 
