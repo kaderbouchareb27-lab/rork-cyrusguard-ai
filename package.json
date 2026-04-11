@@ -9,5 +9,6 @@
     "start": "cd expo && bun start",
     "start-web": "cd expo && bun start-web",
     "lint": "cd expo && bun lint"
-  }
+  },
+  "main": "expo-router/entry"
 }
