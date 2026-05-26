@@ -53,8 +53,6 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="scan" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="result" />
-      <Stack.Screen name="chat" />
-      <Stack.Screen name="scan-chat" />
       <Stack.Screen name="url-analyze" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="delete-account" />
       <Stack.Screen name="terms" />

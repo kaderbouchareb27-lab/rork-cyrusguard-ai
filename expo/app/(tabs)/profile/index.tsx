@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
   User, Globe, Flag, CreditCard, Crown, Trash2, LogOut,
-  FileText, Lock, HelpCircle, Info, Mail, ChevronRight, Languages, MapPin
+  FileText, Lock, HelpCircle, Info, Mail, ChevronRight, Languages, MapPin, Sparkles
 } from 'lucide-react-native';
+import { Alert } from 'react-native';
 import Colors from '@/constants/colors';
 import { useApp, type Country } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
@@ -13,7 +14,33 @@ import type { Language } from '@/constants/translations';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { t, language, country, currencySymbol, user, availableLanguages, setLanguageSafe, setCountry, auth, logoutUser } = useApp();
+  const { t, language, country, currencySymbol, user, availableLanguages, setLanguageSafe, setCountry, auth, logoutUser, hasAcceptedAIDisclosure, revokeAIDisclosure } = useApp();
+
+  const handleAiConsent = () => {
+    if (!hasAcceptedAIDisclosure) {
+      Alert.alert(
+        language === 'fr' ? 'Consentement IA' : 'AI Consent',
+        language === 'fr'
+          ? 'Vous n\'avez pas encore accepté l\'analyse IA. Elle vous sera proposée lors de votre prochain scan.'
+          : 'You have not accepted AI analysis yet. You will be prompted at your next scan.',
+      );
+      return;
+    }
+    Alert.alert(
+      language === 'fr' ? 'Révoquer le consentement IA ?' : 'Revoke AI consent?',
+      language === 'fr'
+        ? 'Vous devrez réaccepter pour utiliser l\'analyse IA à nouveau.'
+        : 'You will need to accept again to use AI analysis.',
+      [
+        { text: language === 'fr' ? 'Annuler' : 'Cancel', style: 'cancel' as const },
+        {
+          text: language === 'fr' ? 'Révoquer' : 'Revoke',
+          style: 'destructive' as const,
+          onPress: () => { void revokeAIDisclosure(); },
+        },
+      ],
+    );
+  };
 
   const allLanguageOptions: { key: Language; label: string }[] = [
     { key: 'fr', label: t('french') },
@@ -87,6 +114,18 @@ export default function ProfileScreen() {
           value: currencyDisplay,
           color: Colors.accent,
           onPress: () => {},
+        },
+      ],
+    },
+    {
+      title: t('aiTransparencySection'),
+      items: [
+        {
+          icon: Sparkles,
+          label: t('aiConsentLabel'),
+          value: hasAcceptedAIDisclosure ? t('aiConsentAccepted') : t('aiConsentPending'),
+          color: hasAcceptedAIDisclosure ? Colors.accent : Colors.textMuted,
+          onPress: handleAiConsent,
         },
       ],
     },

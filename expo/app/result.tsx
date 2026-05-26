@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { 
-  AlertTriangle, CheckCircle, MessageCircle, ExternalLink,
-  Phone, ChevronLeft, Lightbulb, Flag
+  AlertTriangle, CheckCircle, ExternalLink,
+  Phone, ChevronLeft, Lightbulb, Flag, Shield
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
@@ -77,12 +77,7 @@ export default function ResultScreen() {
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('analysisComplete')}</Text>
-          <TouchableOpacity
-            style={styles.chatBtn}
-            onPress={() => router.push({ pathname: '/scan-chat' as any, params: { scanId: scan.id } })}
-          >
-            <MessageCircle size={20} color={Colors.accent} />
-          </TouchableOpacity>
+          <View style={styles.backBtn} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -184,12 +179,15 @@ export default function ResultScreen() {
 
           <TouchableOpacity
             style={styles.discussBtn}
-            onPress={() => router.push({ pathname: '/scan-chat' as any, params: { scanId: scan.id } })}
+            onPress={() => router.push('/scan' as any)}
             activeOpacity={0.8}
+            testID="new-scan-btn"
           >
-            <MessageCircle size={20} color={Colors.background} />
-            <Text style={styles.discussBtnText}>{t('scanChat')}</Text>
+            <Shield size={20} color={Colors.background} />
+            <Text style={styles.discussBtnText}>{t('newScan')}</Text>
           </TouchableOpacity>
+
+          <Text style={styles.aiNotice}>{t('aiNotice')}</Text>
 
           <View style={styles.bottomSpace} />
         </ScrollView>
@@ -232,13 +230,14 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textPrimary,
   },
-  chatBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+  aiNotice: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center' as const,
+    marginTop: 14,
+    paddingHorizontal: 24,
+    lineHeight: 16,
+    fontStyle: 'italic' as const,
   },
   content: {
     paddingHorizontal: 20,

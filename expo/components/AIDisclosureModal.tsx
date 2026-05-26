@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react-native';
-import { Shield, Eye } from 'lucide-react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, ScrollView } from 'react-native';
+import { Shield, Sparkles, Lock, Database, X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
@@ -11,7 +11,7 @@ interface AIDisclosureModalProps {
 }
 
 export default function AIDisclosureModal({ visible, onAccept, onClose }: AIDisclosureModalProps) {
-  const { t, language } = useApp();
+  const { t } = useApp();
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -40,17 +40,44 @@ export default function AIDisclosureModal({ visible, onAccept, onClose }: AIDisc
           <View style={styles.iconContainer}>
             <View style={styles.iconOuter}>
               <View style={styles.iconInner}>
-                <Eye size={28} color={Colors.accent} />
+                <Sparkles size={28} color={Colors.accent} />
               </View>
             </View>
           </View>
 
           <Text style={styles.title}>{t('aiDisclosureTitle')}</Text>
+          <Text style={styles.subtitle}>{t('aiDisclosureSubtitle')}</Text>
 
-          <View style={styles.messageBubble}>
-            <Shield size={16} color={Colors.info} style={styles.shieldIcon} />
-            <Text style={styles.message}>{t('aiDisclosureMessage')}</Text>
-          </View>
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletIcon, { backgroundColor: Colors.accentMuted }]}>
+                <Shield size={16} color={Colors.accent} />
+              </View>
+              <View style={styles.bulletTextWrap}>
+                <Text style={styles.bulletTitle}>{t('aiBullet1Title')}</Text>
+                <Text style={styles.bulletDesc}>{t('aiBullet1Desc')}</Text>
+              </View>
+            </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletIcon, { backgroundColor: Colors.infoMuted }]}>
+                <Database size={16} color={Colors.info} />
+              </View>
+              <View style={styles.bulletTextWrap}>
+                <Text style={styles.bulletTitle}>{t('aiBullet2Title')}</Text>
+                <Text style={styles.bulletDesc}>{t('aiBullet2Desc')}</Text>
+              </View>
+            </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletIcon, { backgroundColor: 'rgba(168,85,247,0.15)' }]}>
+                <Lock size={16} color="#A855F7" />
+              </View>
+              <View style={styles.bulletTextWrap}>
+                <Text style={styles.bulletTitle}>{t('aiBullet3Title')}</Text>
+                <Text style={styles.bulletDesc}>{t('aiBullet3Desc')}</Text>
+              </View>
+            </View>
+            <Text style={styles.fineprint}>{t('aiDisclosureFineprint')}</Text>
+          </ScrollView>
 
           <TouchableOpacity
             style={styles.acceptBtn}
@@ -58,17 +85,19 @@ export default function AIDisclosureModal({ visible, onAccept, onClose }: AIDisc
             activeOpacity={0.8}
             testID="ai-disclosure-accept-btn"
           >
+            <Shield size={18} color={Colors.background} />
             <Text style={styles.acceptBtnText}>{t('aiDisclosureAccept')}</Text>
           </TouchableOpacity>
 
           {onClose && (
             <TouchableOpacity
-              style={styles.closeBtn}
+              style={styles.refuseBtn}
               onPress={onClose}
               activeOpacity={0.7}
-              testID="ai-disclosure-close-btn"
+              testID="ai-disclosure-refuse-btn"
             >
-              <Text style={styles.closeBtnText}>{language === 'fr' ? 'Annuler' : 'Cancel'}</Text>
+              <X size={16} color={Colors.danger} />
+              <Text style={styles.refuseBtnText}>{t('aiDisclosureRefuse')}</Text>
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -80,87 +109,130 @@ export default function AIDisclosureModal({ visible, onAccept, onClose }: AIDisc
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: 22,
   },
   card: {
     backgroundColor: Colors.backgroundCard,
     borderRadius: 24,
-    padding: 28,
+    paddingVertical: 24,
+    paddingHorizontal: 22,
     width: '100%',
-    maxWidth: 380,
-    alignItems: 'center',
+    maxWidth: 400,
+    maxHeight: '88%',
     borderWidth: 1,
     borderColor: Colors.border,
   },
   iconContainer: {
-    marginBottom: 20,
+    alignItems: 'center' as const,
+    marginBottom: 14,
   },
   iconOuter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     backgroundColor: Colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconInner: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontSize: 20,
-    fontWeight: '700' as const,
+    fontWeight: '800' as const,
     color: Colors.textPrimary,
     textAlign: 'center' as const,
-    marginBottom: 16,
+    letterSpacing: -0.3,
   },
-  messageBubble: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 18,
+  subtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center' as const,
+    marginTop: 6,
+    marginBottom: 18,
+    lineHeight: 19,
+  },
+  scroll: {
     width: '100%',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    maxHeight: 280,
+    marginBottom: 12,
+  },
+  scrollContent: {
+    paddingVertical: 2,
+  },
+  bulletRow: {
     flexDirection: 'row' as const,
     gap: 12,
+    marginBottom: 14,
+    alignItems: 'flex-start' as const,
   },
-  shieldIcon: {
-    marginTop: 2,
+  bulletIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
   },
-  message: {
+  bulletTextWrap: {
     flex: 1,
+  },
+  bulletTitle: {
     fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    marginBottom: 3,
+  },
+  bulletDesc: {
+    fontSize: 12,
     color: Colors.textSecondary,
-    lineHeight: 22,
+    lineHeight: 17,
+  },
+  fineprint: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    lineHeight: 16,
+    textAlign: 'center' as const,
+    marginTop: 6,
+    paddingHorizontal: 4,
   },
   acceptBtn: {
+    flexDirection: 'row' as const,
     backgroundColor: Colors.accent,
     borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
     width: '100%',
-    alignItems: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    marginTop: 6,
   },
   acceptBtnText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+    fontSize: 15,
+    fontWeight: '800' as const,
     color: Colors.background,
+    letterSpacing: 0.2,
   },
-  closeBtn: {
+  refuseBtn: {
+    flexDirection: 'row' as const,
     paddingVertical: 12,
+    marginTop: 6,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
   },
-  closeBtnText: {
-    fontSize: 14,
+  refuseBtnText: {
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: Colors.textMuted,
+    color: Colors.danger,
   },
 });

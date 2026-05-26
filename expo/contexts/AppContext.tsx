@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { translations, type Language } from '@/constants/translations';
-import { type ScanResult, type ChatMessage } from '@/mocks/scans';
+import { type ScanResult } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
 import {
   configureRevenueCat,
@@ -43,8 +43,6 @@ const STORAGE_KEYS = {
   country: 'cyrusguard_country',
   scans: 'cyrusguard_scans',
   user: 'cyrusguard_user',
-  chatMessages: 'cyrusguard_chat',
-  dailyMessages: 'cyrusguard_daily_msgs',
   creditsUsed: 'cyrusguard_credits_used',
   aiDisclosure: 'cyrusguard_ai_disclosure',
   auth: 'cyrusguard_auth',
@@ -56,8 +54,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [language, setLanguageState] = useState<Language>('fr');
   const [country, setCountryState] = useState<Country>('CA');
   const [scans, setScans] = useState<ScanResult[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [dailyMessageCount, setDailyMessageCount] = useState<number>(0);
   const [user, setUser] = useState<UserProfile>({
     email: '',
     name: '',
@@ -79,7 +75,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     queryKey: ['app-settings'],
     queryFn: async () => {
       try {
-        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr, scansStr, chatStr] = await Promise.all([
+        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr, scansStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.language),
           AsyncStorage.getItem(STORAGE_KEYS.country),
           AsyncStorage.getItem(STORAGE_KEYS.user),
@@ -87,7 +83,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
           AsyncStorage.getItem(STORAGE_KEYS.aiDisclosure),
           AsyncStorage.getItem(STORAGE_KEYS.auth),
           AsyncStorage.getItem(STORAGE_KEYS.scans),
-          AsyncStorage.getItem(STORAGE_KEYS.chatMessages),
         ]);
         let parsedUser = null;
         if (userStr) {
@@ -109,10 +104,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
         if (scansStr) {
           try { parsedScans = JSON.parse(scansStr); } catch (e) { console.log('[AppContext] Failed to parse scans:', e); }
         }
-        let parsedChat: ChatMessage[] = [];
-        if (chatStr) {
-          try { parsedChat = JSON.parse(chatStr); } catch (e) { console.log('[AppContext] Failed to parse chat:', e); }
-        }
         return {
           language: (langStr as Language) || 'fr',
           country: (countryStr as Country) || 'CA',
@@ -121,7 +112,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
           hasAcceptedAIDisclosure: disclosureStr === 'true',
           auth: parsedAuth,
           scans: parsedScans,
-          chatMessages: parsedChat,
         };
       } catch (e) {
         console.log('[AppContext] Error loading settings:', e);
@@ -133,7 +123,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
           hasAcceptedAIDisclosure: false,
           auth: null,
           scans: [] as ScanResult[],
-          chatMessages: [] as ChatMessage[],
         };
       }
     },
@@ -151,9 +140,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
       }
       if (settingsQuery.data.scans && settingsQuery.data.scans.length > 0) {
         setScans(settingsQuery.data.scans);
-      }
-      if (settingsQuery.data.chatMessages && settingsQuery.data.chatMessages.length > 0) {
-        setChatMessages(settingsQuery.data.chatMessages);
       }
     }
   }, [settingsQuery.data]);
@@ -198,21 +184,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     });
   }, []);
 
-  const addChatMessageToStorage = useCallback((msgs: ChatMessage[]) => {
-    void AsyncStorage.setItem(STORAGE_KEYS.chatMessages, JSON.stringify(msgs.slice(-100)));
-  }, []);
-
-  const addChatMessage = useCallback((msg: ChatMessage) => {
-    setChatMessages(prev => {
-      const updated = [...prev, msg];
-      addChatMessageToStorage(updated);
-      return updated;
-    });
-    if (msg.role === 'user') {
-      setDailyMessageCount(prev => prev + 1);
-    }
-  }, [addChatMessageToStorage]);
-
   const remainingCredits = useMemo(() => {
     if (user.isPremium) return Infinity;
     return Math.max(0, FREE_CREDITS - creditsUsed);
@@ -231,13 +202,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [user.isPremium, auth.isAuthenticated]);
 
   const canScan = canUseFeature;
-  const canChat = canUseFeature;
-  const canSendMessage = canUseFeature;
 
   const acceptAIDisclosure = useCallback(async () => {
     setHasAcceptedAIDisclosureState(true);
     await AsyncStorage.setItem(STORAGE_KEYS.aiDisclosure, 'true');
     console.log('[AppContext] AI disclosure accepted');
+  }, []);
+
+  const revokeAIDisclosure = useCallback(async () => {
+    setHasAcceptedAIDisclosureState(false);
+    await AsyncStorage.removeItem(STORAGE_KEYS.aiDisclosure);
+    console.log('[AppContext] AI disclosure revoked');
   }, []);
 
   const consumeCredit = useCallback(() => {
@@ -492,9 +467,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const deleteAllData = useCallback(async () => {
     setScans([]);
-    setChatMessages([]);
-    setDailyMessageCount(0);
     setCreditsUsed(0);
+    setHasAcceptedAIDisclosureState(false);
     setAuth({ isAuthenticated: false, uid: null, email: null, fullName: null, provider: null });
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
@@ -508,11 +482,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     availableLanguages,
     user,
     scans,
-    chatMessages,
-    dailyMessageCount,
     canScan,
-    canChat,
-    canSendMessage,
     remainingCredits,
     creditsUsed,
     consumeCredit,
@@ -522,6 +492,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     showPaymentSuccess,
     hasAcceptedAIDisclosure,
     acceptAIDisclosure,
+    revokeAIDisclosure,
     auth,
     loginUser,
     logoutUser,
@@ -530,7 +501,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setLanguageSafe,
     setCountry,
     addScan,
-    addChatMessage,
     upgradeToPremium,
     restorePurchases,
     deleteAllData,
@@ -542,13 +512,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
     isOfferingsLoading: offeringsQuery.isLoading,
   }), [
     language, country, currency, currencySymbol, availableLanguages,
-    user, scans, chatMessages, dailyMessageCount, canScan, canChat,
-    canSendMessage, remainingCredits, creditsUsed, consumeCredit,
+    user, scans, canScan,
+    remainingCredits, creditsUsed, consumeCredit,
     canUseFeature, needsPaywall, needsAccountCreation, showPaymentSuccess,
-    hasAcceptedAIDisclosure, acceptAIDisclosure,
+    hasAcceptedAIDisclosure, acceptAIDisclosure, revokeAIDisclosure,
     auth, loginUser, logoutUser,
     t, setLanguage, setLanguageSafe,
-    setCountry, addScan, addChatMessage, upgradeToPremium, restorePurchases,
+    setCountry, addScan, upgradeToPremium, restorePurchases,
     deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading,
     purchaseMutation.isPending, restoreMutation.isPending,
     offeringsQuery.data, offeringsQuery.isLoading,

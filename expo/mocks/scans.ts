@@ -21,14 +21,6 @@ export interface ScanResult {
   url?: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  imageUri?: string;
-}
-
 export const mockScans: ScanResult[] = [
   {
     id: '1',
