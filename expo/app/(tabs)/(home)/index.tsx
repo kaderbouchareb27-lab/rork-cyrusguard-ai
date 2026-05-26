@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Shield, Camera, Link, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail } from 'lucide-react-native';
+import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryAlerts, trendingScamsByCountry, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
 
-function AlertCard({ alert, t }: { alert: AlertData; t: (key: string) => string }) {
+function AlertCard({ alert }: { alert: AlertData }) {
   const isHigh = alert.severity === 'high';
 
   return (
@@ -18,7 +18,7 @@ function AlertCard({ alert, t }: { alert: AlertData; t: (key: string) => string 
         <View style={[alertStyles.severityBadge, isHigh ? alertStyles.severityHigh : alertStyles.severityMedium]}>
           {isHigh ? <AlertTriangle size={11} color={Colors.danger} /> : <Bell size={11} color={Colors.warning} />}
           <Text style={[alertStyles.severityText, isHigh ? alertStyles.severityTextHigh : alertStyles.severityTextMedium]}>
-            {isHigh ? t('highSeverity') : t('mediumSeverity')}
+            {isHigh ? 'Urgente' : 'Attention'}
           </Text>
         </View>
         <Text style={alertStyles.date}>{alert.date}</Text>
@@ -89,7 +89,7 @@ const alertStyles = StyleSheet.create({
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { t, language, country, scans, showPaymentSuccess, setShowPaymentSuccess, user, remainingCredits, canScan } = useApp();
+  const { t, language, country, scans, showPaymentSuccess, setShowPaymentSuccess, user, remainingCredits, canScan, canChat } = useApp();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bannerAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -247,27 +247,39 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionCard, !canScan && styles.actionCardLocked]}
+              style={styles.actionCard}
+              onPress={() => router.push('/url-analyze' as any)}
+              activeOpacity={0.7}
+              testID="action-url"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: Colors.infoMuted }]}>
+                <Link size={22} color={Colors.info} />
+              </View>
+              <Text style={styles.actionLabel}>{t('analyzeUrl')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, !canChat && styles.actionCardLocked]}
               onPress={() => {
-                if (canScan) {
-                  router.push('/url-analyze' as any);
+                if (canChat) {
+                  router.push('/chat' as any);
                 } else {
                   router.push('/(tabs)/premium' as any);
                 }
               }}
               activeOpacity={0.7}
-              testID="action-url"
+              testID="action-chat"
             >
-              {!canScan && (
+              {!canChat && (
                 <View style={styles.premiumBadge}>
                   <Crown size={10} color="#FFD700" />
                   <Text style={styles.premiumBadgeText}>Premium</Text>
                 </View>
               )}
-              <View style={[styles.actionIcon, { backgroundColor: canScan ? Colors.infoMuted : Colors.dangerMuted }]}>
-                <Link size={22} color={canScan ? Colors.info : Colors.danger} />
+              <View style={[styles.actionIcon, { backgroundColor: canChat ? 'rgba(168,85,247,0.15)' : 'rgba(255,215,0,0.1)' }]}>
+                <MessageCircle size={22} color={canChat ? '#A855F7' : '#94A3B8'} />
               </View>
-              <Text style={styles.actionLabel}>{t('analyzeUrl')}</Text>
+              <Text style={[styles.actionLabel, !canChat && styles.actionLabelLocked]}>{t('chatWithCyrus')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -301,7 +313,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.alertsScroll}
           >
             {topAlerts.map((alert) => (
-              <AlertCard key={alert.id} alert={alert} t={t} />
+              <AlertCard key={alert.id} alert={alert} />
             ))}
           </ScrollView>
 
@@ -693,5 +705,8 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#FFD700',
     letterSpacing: 0.3,
+  },
+  actionLabelLocked: {
+    color: '#94A3B8',
   },
 });

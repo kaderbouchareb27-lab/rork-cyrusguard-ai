@@ -15,16 +15,19 @@ export default function ManageSubscriptionScreen() {
   const router = useRouter();
   const {
     t, user, country, upgradeToPremium, remainingCredits,
-    restorePurchases, isPurchasing, isRestoring,
+    restorePurchases, isPurchasing, isRestoring, currentOffering,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(user.plan);
 
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
 
+  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly');
+  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual');
+
   const prices = {
-    monthly: `${currencySymbol}${config.pricing.monthly}`,
-    annual: `${currencySymbol}${config.pricing.annual}`,
+    monthly: monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`,
+    annual: annualPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.annual}`,
   };
 
   const currentPlanLabel = (): string => {

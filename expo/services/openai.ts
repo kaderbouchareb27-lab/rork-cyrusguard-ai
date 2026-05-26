@@ -169,36 +169,17 @@ Boursorama : domaine : boursorama.com
 N26 : domaine : n26.com
 Revolut France : domaine : revolut.com
 
-FRANCE - GOUVERNEMENT ET SERVICES :
+FRANCE - GOUVERNEMENT :
 Impots : domaine : impots.gouv.fr
-REGLE : Les impots ne demandent JAMAIS de payer par virement urgent par SMS. Les remboursements ne se font jamais via un lien SMS.
-Ameli (Secu sociale / CPAM) : domaine : ameli.fr
-REGLE ABSOLUE : Ameli ne demande JAMAIS de mettre a jour votre carte Vitale par SMS ou email avec un lien. Le renouvellement de carte Vitale se fait en pharmacie ou par courrier officiel.
+REGLE : Les impots ne demandent JAMAIS de payer par virement urgent par SMS.
+Ameli (Secu sociale) : domaine : ameli.fr
 CAF : domaine : caf.fr
-REGLE : La CAF ne demande jamais vos coordonnees bancaires par email ou SMS.
 Pole Emploi/France Travail : domaine : francetravail.fr
-CPF (Compte Personnel de Formation) : domaine : moncompteformation.gouv.fr
-REGLE ABSOLUE : Le CPF n'expire JAMAIS. Aucun organisme officiel ne vous appelle pour vous dire que votre CPF va expirer. Toute sollicitation telephonique pour le CPF = ARNAQUE.
 La Poste : domaine : laposte.fr
-Chronopost : domaine : chronopost.fr
-Colissimo : domaine : colissimo.fr
-REGLE : La Poste, Chronopost et Colissimo ne demandent JAMAIS de frais par SMS pour liberer un colis. Les faux SMS de livraison avec lien = ARNAQUE.
+REGLE : La Poste ne demande JAMAIS de frais par SMS pour liberer un colis.
 Gouvernement : domaine : gouv.fr, service-public.fr
 ANSSI : domaine : ssi.gouv.fr
 Cybermalveillance : domaine : cybermalveillance.gouv.fr
-Vignette Crit'Air : domaine : certificat-air.gouv.fr
-REGLE : Le seul site officiel pour commander la vignette Crit'Air est certificat-air.gouv.fr. Tout autre site est frauduleux.
-ANTAI (amendes) : domaine : amendes.gouv.fr
-REGLE : Les amendes se paient uniquement sur amendes.gouv.fr. Tout SMS avec un lien pour payer une amende = ARNAQUE.
-EDF : domaine : edf.fr
-Engie : domaine : engie.fr
-REGLE : EDF et Engie ne menacent JAMAIS de couper l'electricite par email ou SMS avec un lien de paiement.
-
-FRANCE - ARNAQUES SPECIFIQUES :
-Arnaque au faux conseiller bancaire : Un escroc appelle en se faisant passer pour votre banque (numero spoofe), pretend qu'une fraude est en cours et vous demande de valider des operations pour les "annuler". REGLE : Votre banque ne vous demande JAMAIS de valider des operations par telephone. Raccrochez et appelez le numero au dos de votre carte.
-Arnaque au faux virement : SMS ou email pretendant qu'un virement est bloque et qu'il faut confirmer vos coordonnees bancaires.
-Arnaque au faux PV : SMS pretendant que vous avez un PV impaye avec un lien. Les PV se paient uniquement sur amendes.gouv.fr.
-Arnaque RIB : Email pirate demandant de changer le RIB d'un fournisseur/proprietaire. Toujours verifier par telephone au numero connu.
 
 ETATS-UNIS - BANQUES ET SERVICES :
 Chase : domaine : chase.com
@@ -211,21 +192,10 @@ Venmo : domaine : venmo.com
 Zelle : domaine : zellepay.com
 Cash App : domaine : cash.app
 IRS (fisc USA) : domaine : irs.gov
-REGLE ABSOLUE : L'IRS ne contacte JAMAIS par SMS ou appel pour demander un paiement immediat. Toujours par courrier postal officiel. L'IRS ne menace jamais d'arrestation.
+REGLE ABSOLUE : L'IRS ne contacte JAMAIS par SMS ou appel pour demander un paiement immediat. Toujours par courrier postal officiel.
 USPS (poste USA) : domaine : usps.com
 REGLE : USPS ne demande JAMAIS de frais par SMS avec un lien.
-Social Security Administration (SSA) : domaine : ssa.gov
-REGLE ABSOLUE : La SSA ne suspend JAMAIS votre numero de securite sociale. Elle ne demande JAMAIS de paiement par carte cadeau, virement ou crypto. Elle n'appelle jamais pour menacer d'arrestation.
-Medicare : domaine : medicare.gov, cms.gov
-REGLE : Medicare ne vous appelle JAMAIS pour vous demander votre numero Medicare sauf si vous avez appele en premier. Aucune offre de Medicare par telephone non sollicite n'est legitime.
-FBI : domaine : fbi.gov
-REGLE : Le FBI ne contacte JAMAIS par email ou SMS pour demander de l'argent ou menacer d'arrestation. Les faux emails FBI sont toujours des arnaques.
-DMV (permis de conduire) : domaine varie par etat (.gov)
-REGLE : Le DMV ne vous contacte JAMAIS par SMS pour renouveler votre permis avec un lien.
-Federal Student Aid : domaine : studentaid.gov
-REGLE : Le gouvernement ne vous appelle jamais pour offrir un programme de remise de pret etudiant en echange d'un paiement immediat.
-Utility companies (Con Edison, PG&E, Duke Energy, etc.) : domaines officiels par etat
-REGLE : Les compagnies d'electricite/gaz ne menacent JAMAIS de couper le courant en 30 minutes par telephone. Elles envoient des avis ecrits.
+Social Security : domaine : ssa.gov
 
 GRANDES PLATEFORMES MONDIALES :
 Apple : domaine : apple.com, icloud.com (JAMAIS apple-support.net ou similaire)
@@ -265,18 +235,8 @@ Signaux : expediteur avec domaine different, fautes subtiles dans le domaine (pa
 
 TYPE 3 - VISHING (Arnaque par Telephone) :
 Appels frauduleux imitant des agents officiels.
-Signaux : menace d'arrestation par l'ARC/IRS/SSA, paiement en cartes-cadeaux, paiement en crypto, faux agent de banque demandant transfert vers compte securise, faux support technique, numero falsifie (spoofing), pression extreme, fausse suspension de numero de securite sociale, faux agent FBI/police.
-REGLES : L'ARC/IRS ne demande JAMAIS de payer en cartes-cadeaux. Votre banque ne demande JAMAIS de transferer vers un compte securise. La police ne demande JAMAIS d'argent par telephone. Microsoft/Apple ne vous appellent JAMAIS pour dire que votre PC est infecte. La SSA ne suspend jamais votre numero. Le FBI ne demande jamais d'argent par telephone.
-
-TYPE 3B - ARNAQUES USA SPECIFIQUES :
-Medicare scam : Appels non sollicites offrant des kits COVID gratuits, de nouveaux plans Medicare, ou demandant votre numero Medicare. Aucune offre legitime par telephone.
-SSA impersonation : Appels pretendant que votre numero de securite sociale est suspendu ou lie a un crime. Demandent un paiement immediat par carte cadeau ou crypto.
-FBI impersonation : Emails ou appels pretendant etre le FBI menaçant d'arrestation si vous ne payez pas. Le FBI ne fait jamais cela.
-Jury duty scam : Appels disant que vous avez rate un jury et qu'un mandat est emis. Demandent un paiement pour annuler le mandat.
-Student loan forgiveness scam : Appels ou SMS offrant une remise totale de prets etudiants moyennant des frais. Le programme federal ne demande jamais de frais.
-Utility scam : Appels de faux employes d'electricite/gaz menaçant de couper le courant dans l'heure. Demandent un paiement immediat.
-Zelle/Venmo scam : Faux SMS pretendant qu'un transfert Zelle/Venmo est en attente, demandant de confirmer via un lien frauduleux.
-Amazon/Apple receipt scam : Emails ou appels pretendant qu'un achat de 999$ a ete effectue. Demandent d'appeler pour annuler, puis volent les infos bancaires.
+Signaux : menace d'arrestation par l'ARC/IRS, paiement en cartes-cadeaux, paiement en crypto, faux agent de banque demandant transfert vers compte securise, faux support technique, numero falsifie (spoofing), pression extreme.
+REGLES : L'ARC/IRS ne demande JAMAIS de payer en cartes-cadeaux. Votre banque ne demande JAMAIS de transferer vers un compte securise. La police ne demande JAMAIS d'argent par telephone. Microsoft/Apple ne vous appellent JAMAIS pour dire que votre PC est infecte.
 
 TYPE 4 - ARNAQUE MARKETPLACE (Facebook, Kijiji, LeBonCoin) :
 Faux acheteurs ou vendeurs sur plateformes d'annonces.
@@ -363,12 +323,9 @@ You specialize in the UNITED STATES. You speak clear, friendly American English.
 Reporting organizations:
 Federal Trade Commission (FTC) : ReportFraud.ftc.gov | 1-877-382-4357
 FBI Internet Crime Complaint Center (IC3) : ic3.gov
-Social Security Administration OIG : oig.ssa.gov | 1-800-269-0271
 AARP Fraud Watch Network : 877-908-3360
 State Attorney General's office
 Better Business Bureau (BBB)
-USPS Postal Inspection Service : uspis.gov
-Medicare fraud hotline : 1-800-HHS-TIPS (1-800-447-8477)
 Your bank: call the number on the BACK of your card`,
 
   FR: `
@@ -377,12 +334,10 @@ Tu es specialise pour la FRANCE. Tu parles en francais standard, de maniere clai
 Organismes de signalement :
 Cybermalveillance.gouv.fr
 Signal Spam : signal-spam.fr
-Pharos (signalement en ligne) : internet-signalement.gouv.fr
-33700 : Transférez les SMS frauduleux au 33700 pour les signaler
+Pharos : internet-signalement.gouv.fr
 Info Escroqueries : 0 805 805 817 (appel gratuit)
-3018 (numero national contre le harcelement et les arnaques en ligne)
-DGCCRF (Direction generale de la concurrence) : signal.conso.gouv.fr
-Banque de France : abeis-acpr.banque-france.fr (pour les arnaques financieres)
+3018 (numero national)
+DGCCRF (Direction generale de la concurrence)
 Votre banque : appelez le numero au DOS de votre carte`,
 };
 
@@ -1060,4 +1015,94 @@ ${reportingOrgs}`;
   }
 }
 
+export async function sendChatMessage(
+  userMessage: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  language: string,
+  country: Country = 'CA',
+): Promise<string> {
+  console.log('[AI] Sending chat message via Rork Toolkit');
 
+  const langInstruction = language === 'fr'
+    ? 'L\'utilisateur parle français. Réponds en français.'
+    : 'The user speaks English. Respond in English.';
+
+  const chatBehavior = language === 'fr'
+    ? `\n\nCOMPORTEMENT EN CHAT :\n- Réponds de manière simple, courte et claire\n- Fais de la prévention : explique pourquoi c'est dangereux et comment se protéger\n- Si l'utilisateur te montre un SMS, email, message WhatsApp, annonce Facebook ou lien suspect, analyse-le et dis-lui clairement si c'est une arnaque ou non\n- Donne toujours des conseils concrets : "Ne clique pas", "Bloque ce numéro", "Signale ce message"\n- Si c'est sécuritaire, rassure l'utilisateur\n- Tu n'as PAS besoin de faire un rapport formel, parle comme un ami qui protège\n- Utilise des emojis pour rendre tes réponses plus lisibles (⚠️ 🚨 ✅ 🔒 💡)\n- Si l'utilisateur pose une question générale sur les arnaques, éduque-le avec des exemples concrets`
+    : `\n\nCHAT BEHAVIOR:\n- Respond in a simple, short and clear way\n- Focus on prevention: explain why something is dangerous and how to stay safe\n- If the user shows you a suspicious SMS, email, WhatsApp message, Facebook ad or link, analyze it and clearly tell them if it's a scam or not\n- Always give concrete advice: "Don't click", "Block this number", "Report this message"\n- If it's safe, reassure the user\n- You do NOT need to make a formal report, talk like a friend who's looking out for them\n- Use emojis to make your responses easier to read (⚠️ 🚨 ✅ 🔒 💡)\n- If the user asks a general question about scams, educate them with concrete examples`;
+
+  const systemContent = `${getCyrusPrompt(country)}\n\n${langInstruction}${chatBehavior}`;
+
+  const messages: ToolkitMessage[] = [
+    { role: 'user', content: systemContent + '\n\nUser: ' + (conversationHistory.length > 0 ? conversationHistory[0].content : userMessage) },
+  ];
+
+  for (let i = 0; i < conversationHistory.length; i++) {
+    const msg = conversationHistory[i];
+    if (i === 0) continue;
+    messages.push({ role: msg.role, content: msg.content });
+  }
+
+  if (conversationHistory.length > 0) {
+    messages.push({ role: 'user', content: userMessage });
+  }
+
+  const response = await generateText({ messages });
+  return stripMarkdown(response || '');
+}
+
+export async function sendScanChatMessage(
+  userMessage: string,
+  scanContext: {
+    riskScore: number;
+    riskLevel: string;
+    sourceType: string;
+    summary: string;
+    suspiciousElements: string[];
+    reassuringElements: string[];
+    advice: string[];
+  },
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  language: string,
+  country: Country = 'CA',
+): Promise<string> {
+  console.log('[AI] Sending scan chat message via Rork Toolkit');
+
+  const langInstruction = language === 'fr'
+    ? 'L\'utilisateur parle français. Réponds en français.'
+    : 'The user speaks English. Respond in English.';
+
+  const scanInfo = `
+Scan context:
+- Risk Score: ${scanContext.riskScore}/100
+- Risk Level: ${scanContext.riskLevel}
+- Source Type: ${scanContext.sourceType}
+- Summary: ${scanContext.summary}
+- Suspicious Elements: ${scanContext.suspiciousElements.join(', ')}
+- Reassuring Elements: ${scanContext.reassuringElements.join(', ')}
+- Advice given: ${scanContext.advice.join(', ')}
+`;
+
+  const systemContent = `${getCyrusPrompt(country)}\n\n${langInstruction}\n\nYou are discussing a specific scan result with the user. Here is the scan context:\n${scanInfo}\n\nAnswer the user's questions about this specific scan. Be detailed, educational, and provide actionable advice.`;
+
+  const messages: ToolkitMessage[] = [];
+
+  if (conversationHistory.length > 0) {
+    messages.push({
+      role: 'user',
+      content: systemContent + '\n\nUser: ' + conversationHistory[0].content,
+    });
+    for (let i = 1; i < conversationHistory.length; i++) {
+      messages.push({ role: conversationHistory[i].role, content: conversationHistory[i].content });
+    }
+    messages.push({ role: 'user', content: userMessage });
+  } else {
+    messages.push({
+      role: 'user',
+      content: systemContent + '\n\nUser: ' + userMessage,
+    });
+  }
+
+  const response = await generateText({ messages });
+  return stripMarkdown(response || '');
+}

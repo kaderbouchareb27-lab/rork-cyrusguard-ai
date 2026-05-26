@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { 
-  AlertTriangle, CheckCircle, ExternalLink,
-  Phone, ChevronLeft, Lightbulb, Flag, Shield
+  AlertTriangle, CheckCircle, MessageCircle, ExternalLink,
+  Phone, ChevronLeft, Lightbulb, Flag
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp, useLocalizedScan } from '@/contexts/AppContext';
-import { reportingOrganizations, type ScanResult } from '@/mocks/scans';
+import { reportingOrganizations } from '@/mocks/scans';
 import RiskCircle from '@/components/RiskCircle';
 
 export default function ResultScreen() {
@@ -18,27 +18,8 @@ export default function ResultScreen() {
   const { t, scans, language, country } = useApp();
 
   const scan = useMemo(() => scans.find(s => s.id === scanId), [scans, scanId]);
+  const localized = useLocalizedScan(scan ?? scans[0]);
   const orgs = reportingOrganizations[country] ?? reportingOrganizations.CA;
-
-  const fallbackScan: ScanResult = useMemo(() => ({
-    id: 'fallback',
-    date: new Date().toISOString(),
-    riskScore: 0,
-    riskLevel: 'low' as const,
-    sourceType: 'sms' as const,
-    summary: '',
-    summaryEn: '',
-    explanation: '',
-    explanationEn: '',
-    suspiciousElements: [],
-    suspiciousElementsEn: [],
-    reassuringElements: [],
-    reassuringElementsEn: [],
-    advice: [],
-    adviceEn: [],
-  }), []);
-
-  const localized = useLocalizedScan(scan ?? fallbackScan);
 
   if (!scan) {
     return (
@@ -77,7 +58,12 @@ export default function ResultScreen() {
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('analysisComplete')}</Text>
-          <View style={styles.backBtn} />
+          <TouchableOpacity
+            style={styles.chatBtn}
+            onPress={() => router.push({ pathname: '/scan-chat' as any, params: { scanId: scan.id } })}
+          >
+            <MessageCircle size={20} color={Colors.accent} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -179,15 +165,12 @@ export default function ResultScreen() {
 
           <TouchableOpacity
             style={styles.discussBtn}
-            onPress={() => router.push('/scan' as any)}
+            onPress={() => router.push({ pathname: '/scan-chat' as any, params: { scanId: scan.id } })}
             activeOpacity={0.8}
-            testID="new-scan-btn"
           >
-            <Shield size={20} color={Colors.background} />
-            <Text style={styles.discussBtnText}>{t('newScan')}</Text>
+            <MessageCircle size={20} color={Colors.background} />
+            <Text style={styles.discussBtnText}>{t('scanChat')}</Text>
           </TouchableOpacity>
-
-          <Text style={styles.aiNotice}>{t('aiNotice')}</Text>
 
           <View style={styles.bottomSpace} />
         </ScrollView>
@@ -230,14 +213,13 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textPrimary,
   },
-  aiNotice: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    textAlign: 'center' as const,
-    marginTop: 14,
-    paddingHorizontal: 24,
-    lineHeight: 16,
-    fontStyle: 'italic' as const,
+  chatBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.accentMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     paddingHorizontal: 20,

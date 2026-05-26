@@ -27,7 +27,7 @@ export default function AboutScreen() {
               <Shield size={40} color={Colors.accent} />
             </View>
             <Text style={styles.appName}>CyrusGuard AI</Text>
-            <Text style={styles.version}>v3.0.1</Text>
+            <Text style={styles.version}>v1.0.0</Text>
           </View>
 
           <Text style={styles.description}>

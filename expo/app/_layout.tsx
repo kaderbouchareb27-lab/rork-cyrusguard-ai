@@ -7,16 +7,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import Colors from "@/constants/colors";
-import { configureRevenueCat } from "@/services/revenueCat";
 
 try {
   void SplashScreen.preventAutoHideAsync();
 } catch (e) {
   console.log('[Layout] SplashScreen.preventAutoHideAsync error:', e);
 }
-
-// Configure RevenueCat once at module load (per RevenueCat best practices).
-configureRevenueCat();
 
 const queryClient = new QueryClient();
 
@@ -53,6 +49,8 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="scan" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="result" />
+      <Stack.Screen name="chat" />
+      <Stack.Screen name="scan-chat" />
       <Stack.Screen name="url-analyze" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="delete-account" />
       <Stack.Screen name="terms" />

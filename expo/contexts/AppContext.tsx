@@ -1,23 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
+import Purchases, {
+  type CustomerInfo,
+  type PurchasesOffering,
+  type PurchasesPackage,
+  LOG_LEVEL,
+} from 'react-native-purchases';
 import { translations, type Language } from '@/constants/translations';
-import { type ScanResult } from '@/mocks/scans';
+import { type ScanResult, type ChatMessage } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
-import {
-  configureRevenueCat,
-  getOfferings,
-  getCustomerInfo,
-  hasPremiumEntitlement,
-  pickPackage,
-  purchasePackage,
-  restorePurchases as rcRestorePurchases,
-  setRCUserId,
-  isRCAvailable,
-} from '@/services/revenueCat';
-import type { PurchasesOffering } from 'react-native-purchases';
 
 export type Country = 'CA' | 'US' | 'FR';
 
@@ -37,23 +31,73 @@ interface AuthState {
 }
 
 const FREE_CREDITS = 2;
+const ENTITLEMENT_ID = 'CyrusGuard AI Pro';
 
 const STORAGE_KEYS = {
   language: 'cyrusguard_language',
   country: 'cyrusguard_country',
   scans: 'cyrusguard_scans',
   user: 'cyrusguard_user',
+  chatMessages: 'cyrusguard_chat',
+  dailyMessages: 'cyrusguard_daily_msgs',
   creditsUsed: 'cyrusguard_credits_used',
   aiDisclosure: 'cyrusguard_ai_disclosure',
   auth: 'cyrusguard_auth',
 };
 
+function getRCApiKey(): string {
+  if (__DEV__ || Platform.OS === 'web') {
+    return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
+  }
+  return Platform.select({
+    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
+    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
+    default: process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY,
+  }) ?? '';
+}
 
+let rcConfigured = false;
+function configureRC() {
+  if (rcConfigured) return;
+  const apiKey = getRCApiKey();
+  if (!apiKey) {
+    console.log('[RC] No RevenueCat API key found, skipping configuration');
+    return;
+  }
+  try {
+    void Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    Purchases.configure({ apiKey });
+    rcConfigured = true;
+    console.log('[RC] RevenueCat configured successfully');
+  } catch (e) {
+    console.log('[RC] Error configuring RevenueCat:', e);
+  }
+}
+
+configureRC();
+
+function checkPremiumFromCustomerInfo(info: CustomerInfo): boolean {
+  const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+  return !!entitlement;
+}
+
+function getPlanFromCustomerInfo(info: CustomerInfo): 'free' | 'monthly' | 'annual' {
+  const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+  if (!entitlement) return 'free';
+  const productId = entitlement.productIdentifier ?? '';
+  if (productId.includes('yearly') || productId.includes('annual')) return 'annual';
+  if (productId.includes('monthly')) return 'monthly';
+  if (productId.includes('lifetime')) return 'annual';
+  return 'monthly';
+}
 
 export const [AppProvider, useApp] = createContextHook(() => {
+  const queryClient = useQueryClient();
   const [language, setLanguageState] = useState<Language>('fr');
   const [country, setCountryState] = useState<Country>('CA');
   const [scans, setScans] = useState<ScanResult[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [dailyMessageCount, setDailyMessageCount] = useState<number>(0);
   const [user, setUser] = useState<UserProfile>({
     email: '',
     name: '',
@@ -70,12 +114,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
     fullName: null,
     provider: null,
   });
+  const [rcLoggedIn, setRcLoggedIn] = useState<boolean>(false);
 
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
     queryFn: async () => {
       try {
-        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr, scansStr] = await Promise.all([
+        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr, scansStr, chatStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.language),
           AsyncStorage.getItem(STORAGE_KEYS.country),
           AsyncStorage.getItem(STORAGE_KEYS.user),
@@ -83,6 +128,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
           AsyncStorage.getItem(STORAGE_KEYS.aiDisclosure),
           AsyncStorage.getItem(STORAGE_KEYS.auth),
           AsyncStorage.getItem(STORAGE_KEYS.scans),
+          AsyncStorage.getItem(STORAGE_KEYS.chatMessages),
         ]);
         let parsedUser = null;
         if (userStr) {
@@ -104,6 +150,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
         if (scansStr) {
           try { parsedScans = JSON.parse(scansStr); } catch (e) { console.log('[AppContext] Failed to parse scans:', e); }
         }
+        let parsedChat: ChatMessage[] = [];
+        if (chatStr) {
+          try { parsedChat = JSON.parse(chatStr); } catch (e) { console.log('[AppContext] Failed to parse chat:', e); }
+        }
         return {
           language: (langStr as Language) || 'fr',
           country: (countryStr as Country) || 'CA',
@@ -112,6 +162,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
           hasAcceptedAIDisclosure: disclosureStr === 'true',
           auth: parsedAuth,
           scans: parsedScans,
+          chatMessages: parsedChat,
         };
       } catch (e) {
         console.log('[AppContext] Error loading settings:', e);
@@ -123,6 +174,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
           hasAcceptedAIDisclosure: false,
           auth: null,
           scans: [] as ScanResult[],
+          chatMessages: [] as ChatMessage[],
         };
       }
     },
@@ -141,10 +193,159 @@ export const [AppProvider, useApp] = createContextHook(() => {
       if (settingsQuery.data.scans && settingsQuery.data.scans.length > 0) {
         setScans(settingsQuery.data.scans);
       }
+      if (settingsQuery.data.chatMessages && settingsQuery.data.chatMessages.length > 0) {
+        setChatMessages(settingsQuery.data.chatMessages);
+      }
     }
   }, [settingsQuery.data]);
 
+  const rcLoginMutation = useMutation({
+    mutationFn: async (uid: string) => {
+      if (!rcConfigured) {
+        console.log('[RC] Not configured, skipping logIn');
+        return null;
+      }
+      console.log('[RC] Logging in with RevenueCat');
+      const { customerInfo } = await Purchases.logIn(uid);
+      return customerInfo;
+    },
+    onSuccess: (info) => {
+      if (info) {
+        console.log('[RC] logIn successful');
+        queryClient.setQueryData(['rc-customer-info'], info);
+        setRcLoggedIn(true);
+      }
+    },
+    onError: (error: any) => {
+      console.log('[RC] logIn error:', error);
+    },
+  });
 
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.uid && rcConfigured && !rcLoggedIn) {
+      console.log('[RC] Auto-login for authenticated user');
+      rcLoginMutation.mutate(auth.uid);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.isAuthenticated, auth.uid, rcLoggedIn]);
+
+  const customerInfoQuery = useQuery({
+    queryKey: ['rc-customer-info'],
+    queryFn: async () => {
+      if (!rcConfigured) return null;
+      try {
+        const info = await Purchases.getCustomerInfo();
+        console.log('[RC] Customer info fetched');
+        return info;
+      } catch (e) {
+        console.log('[RC] Error fetching customer info:', e);
+        return null;
+      }
+    },
+    refetchInterval: 60000,
+  });
+
+  const offeringsQuery = useQuery({
+    queryKey: ['rc-offerings'],
+    queryFn: async () => {
+      if (!rcConfigured) return null;
+      try {
+        const offerings = await Purchases.getOfferings();
+        console.log('[RC] Offerings fetched:', offerings.current?.identifier);
+        return offerings;
+      } catch (e) {
+        console.log('[RC] Error fetching offerings:', e);
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    const info = customerInfoQuery.data;
+    if (!info) return;
+    const isPremium = checkPremiumFromCustomerInfo(info);
+    const plan = getPlanFromCustomerInfo(info);
+    console.log('[RC] Syncing premium status');
+    setUser(prev => {
+      if (prev.isPremium === isPremium && prev.plan === plan) return prev;
+      const updated = { ...prev, isPremium, plan };
+      void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updated));
+      return updated;
+    });
+  }, [customerInfoQuery.data]);
+
+  useEffect(() => {
+    if (!rcConfigured) return;
+    const listener = (info: CustomerInfo) => {
+      console.log('[RC] CustomerInfo listener triggered');
+      queryClient.setQueryData(['rc-customer-info'], info);
+    };
+    Purchases.addCustomerInfoUpdateListener(listener);
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(listener);
+    };
+  }, [queryClient]);
+
+  const purchaseMutation = useMutation({
+    mutationFn: async (pkg: PurchasesPackage) => {
+      if (auth.isAuthenticated && !rcLoggedIn && auth.uid) {
+        console.log('[RC] Ensuring logIn before purchase...');
+        const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
+        setRcLoggedIn(true);
+        queryClient.setQueryData(['rc-customer-info'], loginInfo);
+      }
+      console.log('[RC] Purchasing package:', pkg.identifier);
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
+      return customerInfo;
+    },
+    onSuccess: (info) => {
+      console.log('[RC] Purchase successful');
+      queryClient.setQueryData(['rc-customer-info'], info);
+      const isPremium = checkPremiumFromCustomerInfo(info);
+      if (isPremium) {
+        setShowPaymentSuccess(true);
+        setTimeout(() => setShowPaymentSuccess(false), 5000);
+      }
+    },
+    onError: (error: any) => {
+      if (error?.userCancelled) {
+        console.log('[RC] Purchase cancelled by user');
+        return;
+      }
+      console.log('[RC] Purchase error:', error);
+      Alert.alert('Error', error?.message ?? 'Purchase failed. Please try again.');
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async () => {
+      console.log('[RC] Restoring purchases...');
+      const info = await Purchases.restorePurchases();
+      return info;
+    },
+    onSuccess: (info) => {
+      queryClient.setQueryData(['rc-customer-info'], info);
+      const isPremium = checkPremiumFromCustomerInfo(info);
+      if (isPremium) {
+        Alert.alert('✅', language === 'fr'
+          ? 'Votre abonnement Premium a été restauré !'
+          : 'Your premium subscription has been restored!');
+      } else {
+        Alert.alert('ℹ️', language === 'fr'
+          ? 'Aucun abonnement actif trouvé.'
+          : 'No active subscription found.');
+      }
+    },
+    onError: (error: any) => {
+      console.log('[RC] Restore error:', error);
+      Alert.alert('Error', error?.message ?? 'Failed to restore purchases.');
+    },
+  });
+
+  const currentOffering = useMemo<PurchasesOffering | null>(() => {
+    return offeringsQuery.data?.current ?? null;
+  }, [offeringsQuery.data]);
 
   const currency = useMemo<Currency>(() => countryConfigs[country].currency, [country]);
   const currencySymbol = useMemo(() => countryConfigs[country].currencySymbol, [country]);
@@ -184,6 +385,21 @@ export const [AppProvider, useApp] = createContextHook(() => {
     });
   }, []);
 
+  const addChatMessageToStorage = useCallback((msgs: ChatMessage[]) => {
+    void AsyncStorage.setItem(STORAGE_KEYS.chatMessages, JSON.stringify(msgs.slice(-100)));
+  }, []);
+
+  const addChatMessage = useCallback((msg: ChatMessage) => {
+    setChatMessages(prev => {
+      const updated = [...prev, msg];
+      addChatMessageToStorage(updated);
+      return updated;
+    });
+    if (msg.role === 'user') {
+      setDailyMessageCount(prev => prev + 1);
+    }
+  }, [addChatMessageToStorage]);
+
   const remainingCredits = useMemo(() => {
     if (user.isPremium) return Infinity;
     return Math.max(0, FREE_CREDITS - creditsUsed);
@@ -202,17 +418,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [user.isPremium, auth.isAuthenticated]);
 
   const canScan = canUseFeature;
+  const canChat = user.isPremium;
+  const canSendMessage = user.isPremium;
 
   const acceptAIDisclosure = useCallback(async () => {
     setHasAcceptedAIDisclosureState(true);
     await AsyncStorage.setItem(STORAGE_KEYS.aiDisclosure, 'true');
     console.log('[AppContext] AI disclosure accepted');
-  }, []);
-
-  const revokeAIDisclosure = useCallback(async () => {
-    setHasAcceptedAIDisclosureState(false);
-    await AsyncStorage.removeItem(STORAGE_KEYS.aiDisclosure);
-    console.log('[AppContext] AI disclosure revoked');
   }, []);
 
   const consumeCredit = useCallback(() => {
@@ -241,23 +453,34 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setAuth(newAuth);
     await AsyncStorage.setItem(STORAGE_KEYS.auth, JSON.stringify(newAuth));
 
-    let updatedUser: UserProfile | null = null;
-    setUser(prev => {
-      updatedUser = {
-        ...prev,
-        email: params.email ?? prev.email,
-        name: params.fullName ?? prev.name,
-      };
-      return updatedUser;
-    });
+    const updatedUser: UserProfile = {
+      ...user,
+      email: params.email ?? user.email,
+      name: params.fullName ?? user.name,
+    };
+    setUser(updatedUser);
+    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
 
-    if (updatedUser) {
-      await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
+    if (rcConfigured && params.uid) {
+      try {
+        console.log('[RC] Calling Purchases.logIn after auth...');
+        const { customerInfo } = await Purchases.logIn(params.uid);
+        setRcLoggedIn(true);
+        queryClient.setQueryData(['rc-customer-info'], customerInfo);
+        console.log('[RC] logIn after auth successful');
+
+        const isPremium = checkPremiumFromCustomerInfo(customerInfo);
+        const plan = getPlanFromCustomerInfo(customerInfo);
+        if (isPremium) {
+          const premiumUser = { ...updatedUser, isPremium, plan };
+          setUser(premiumUser);
+          await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(premiumUser));
+        }
+      } catch (e) {
+        console.log('[RC] logIn after auth error:', e);
+      }
     }
-
-    // Identify the user in RevenueCat so purchases follow the account.
-    void setRCUserId(params.uid);
-  }, []);
+  }, [user, queryClient]);
 
   const logoutUser = useCallback(async () => {
     console.log('[Auth] Logging out user');
@@ -269,209 +492,57 @@ export const [AppProvider, useApp] = createContextHook(() => {
       provider: null,
     });
     await AsyncStorage.removeItem(STORAGE_KEYS.auth);
+    setRcLoggedIn(false);
+
+    if (rcConfigured) {
+      try {
+        await Purchases.logOut();
+        console.log('[RC] Logged out from RevenueCat');
+      } catch (e) {
+        console.log('[RC] logOut error:', e);
+      }
+    }
 
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
     await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ email: '', name: '', isPremium: false, plan: 'free' }));
-
-    // Reset RevenueCat user — back to anonymous.
-    void setRCUserId(null);
   }, []);
-
-  // ---- RevenueCat integration ----
-  const queryClient = useQueryClient();
-
-  // Ensure RC is configured (no-op if already done at module load).
-  useEffect(() => {
-    configureRevenueCat();
-  }, []);
-
-  const offeringsQuery = useQuery({
-    queryKey: ['rc-offerings'],
-    queryFn: async (): Promise<PurchasesOffering | null> => {
-      return await getOfferings();
-    },
-    enabled: Platform.OS !== 'web',
-    retry: 1,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const customerInfoQuery = useQuery({
-    queryKey: ['rc-customer-info'],
-    queryFn: async () => {
-      const info = await getCustomerInfo();
-      return info;
-    },
-    enabled: Platform.OS !== 'web',
-    retry: 1,
-    refetchOnWindowFocus: true,
-  });
-
-  // Sync premium status from RevenueCat customer info into local user state.
-  useEffect(() => {
-    const info = customerInfoQuery.data;
-    if (!info) return;
-    const isPremium = hasPremiumEntitlement(info);
-    const activeEntitlement = info.entitlements.active['premium'];
-    let plan: 'free' | 'monthly' | 'annual' = 'free';
-    if (isPremium && activeEntitlement?.productIdentifier) {
-      const pid = activeEntitlement.productIdentifier.toLowerCase();
-      if (pid.includes('annual') || pid.includes('year') || pid.includes('yearly')) plan = 'annual';
-      else if (pid.includes('month')) plan = 'monthly';
-    }
-    setUser(prev => {
-      if (prev.isPremium === isPremium && prev.plan === plan) return prev;
-      const next = { ...prev, isPremium, plan };
-      void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(next));
-      return next;
-    });
-  }, [customerInfoQuery.data]);
-
-  const purchaseMutation = useMutation({
-    mutationFn: async (cycle: 'monthly' | 'annual') => {
-      const offering = offeringsQuery.data ?? (await getOfferings());
-      if (!offering) {
-        throw new Error('NO_OFFERINGS');
-      }
-      const pkg = pickPackage(offering, cycle);
-      if (!pkg) {
-        throw new Error('NO_PACKAGE');
-      }
-      const outcome = await purchasePackage(pkg);
-      return outcome;
-    },
-    onSuccess: (outcome) => {
-      if (outcome.status === 'success') {
-        void queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
-      }
-    },
-  });
-
-  const restoreMutation = useMutation({
-    mutationFn: async () => {
-      return await rcRestorePurchases();
-    },
-    onSuccess: (outcome) => {
-      if (outcome.status === 'success') {
-        void queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
-      }
-    },
-  });
 
   const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
-    console.log('[IAP] upgradeToPremium called with plan:', plan);
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        language === 'fr' ? 'Info' : 'Info',
-        language === 'fr'
-          ? 'Les achats intégrés ne sont pas disponibles sur le web. Téléchargez l\'app sur iOS.'
-          : 'In-app purchases are not available on web. Download the app on iOS.'
-      );
+    if (!currentOffering) {
+      console.log('[RC] No offering available');
+      Alert.alert('Error', language === 'fr'
+        ? 'Aucun forfait disponible. Veuillez réessayer plus tard.'
+        : 'No subscription packages available. Please try again later.');
       return;
     }
-    if (!isRCAvailable()) {
-      configureRevenueCat();
+    const packageId = plan === 'monthly' ? '$rc_monthly' : '$rc_annual';
+    const pkg = currentOffering.availablePackages.find(p => p.identifier === packageId);
+    if (!pkg) {
+      console.log('[RC] Package not found:', packageId);
+      Alert.alert('Error', language === 'fr'
+        ? 'Forfait introuvable.'
+        : 'Subscription package not found.');
+      return;
     }
-    try {
-      const outcome = await purchaseMutation.mutateAsync(plan);
-      if (outcome.status === 'cancelled') {
-        return;
-      }
-      if (outcome.status === 'pending') {
-        Alert.alert(
-          language === 'fr' ? 'Paiement en attente' : 'Payment pending',
-          language === 'fr'
-            ? 'Votre achat est en attente d\'approbation. Vous recevrez Premium dès qu\'il sera approuvé.'
-            : 'Your purchase is pending approval. You will get Premium as soon as it is approved.'
-        );
-        return;
-      }
-      if (outcome.status === 'error') {
-        Alert.alert(
-          language === 'fr' ? 'Erreur d\'achat' : 'Purchase error',
-          outcome.message
-        );
-        return;
-      }
-      // success
-      Alert.alert(
-        language === 'fr' ? 'Bienvenue dans Premium !' : 'Welcome to Premium!',
-        language === 'fr'
-          ? 'Votre abonnement est actif. Profitez de toutes les fonctionnalités.'
-          : 'Your subscription is active. Enjoy all the features.'
-      );
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      const msg = err?.message ?? 'Unknown error';
-      if (msg === 'NO_OFFERINGS' || msg === 'NO_PACKAGE') {
-        Alert.alert(
-          language === 'fr' ? 'Indisponible' : 'Unavailable',
-          language === 'fr'
-            ? 'Les offres ne sont pas disponibles pour le moment. Réessayez plus tard.'
-            : 'Offers are not available right now. Please try again later.'
-        );
-      } else {
-        Alert.alert(
-          language === 'fr' ? 'Erreur d\'achat' : 'Purchase error',
-          msg
-        );
-      }
-    }
-  }, [language, purchaseMutation]);
+    purchaseMutation.mutate(pkg);
+  }, [currentOffering, purchaseMutation, language]);
 
-  const restorePurchases = useCallback(async () => {
-    console.log('[IAP] restorePurchases called');
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        language === 'fr' ? 'Info' : 'Info',
-        language === 'fr'
-          ? 'La restauration n\'est pas disponible sur le web.'
-          : 'Restore is not available on web.'
-      );
-      return;
-    }
-    if (!isRCAvailable()) {
-      configureRevenueCat();
-    }
-    try {
-      const outcome = await restoreMutation.mutateAsync();
-      if (outcome.status === 'error') {
-        Alert.alert(
-          language === 'fr' ? 'Erreur' : 'Error',
-          outcome.message
-        );
-        return;
-      }
-      if (outcome.hasPremium) {
-        Alert.alert(
-          language === 'fr' ? 'Achats restaurés' : 'Purchases restored',
-          language === 'fr'
-            ? 'Votre abonnement Premium est de nouveau actif.'
-            : 'Your Premium subscription is active again.'
-        );
-      } else {
-        Alert.alert(
-          language === 'fr' ? 'Aucun achat trouvé' : 'No purchases found',
-          language === 'fr'
-            ? 'Aucun abonnement actif n\'a été trouvé pour ce compte Apple.'
-            : 'No active subscription was found for this Apple account.'
-        );
-      }
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      Alert.alert(
-        language === 'fr' ? 'Erreur' : 'Error',
-        err?.message ?? 'Unknown error'
-      );
-    }
-  }, [language, restoreMutation]);
+  const restorePurchases = useCallback(() => {
+    restoreMutation.mutate();
+  }, [restoreMutation]);
 
   const deleteAllData = useCallback(async () => {
     setScans([]);
+    setChatMessages([]);
+    setDailyMessageCount(0);
     setCreditsUsed(0);
-    setHasAcceptedAIDisclosureState(false);
     setAuth({ isAuthenticated: false, uid: null, email: null, fullName: null, provider: null });
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
+    setRcLoggedIn(false);
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+    if (rcConfigured) {
+      try { await Purchases.logOut(); } catch (e) { console.log('[RC] logOut error:', e); }
+    }
   }, []);
 
   return useMemo(() => ({
@@ -482,7 +553,11 @@ export const [AppProvider, useApp] = createContextHook(() => {
     availableLanguages,
     user,
     scans,
+    chatMessages,
+    dailyMessageCount,
     canScan,
+    canChat,
+    canSendMessage,
     remainingCredits,
     creditsUsed,
     consumeCredit,
@@ -492,7 +567,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     showPaymentSuccess,
     hasAcceptedAIDisclosure,
     acceptAIDisclosure,
-    revokeAIDisclosure,
     auth,
     loginUser,
     logoutUser,
@@ -501,6 +575,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setLanguageSafe,
     setCountry,
     addScan,
+    addChatMessage,
     upgradeToPremium,
     restorePurchases,
     deleteAllData,
@@ -508,20 +583,20 @@ export const [AppProvider, useApp] = createContextHook(() => {
     isLoading: settingsQuery.isLoading,
     isPurchasing: purchaseMutation.isPending,
     isRestoring: restoreMutation.isPending,
-    currentOffering: offeringsQuery.data ?? null,
+    currentOffering,
     isOfferingsLoading: offeringsQuery.isLoading,
   }), [
     language, country, currency, currencySymbol, availableLanguages,
-    user, scans, canScan,
-    remainingCredits, creditsUsed, consumeCredit,
+    user, scans, chatMessages, dailyMessageCount, canScan, canChat,
+    canSendMessage, remainingCredits, creditsUsed, consumeCredit,
     canUseFeature, needsPaywall, needsAccountCreation, showPaymentSuccess,
-    hasAcceptedAIDisclosure, acceptAIDisclosure, revokeAIDisclosure,
+    hasAcceptedAIDisclosure, acceptAIDisclosure,
     auth, loginUser, logoutUser,
     t, setLanguage, setLanguageSafe,
-    setCountry, addScan, upgradeToPremium, restorePurchases,
+    setCountry, addScan, addChatMessage, upgradeToPremium, restorePurchases,
     deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading,
     purchaseMutation.isPending, restoreMutation.isPending,
-    offeringsQuery.data, offeringsQuery.isLoading,
+    currentOffering, offeringsQuery.isLoading,
   ]);
 });
 

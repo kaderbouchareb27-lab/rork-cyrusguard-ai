@@ -7,7 +7,7 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
 interface PaywallGateProps {
-  type: 'scan' | 'url';
+  type: 'scan' | 'chat' | 'url' | 'scan-chat';
 }
 
 export default function PaywallGate({ type: _type }: PaywallGateProps) {
