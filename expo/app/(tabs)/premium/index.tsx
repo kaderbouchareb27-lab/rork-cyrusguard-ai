@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ export default function PremiumScreen() {
   const {
     t, country, upgradeToPremium, user, remainingCredits,
     restorePurchases, isPurchasing, isRestoring, isOfferingsLoading,
+    currentOffering,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -45,9 +46,32 @@ export default function PremiumScreen() {
   const config = countryConfigs[country];
   const currencySymbol = config.currencySymbol;
 
-  const monthlyPrice = `${currencySymbol}${config.pricing.monthly}`;
-  const annualPrice = `${currencySymbol}${config.pricing.annual}`;
-  const monthlyEquivalent = `${currencySymbol}${config.pricing.monthlyEquivalent}`;
+  // Prefer RevenueCat / App Store live prices when available; fall back to config.
+  const pricing = useMemo(() => {
+    const monthlyPkg = currentOffering?.monthly ?? null;
+    const annualPkg = currentOffering?.annual ?? null;
+    const monthlyPrice = monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`;
+    const annualPrice = annualPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.annual}`;
+    // Monthly equivalent of annual plan
+    let monthlyEquivalent = `${currencySymbol}${config.pricing.monthlyEquivalent}`;
+    if (annualPkg?.product?.price && annualPkg?.product?.currencyCode) {
+      const perMonth = annualPkg.product.price / 12;
+      try {
+        monthlyEquivalent = new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: annualPkg.product.currencyCode,
+          maximumFractionDigits: 2,
+        }).format(perMonth);
+      } catch {
+        monthlyEquivalent = `${currencySymbol}${perMonth.toFixed(2)}`;
+      }
+    }
+    return { monthlyPrice, annualPrice, monthlyEquivalent };
+  }, [currentOffering, config, currencySymbol]);
+
+  const monthlyPrice = pricing.monthlyPrice;
+  const annualPrice = pricing.annualPrice;
+  const monthlyEquivalent = pricing.monthlyEquivalent;
 
   const faqs = [
     { q: t('faq1Q'), a: t('faq1A') },

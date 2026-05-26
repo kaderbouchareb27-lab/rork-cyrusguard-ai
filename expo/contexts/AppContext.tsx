@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { translations, type Language } from '@/constants/translations';
 import { type ScanResult, type ChatMessage } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
+import {
+  configureRevenueCat,
+  getOfferings,
+  getCustomerInfo,
+  hasPremiumEntitlement,
+  pickPackage,
+  purchasePackage,
+  restorePurchases as rcRestorePurchases,
+  setRCUserId,
+  isRCAvailable,
+} from '@/services/revenueCat';
+import type { PurchasesOffering } from 'react-native-purchases';
 
 export type Country = 'CA' | 'US' | 'FR';
 
@@ -268,6 +280,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
     }
 
+    // Identify the user in RevenueCat so purchases follow the account.
+    void setRCUserId(params.uid);
   }, []);
 
   const logoutUser = useCallback(async () => {
@@ -283,21 +297,198 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     setUser({ email: '', name: '', isPremium: false, plan: 'free' });
     await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ email: '', name: '', isPremium: false, plan: 'free' }));
+
+    // Reset RevenueCat user — back to anonymous.
+    void setRCUserId(null);
   }, []);
 
-  const upgradeToPremium = useCallback(async (_plan: 'monthly' | 'annual') => {
-    console.log('[IAP] upgradeToPremium called - no purchase provider configured yet');
-    Alert.alert('Info', language === 'fr'
-      ? 'Service d\'achat bientôt disponible.'
-      : 'Purchase service coming soon.');
-  }, [language]);
+  // ---- RevenueCat integration ----
+  const queryClient = useQueryClient();
 
-  const restorePurchases = useCallback(() => {
-    console.log('[IAP] restorePurchases called - no purchase provider configured yet');
-    Alert.alert('Info', language === 'fr'
-      ? 'Service d\'achat bientôt disponible.'
-      : 'Purchase service coming soon.');
-  }, [language]);
+  // Ensure RC is configured (no-op if already done at module load).
+  useEffect(() => {
+    configureRevenueCat();
+  }, []);
+
+  const offeringsQuery = useQuery({
+    queryKey: ['rc-offerings'],
+    queryFn: async (): Promise<PurchasesOffering | null> => {
+      return await getOfferings();
+    },
+    enabled: Platform.OS !== 'web',
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const customerInfoQuery = useQuery({
+    queryKey: ['rc-customer-info'],
+    queryFn: async () => {
+      const info = await getCustomerInfo();
+      return info;
+    },
+    enabled: Platform.OS !== 'web',
+    retry: 1,
+    refetchOnWindowFocus: true,
+  });
+
+  // Sync premium status from RevenueCat customer info into local user state.
+  useEffect(() => {
+    const info = customerInfoQuery.data;
+    if (!info) return;
+    const isPremium = hasPremiumEntitlement(info);
+    const activeEntitlement = info.entitlements.active['premium'];
+    let plan: 'free' | 'monthly' | 'annual' = 'free';
+    if (isPremium && activeEntitlement?.productIdentifier) {
+      const pid = activeEntitlement.productIdentifier.toLowerCase();
+      if (pid.includes('annual') || pid.includes('year') || pid.includes('yearly')) plan = 'annual';
+      else if (pid.includes('month')) plan = 'monthly';
+    }
+    setUser(prev => {
+      if (prev.isPremium === isPremium && prev.plan === plan) return prev;
+      const next = { ...prev, isPremium, plan };
+      void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(next));
+      return next;
+    });
+  }, [customerInfoQuery.data]);
+
+  const purchaseMutation = useMutation({
+    mutationFn: async (cycle: 'monthly' | 'annual') => {
+      const offering = offeringsQuery.data ?? (await getOfferings());
+      if (!offering) {
+        throw new Error('NO_OFFERINGS');
+      }
+      const pkg = pickPackage(offering, cycle);
+      if (!pkg) {
+        throw new Error('NO_PACKAGE');
+      }
+      const outcome = await purchasePackage(pkg);
+      return outcome;
+    },
+    onSuccess: (outcome) => {
+      if (outcome.status === 'success') {
+        void queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
+      }
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async () => {
+      return await rcRestorePurchases();
+    },
+    onSuccess: (outcome) => {
+      if (outcome.status === 'success') {
+        void queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
+      }
+    },
+  });
+
+  const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
+    console.log('[IAP] upgradeToPremium called with plan:', plan);
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        language === 'fr' ? 'Info' : 'Info',
+        language === 'fr'
+          ? 'Les achats intégrés ne sont pas disponibles sur le web. Téléchargez l\'app sur iOS.'
+          : 'In-app purchases are not available on web. Download the app on iOS.'
+      );
+      return;
+    }
+    if (!isRCAvailable()) {
+      configureRevenueCat();
+    }
+    try {
+      const outcome = await purchaseMutation.mutateAsync(plan);
+      if (outcome.status === 'cancelled') {
+        return;
+      }
+      if (outcome.status === 'pending') {
+        Alert.alert(
+          language === 'fr' ? 'Paiement en attente' : 'Payment pending',
+          language === 'fr'
+            ? 'Votre achat est en attente d\'approbation. Vous recevrez Premium dès qu\'il sera approuvé.'
+            : 'Your purchase is pending approval. You will get Premium as soon as it is approved.'
+        );
+        return;
+      }
+      if (outcome.status === 'error') {
+        Alert.alert(
+          language === 'fr' ? 'Erreur d\'achat' : 'Purchase error',
+          outcome.message
+        );
+        return;
+      }
+      // success
+      Alert.alert(
+        language === 'fr' ? 'Bienvenue dans Premium !' : 'Welcome to Premium!',
+        language === 'fr'
+          ? 'Votre abonnement est actif. Profitez de toutes les fonctionnalités.'
+          : 'Your subscription is active. Enjoy all the features.'
+      );
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      const msg = err?.message ?? 'Unknown error';
+      if (msg === 'NO_OFFERINGS' || msg === 'NO_PACKAGE') {
+        Alert.alert(
+          language === 'fr' ? 'Indisponible' : 'Unavailable',
+          language === 'fr'
+            ? 'Les offres ne sont pas disponibles pour le moment. Réessayez plus tard.'
+            : 'Offers are not available right now. Please try again later.'
+        );
+      } else {
+        Alert.alert(
+          language === 'fr' ? 'Erreur d\'achat' : 'Purchase error',
+          msg
+        );
+      }
+    }
+  }, [language, purchaseMutation]);
+
+  const restorePurchases = useCallback(async () => {
+    console.log('[IAP] restorePurchases called');
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        language === 'fr' ? 'Info' : 'Info',
+        language === 'fr'
+          ? 'La restauration n\'est pas disponible sur le web.'
+          : 'Restore is not available on web.'
+      );
+      return;
+    }
+    if (!isRCAvailable()) {
+      configureRevenueCat();
+    }
+    try {
+      const outcome = await restoreMutation.mutateAsync();
+      if (outcome.status === 'error') {
+        Alert.alert(
+          language === 'fr' ? 'Erreur' : 'Error',
+          outcome.message
+        );
+        return;
+      }
+      if (outcome.hasPremium) {
+        Alert.alert(
+          language === 'fr' ? 'Achats restaurés' : 'Purchases restored',
+          language === 'fr'
+            ? 'Votre abonnement Premium est de nouveau actif.'
+            : 'Your Premium subscription is active again.'
+        );
+      } else {
+        Alert.alert(
+          language === 'fr' ? 'Aucun achat trouvé' : 'No purchases found',
+          language === 'fr'
+            ? 'Aucun abonnement actif n\'a été trouvé pour ce compte Apple.'
+            : 'No active subscription was found for this Apple account.'
+        );
+      }
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        err?.message ?? 'Unknown error'
+      );
+    }
+  }, [language, restoreMutation]);
 
   const deleteAllData = useCallback(async () => {
     setScans([]);
@@ -345,10 +536,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     deleteAllData,
     setShowPaymentSuccess,
     isLoading: settingsQuery.isLoading,
-    isPurchasing: false,
-    isRestoring: false,
-    currentOffering: null as any,
-    isOfferingsLoading: false,
+    isPurchasing: purchaseMutation.isPending,
+    isRestoring: restoreMutation.isPending,
+    currentOffering: offeringsQuery.data ?? null,
+    isOfferingsLoading: offeringsQuery.isLoading,
   }), [
     language, country, currency, currencySymbol, availableLanguages,
     user, scans, chatMessages, dailyMessageCount, canScan, canChat,
@@ -359,6 +550,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     t, setLanguage, setLanguageSafe,
     setCountry, addScan, addChatMessage, upgradeToPremium, restorePurchases,
     deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading,
+    purchaseMutation.isPending, restoreMutation.isPending,
+    offeringsQuery.data, offeringsQuery.isLoading,
   ]);
 });
 
