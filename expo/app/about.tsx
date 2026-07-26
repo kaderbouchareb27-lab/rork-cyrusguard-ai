@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ChevronLeft, Shield, MapPin } from 'lucide-react-native';
+import { ChevronLeft, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
@@ -24,7 +24,11 @@ export default function AboutScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.logoSection}>
             <View style={styles.logoCircle}>
-              <Shield size={40} color={Colors.accent} />
+              <Image
+                source={require('@/assets/images/logo.png')}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
             <Text style={styles.appName}>CyrusGuard AI</Text>
             <Text style={styles.version}>v1.0.0</Text>
@@ -86,6 +90,7 @@ const styles = StyleSheet.create({
     width: 80, height: 80, borderRadius: 24,
     backgroundColor: Colors.accentMuted, alignItems: 'center', justifyContent: 'center',
   },
+  logoImage: { width: 78, height: 78, borderRadius: 23 },
   appName: { fontSize: 24, fontWeight: '800' as const, color: Colors.textPrimary },
   version: { fontSize: 13, color: Colors.textMuted },
   description: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: 24 },

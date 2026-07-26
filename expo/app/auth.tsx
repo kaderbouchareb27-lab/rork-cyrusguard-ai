@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ActivityIndicator, Alert,
+  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ActivityIndicator, Alert, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { Shield, ChevronLeft, Lock, UserPlus, Fingerprint } from 'lucide-react-native';
+import { ChevronLeft, Lock, UserPlus, Fingerprint } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -123,7 +123,11 @@ export default function AuthScreen() {
                 colors={['rgba(73,209,125,0.24)', 'rgba(73,209,125,0.05)']}
                 style={styles.shieldGradient}
               >
-                <Shield size={56} color={Colors.accent} />
+                <Image
+                  source={require('@/assets/images/logo.png')}
+                  style={styles.shieldLogo}
+                  resizeMode="cover"
+                />
               </LinearGradient>
             </View>
           </View>
@@ -239,6 +243,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.accentGlow,
+  },
+  shieldLogo: {
+    width: 92,
+    height: 92,
+    borderRadius: 26,
   },
   title: {
     fontSize: 26,

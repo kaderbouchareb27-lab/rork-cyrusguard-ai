@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail } from 'lucide-react-native';
@@ -158,7 +158,11 @@ export default function HomeScreen() {
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
             <View style={styles.logoRow}>
               <View style={styles.logoCircle}>
-                <Shield size={28} color={Colors.accent} />
+                <Image
+                  source={require('@/assets/images/logo.png')}
+                  style={styles.logoImage}
+                  resizeMode="cover"
+                />
               </View>
               <View>
                 <Text style={styles.appName}>{t('appName')}</Text>
@@ -174,7 +178,11 @@ export default function HomeScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <Shield size={48} color={Colors.accent} />
+              <Image
+                source={require('@/assets/images/logo.png')}
+                style={styles.heroLogo}
+                resizeMode="cover"
+              />
               <Text style={styles.heroTitle}>{t('protectedBy')}</Text>
               <TouchableOpacity
                 style={styles.heroButton}
@@ -431,6 +439,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 4,
+  },
+  logoImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 17,
+  },
+  heroLogo: {
+    width: 76,
+    height: 76,
+    borderRadius: 24,
   },
   appName: {
     fontSize: 23,
