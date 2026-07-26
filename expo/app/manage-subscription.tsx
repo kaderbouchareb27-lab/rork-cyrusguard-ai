@@ -14,12 +14,12 @@ type PlanType = 'free' | 'monthly' | 'annual';
 export default function ManageSubscriptionScreen() {
   const router = useRouter();
   const {
-    t, user, country, upgradeToPremium, remainingCredits,
+    t, user, country, upgradeToPremium, remainingCredits, freeCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(user.plan);
 
-  const config = countryConfigs[country];
+  const config = countryConfigs[country] ?? countryConfigs.INTL;
   const currencySymbol = config.currencySymbol;
 
   const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly');
@@ -163,7 +163,7 @@ export default function ManageSubscriptionScreen() {
               <View style={styles.creditsRow}>
                 <CreditCard size={14} color={Colors.accent} />
                 <Text style={styles.creditsText}>
-                  {remainingCredits === Infinity ? '∞' : remainingCredits}/2 {t('creditsRemaining')}
+                  {remainingCredits === Infinity ? '∞' : remainingCredits}/{freeCredits} {t('creditsRemaining')}
                 </Text>
               </View>
             )}

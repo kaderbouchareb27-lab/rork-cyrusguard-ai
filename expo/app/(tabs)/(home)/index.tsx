@@ -6,7 +6,7 @@ import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { countryAlerts, trendingScamsByCountry, type AlertData } from '@/constants/countries';
+import { getCountryAlerts, getTrendingScams, getAlertsSectionTitle, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
 
 function AlertCard({ alert }: { alert: AlertData }) {
@@ -126,22 +126,15 @@ export default function HomeScreen() {
   const recentScans = scans.slice(0, 3);
 
   const alertsSectionTitle = useMemo(() => {
-    const titles: Record<string, { fr: string; en: string }> = {
-      CA: { fr: 'Alertes Canada', en: 'Canada Alerts' },
-      US: { fr: 'Alertes États-Unis', en: 'USA Alerts' },
-      FR: { fr: 'Alertes France', en: 'France Alerts' },
-    };
-    return titles[country]?.[language] ?? titles[country]?.en ?? t('countryAlerts');
+    return getAlertsSectionTitle(country, language) ?? t('countryAlerts');
   }, [country, language, t]);
 
   const topAlerts = useMemo(() => {
-    const langKey = language === 'fr' ? 'fr' : 'en';
-    return (countryAlerts[country]?.[langKey] ?? countryAlerts.CA.fr).slice(0, 4);
+    return getCountryAlerts(country, language).slice(0, 4);
   }, [country, language]);
 
   const trendingScams = useMemo(() => {
-    const langKey = language === 'fr' ? 'fr' : 'en';
-    return trendingScamsByCountry[country]?.[langKey] ?? trendingScamsByCountry.CA.fr;
+    return getTrendingScams(country, language);
   }, [country, language]);
 
   return (

@@ -11,7 +11,7 @@ import { countryConfigs } from '@/constants/countries';
 export default function PremiumScreen() {
   const router = useRouter();
   const {
-    t, country, upgradeToPremium, user, remainingCredits,
+    t, country, upgradeToPremium, user, remainingCredits, freeCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
@@ -42,7 +42,7 @@ export default function PremiumScreen() {
     };
   }, [shineAnim, badgePulse]);
 
-  const config = countryConfigs[country];
+  const config = countryConfigs[country] ?? countryConfigs.INTL;
   const currencySymbol = config.currencySymbol;
 
   const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly' || p.product?.identifier?.includes('monthly'));
@@ -68,7 +68,8 @@ export default function PremiumScreen() {
 
   const testimonials = [t('testimonial1'), t('testimonial2'), t('testimonial3')];
 
-  const creditsLeft = remainingCredits === Infinity ? 2 : remainingCredits;
+  const creditsLeft = remainingCredits === Infinity ? freeCredits : remainingCredits;
+  const creditSlots = Array.from({ length: freeCredits }, (_, i) => i);
 
   const handleSubscribe = () => {
     void upgradeToPremium(selectedPlan);
@@ -90,10 +91,10 @@ export default function PremiumScreen() {
             <View style={styles.creditCounter}>
               <Shield size={16} color={creditsLeft > 0 ? Colors.accent : Colors.danger} />
               <Text style={styles.creditCounterText}>
-                {creditsLeft}/2 {t('creditsRemaining')}
+                {creditsLeft}/{freeCredits} {t('creditsRemaining')}
               </Text>
               <View style={styles.creditDots}>
-                {[0, 1].map(i => (
+                {creditSlots.map(i => (
                   <View
                     key={i}
                     style={[

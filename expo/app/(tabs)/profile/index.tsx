@@ -1,14 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
   User, Globe, Flag, CreditCard, Crown, Trash2, LogOut,
-  FileText, Lock, HelpCircle, Info, Mail, ChevronRight, Languages, MapPin
+  FileText, Lock, HelpCircle, Info, Mail, ChevronRight, Languages, MapPin, Check, X
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp, type Country } from '@/contexts/AppContext';
-import { countryConfigs } from '@/constants/countries';
+import { countryConfigs, countryList, getCountryLabel } from '@/constants/countries';
 import type { Language } from '@/constants/translations';
 
 export default function ProfileScreen() {
@@ -21,14 +21,16 @@ export default function ProfileScreen() {
   ];
   const languageOptions = allLanguageOptions.filter(l => availableLanguages.includes(l.key));
 
-  const countryOptions: { key: Country; label: string }[] = [
-    { key: 'CA', label: t('canada') },
-    { key: 'FR', label: t('france') },
-    { key: 'US', label: t('usa') },
-  ];
+  const [isCountryPickerOpen, setIsCountryPickerOpen] = useState<boolean>(false);
+
+  const countryOptions = useMemo(() => countryList.map(c => ({
+    key: c.code,
+    label: language === 'fr' ? c.labelFr : c.labelEn,
+    flag: c.flag,
+  })), [language]);
 
   const currentLanguageLabel = languageOptions.find(l => l.key === language)?.label ?? languageOptions[0]?.label ?? '';
-  const currentCountryLabel = countryOptions.find(c => c.key === country)?.label ?? '';
+  const currentCountryLabel = `${countryConfigs[country].flag} ${getCountryLabel(country, language)}`;
   const currencyDisplay = `${countryConfigs[country].currency} (${currencySymbol})`;
 
   const toggleLanguage = () => {
@@ -38,10 +40,9 @@ export default function ProfileScreen() {
     void setLanguageSafe(availableLanguages[nextIdx]);
   };
 
-  const cycleCountry = () => {
-    const countries: Country[] = ['CA', 'FR', 'US'];
-    const idx = countries.indexOf(country);
-    const next = countries[(idx + 1) % countries.length];
+  const selectCountry = (next: Country) => {
+    setIsCountryPickerOpen(false);
+    if (next === country) return;
     void setCountry(next);
   };
 
@@ -79,7 +80,7 @@ export default function ProfileScreen() {
           label: t('country'),
           value: currentCountryLabel,
           color: Colors.warning,
-          onPress: cycleCountry,
+          onPress: () => setIsCountryPickerOpen(true),
         },
         {
           icon: Globe,
@@ -194,6 +195,44 @@ export default function ProfileScreen() {
           <View style={styles.bottomSpace} />
         </ScrollView>
       </SafeAreaView>
+
+      <Modal
+        visible={isCountryPickerOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsCountryPickerOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('country')}</Text>
+              <TouchableOpacity onPress={() => setIsCountryPickerOpen(false)} testID="close-country-picker">
+                <X size={20} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {countryOptions.map(option => {
+                const isActive = option.key === country;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.countryRow, isActive && styles.countryRowActive]}
+                    onPress={() => selectCountry(option.key)}
+                    activeOpacity={0.7}
+                    testID={`country-${option.key}`}
+                  >
+                    <Text style={styles.countryFlag}>{option.flag}</Text>
+                    <Text style={[styles.countryLabel, isActive && styles.countryLabelActive]}>{option.label}</Text>
+                    <Text style={styles.countryCurrency}>{countryConfigs[option.key].currencySymbol}</Text>
+                    {isActive ? <Check size={18} color={Colors.accent} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+              <View style={styles.bottomSpace} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -368,5 +407,63 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 20,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end' as const,
+  },
+  modalSheet: {
+    maxHeight: '75%' as const,
+    backgroundColor: Colors.backgroundCard,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'space-between' as const,
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: Colors.textPrimary,
+  },
+  countryRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    marginBottom: 6,
+  },
+  countryRowActive: {
+    backgroundColor: Colors.accentMuted,
+    borderColor: Colors.accent + '50',
+  },
+  countryFlag: {
+    fontSize: 20,
+  },
+  countryLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500' as const,
+    color: Colors.textPrimary,
+  },
+  countryLabelActive: {
+    color: Colors.accent,
+    fontWeight: '700' as const,
+  },
+  countryCurrency: {
+    fontSize: 12,
+    color: Colors.textMuted,
   },
 });

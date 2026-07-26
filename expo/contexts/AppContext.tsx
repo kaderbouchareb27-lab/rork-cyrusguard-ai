@@ -13,7 +13,52 @@ import { translations, type Language } from '@/constants/translations';
 import { type ScanResult, type ChatMessage } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
 
-export type Country = 'CA' | 'US' | 'FR';
+export type Country =
+  | 'CA'
+  | 'US'
+  | 'FR'
+  | 'ES'
+  | 'BE'
+  | 'CH'
+  | 'GB'
+  | 'DE'
+  | 'IT'
+  | 'PT'
+  | 'NL'
+  | 'LU'
+  | 'IE'
+  | 'AU'
+  | 'MA'
+  | 'MX'
+  | 'INTL';
+
+export const SUPPORTED_COUNTRIES: Country[] = [
+  'CA', 'FR', 'BE', 'CH', 'LU', 'US', 'GB', 'IE', 'ES', 'PT', 'IT', 'DE', 'NL', 'AU', 'MA', 'MX', 'INTL',
+];
+
+function isSupportedCountry(value: string | null): value is Country {
+  return !!value && (SUPPORTED_COUNTRIES as string[]).includes(value);
+}
+
+/**
+ * Detects the user's country from the device locale (e.g. "es-ES" -> ES).
+ * Falls back to the international profile so every country gets relevant
+ * anti-fraud organizations instead of Canadian ones.
+ */
+function detectDeviceCountry(): Country {
+  try {
+    const locale = Intl.DateTimeFormat().resolvedOptions().locale ?? '';
+    const region = locale.split('-')[1]?.toUpperCase() ?? '';
+    if (isSupportedCountry(region)) return region;
+    if (region === 'AT') return 'DE';
+    if (region === 'GB' || region === 'UK') return 'GB';
+    if (region) return 'INTL';
+    return 'CA';
+  } catch (e) {
+    console.log('[AppContext] Locale detection failed:', e);
+    return 'CA';
+  }
+}
 
 interface UserProfile {
   email: string;
@@ -30,7 +75,7 @@ interface AuthState {
   provider: 'apple' | 'guest' | null;
 }
 
-const FREE_CREDITS = 2;
+export const FREE_CREDITS = 2;
 const ENTITLEMENT_ID = 'CyrusGuard AI Pro';
 
 const STORAGE_KEYS = {
@@ -46,14 +91,14 @@ const STORAGE_KEYS = {
 };
 
 function getRCApiKey(): string {
-  if (__DEV__ || Platform.OS === 'web') {
-    return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
-  }
-  return Platform.select({
+  const testKey = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
+  if (Platform.OS === 'web') return testKey;
+  const platformKey = Platform.select({
     ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
     android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
-    default: process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY,
+    default: testKey,
   }) ?? '';
+  return platformKey || testKey;
 }
 
 let rcConfigured = false;
@@ -65,10 +110,10 @@ function configureRC() {
     return;
   }
   try {
-    void Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    void Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.WARN);
     Purchases.configure({ apiKey });
     rcConfigured = true;
-    console.log('[RC] RevenueCat configured successfully');
+    console.log('[RC] RevenueCat configured successfully on', Platform.OS);
   } catch (e) {
     console.log('[RC] Error configuring RevenueCat:', e);
   }
@@ -154,9 +199,11 @@ export const [AppProvider, useApp] = createContextHook(() => {
         if (chatStr) {
           try { parsedChat = JSON.parse(chatStr); } catch (e) { console.log('[AppContext] Failed to parse chat:', e); }
         }
+        const resolvedCountry: Country = isSupportedCountry(countryStr) ? countryStr : detectDeviceCountry();
+        const resolvedLanguage: Language = (langStr as Language) || countryConfigs[resolvedCountry].defaultLanguage;
         return {
-          language: (langStr as Language) || 'fr',
-          country: (countryStr as Country) || 'CA',
+          language: resolvedLanguage,
+          country: resolvedCountry,
           user: parsedUser,
           creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
           hasAcceptedAIDisclosure: disclosureStr === 'true',
@@ -347,9 +394,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return offeringsQuery.data?.current ?? null;
   }, [offeringsQuery.data]);
 
-  const currency = useMemo<Currency>(() => countryConfigs[country].currency, [country]);
-  const currencySymbol = useMemo(() => countryConfigs[country].currencySymbol, [country]);
-  const availableLanguages = useMemo(() => countryConfigs[country].availableLanguages, [country]);
+  const countryConfig = useMemo(() => countryConfigs[country] ?? countryConfigs.INTL, [country]);
+  const currency = useMemo<Currency>(() => countryConfig.currency, [countryConfig]);
+  const currencySymbol = useMemo(() => countryConfig.currencySymbol, [countryConfig]);
+  const availableLanguages = useMemo(() => countryConfig.availableLanguages, [countryConfig]);
 
   const t = useCallback((key: string): string => {
     return translations[language]?.[key] ?? key;
@@ -362,7 +410,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const setCountry = useCallback(async (c: Country) => {
     setCountryState(c);
-    const config = countryConfigs[c];
+    const config = countryConfigs[c] ?? countryConfigs.INTL;
     const defaultLang = config.defaultLanguage;
     setLanguageState(defaultLang);
     await AsyncStorage.setItem(STORAGE_KEYS.country, c);
@@ -370,7 +418,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, []);
 
   const setLanguageSafe = useCallback(async (lang: Language) => {
-    const config = countryConfigs[country];
+    const config = countryConfigs[country] ?? countryConfigs.INTL;
     if (config.availableLanguages.includes(lang)) {
       setLanguageState(lang);
       await AsyncStorage.setItem(STORAGE_KEYS.language, lang);
@@ -562,6 +610,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     creditsUsed,
     consumeCredit,
     canUseFeature,
+    freeCredits: FREE_CREDITS,
+    countryConfig,
     needsPaywall,
     needsAccountCreation,
     showPaymentSuccess,
@@ -586,7 +636,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     currentOffering,
     isOfferingsLoading: offeringsQuery.isLoading,
   }), [
-    language, country, currency, currencySymbol, availableLanguages,
+    language, country, currency, currencySymbol, availableLanguages, countryConfig,
     user, scans, chatMessages, dailyMessageCount, canScan, canChat,
     canSendMessage, remainingCredits, creditsUsed, consumeCredit,
     canUseFeature, needsPaywall, needsAccountCreation, showPaymentSuccess,

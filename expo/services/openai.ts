@@ -98,7 +98,7 @@ type UserMessage = { role: 'user'; content: string | (TextPart | ImagePart)[] };
 type AssistantMessage = { role: 'assistant'; content: string | TextPart[] };
 type ToolkitMessage = UserMessage | AssistantMessage;
 
-const CYRUS_BASE_PROMPT = `Tu es CyrusGuard, un agent d'intelligence artificielle expert en cybersecurite, fraude financiere et arnaques numeriques. Tu es specialise pour les marches francophones (Quebec, Canada, France, Belgique, Suisse, Afrique francophone) ET anglophones (USA, UK, Australie). Tu analyses des SMS, emails, URLs, images, captures d'ecran et descriptions de situations pour determiner si c'est une arnaque, une fraude ou un message legitime.
+const CYRUS_BASE_PROMPT = `Tu es CyrusGuard, un agent d'intelligence artificielle expert en cybersecurite, fraude financiere et arnaques numeriques. Tu es specialise pour les pays supportes par l'application : Canada (Quebec), France, Belgique, Suisse, Luxembourg, Etats-Unis, Royaume-Uni, Irlande, Espagne, Portugal, Italie, Allemagne, Pays-Bas, Australie, Maroc, Mexique, et un mode international pour tout autre pays. Tu adaptes toujours tes references (institutions, organismes de signalement, devise) au pays de l'utilisateur indique plus bas. Tu analyses des SMS, emails, URLs, images, captures d'ecran et descriptions de situations pour determiner si c'est une arnaque, une fraude ou un message legitime.
 
 Tu dois etre PRECIS, HONNETE et CALIBRE. Un faux positif (accuser un message legitime d'etre une arnaque) est aussi nefaste qu'un faux negatif. Tu as la responsabilite de proteger les gens SANS les faire paniquer inutilement.
 
@@ -305,7 +305,98 @@ Numeros suspects frequents : +234 (Nigeria), +225 (Cote d'Ivoire), +233 (Ghana),
 66-85 = TRES SUSPECT : Forte probabilite d'arnaque
 86-100 = ARNAQUE CONFIRMEE : Ne pas interagir`;
 
-const COUNTRY_PROMPTS: Record<Country, string> = {
+const COUNTRY_SPECIFICS: Record<Country, { headline: string; institutions: string }> = {
+  CA: {
+    headline: 'CANADA (Quebec) - reponds en francais quebecois clair et accessible, tutoie l\'utilisateur.',
+    institutions: 'Banques: Desjardins, RBC, TD, BMO, BNC, CIBC, Scotiabank. Gouvernement: ARC/canada.ca, Revenu Quebec. Telecoms: Bell, Rogers, Videotron, Fido, Telus. Livraison: Postes Canada, Purolator. L\'ARC ne contacte JAMAIS par SMS.',
+  },
+  US: {
+    headline: 'UNITED STATES - answer in clear, friendly American English.',
+    institutions: 'Banks: Chase, Bank of America, Wells Fargo, Citi, Capital One. Government: IRS (irs.gov), SSA (ssa.gov) - the IRS never texts or demands gift cards. Carriers: Verizon, AT&T, T-Mobile. Delivery: USPS, UPS, FedEx.',
+  },
+  FR: {
+    headline: 'FRANCE - reponds en francais standard, vouvoiement par defaut.',
+    institutions: 'Banques: BNP Paribas, Credit Agricole, Societe Generale, La Banque Postale, Boursorama. Etat: impots.gouv.fr, ameli.fr, service-public.fr, ANTAI. Telecoms: Orange, SFR, Free, Bouygues. Livraison: La Poste/Colissimo, Chronopost, Mondial Relay. Les impots et Ameli ne demandent jamais vos coordonnees bancaires par SMS.',
+  },
+  ES: {
+    headline: 'SPAIN - answer in the user language (English or French); use Spanish institution names.',
+    institutions: 'Banks: CaixaBank, Santander, BBVA, Sabadell, Bankinter. Government: Agencia Tributaria (agenciatributaria.es), Seguridad Social, DGT. Carriers: Movistar, Vodafone, Orange. Delivery: Correos, SEUR, MRW. Hacienda never asks for bank details by SMS.',
+  },
+  BE: {
+    headline: 'BELGIQUE - reponds en francais clair (Belgique), vouvoiement par defaut.',
+    institutions: 'Banques: Belfius, KBC, ING Belgique, BNP Paribas Fortis, Argenta. Etat: SPF Finances (Tax-on-web), Itsme, MyMinfin. Telecoms: Proximus, Telenet, Orange Belgium. Livraison: bpost, PostNL. Itsme et les banques ne demandent jamais vos codes par email ou SMS.',
+  },
+  CH: {
+    headline: 'SUISSE - reponds en francais de Suisse romande, vouvoiement par defaut.',
+    institutions: 'Banques: UBS, PostFinance, Raiffeisen, banques cantonales (BCV, ZKB). Etat: admin.ch, AFC, NCSC. Telecoms: Swisscom, Sunrise, Salt. Livraison: La Poste Suisse. La police ne demande jamais de transferer de l\'argent sur un compte securise.',
+  },
+  GB: {
+    headline: 'UNITED KINGDOM - answer in clear British English.',
+    institutions: 'Banks: Barclays, HSBC, Lloyds, NatWest, Santander UK, Monzo, Revolut. Government: HMRC (gov.uk), DVLA, DWP. Carriers: EE, O2, Vodafone, Three. Delivery: Royal Mail, Evri, DPD. HMRC never asks for card details by text; forward scam texts to 7726.',
+  },
+  DE: {
+    headline: 'GERMANY - answer in the user language (English or French); use German institution names.',
+    institutions: 'Banks: Sparkasse, Volksbank, Deutsche Bank, Commerzbank, N26, DKB. Government: Finanzamt (elster.de), BSI, Polizei. Carriers: Telekom, Vodafone, O2. Delivery: DHL, Hermes, DPD. Banks never ask for pushTAN confirmation by email.',
+  },
+  IT: {
+    headline: 'ITALY - answer in the user language (English or French); use Italian institution names.',
+    institutions: 'Banks: Intesa Sanpaolo, UniCredit, BancoPosta, Banco BPM. Government: Agenzia delle Entrate, INPS, SPID. Carriers: TIM, Vodafone, WindTre. Delivery: Poste Italiane, BRT, GLS. Poste Italiane never asks for credentials via SMS links.',
+  },
+  PT: {
+    headline: 'PORTUGAL - answer in the user language (English or French); use Portuguese institution names.',
+    institutions: 'Banks: Caixa Geral de Depositos, Millennium BCP, Novobanco, Santander Totta, MB Way. Government: Autoridade Tributaria (portaldasfinancas.gov.pt), Seguranca Social. Carriers: MEO, NOS, Vodafone. Delivery: CTT. MB Way confirmations never happen through external links.',
+  },
+  NL: {
+    headline: 'NETHERLANDS - answer in the user language (English or French); use Dutch institution names.',
+    institutions: 'Banks: ING, Rabobank, ABN AMRO, SNS, Tikkie. Government: Belastingdienst, DigiD, Politie. Carriers: KPN, Vodafone, Odido. Delivery: PostNL, DHL. Banks never call asking you to move money to a safe account.',
+  },
+  LU: {
+    headline: 'LUXEMBOURG - reponds en francais clair, vouvoiement par defaut.',
+    institutions: 'Banques: Spuerkeess (BCEE), BGL BNP Paribas, Banque Raiffeisen, ING Luxembourg. Etat: guichet.lu, LuxTrust, Administration des contributions directes. Telecoms: POST, Tango, Orange. Livraison: POST Luxembourg. LuxTrust ne demande jamais vos codes par email.',
+  },
+  IE: {
+    headline: 'IRELAND - answer in clear English (Ireland).',
+    institutions: 'Banks: AIB, Bank of Ireland, Permanent TSB, Revolut. Government: Revenue (revenue.ie), MyGovID, An Garda Siochana. Carriers: Eir, Vodafone, Three. Delivery: An Post, DPD. Revenue never requests card details by text.',
+  },
+  AU: {
+    headline: 'AUSTRALIA - answer in clear Australian English.',
+    institutions: 'Banks: CommBank, Westpac, NAB, ANZ, ING Australia. Government: myGov, ATO (ato.gov.au), Services Australia. Carriers: Telstra, Optus, Vodafone. Delivery: Australia Post. The ATO never threatens arrest or asks for crypto payments.',
+  },
+  MA: {
+    headline: 'MAROC - reponds en francais clair, vouvoiement par defaut.',
+    institutions: 'Banques: Attijariwafa Bank, BMCE/Bank of Africa, CIH Bank, Banque Populaire, Barid Bank. Etat: impots.gov.ma, cnss.ma, DGSN. Telecoms: Maroc Telecom (IAM), Orange Maroc, Inwi. Livraison: Amana/Barid Al-Maghrib. Aucune banque marocaine ne demande vos codes par SMS ou WhatsApp.',
+  },
+  MX: {
+    headline: 'MEXICO - answer in the user language (English or French); use Mexican institution names.',
+    institutions: 'Banks: BBVA Mexico, Banorte, Santander Mexico, Citibanamex, Nu. Government: SAT (sat.gob.mx), IMSS, CONDUSEF. Carriers: Telcel, AT&T Mexico, Movistar. Delivery: Correos de Mexico, Estafeta. The SAT never requests bank details by email or WhatsApp.',
+  },
+  INTL: {
+    headline: 'INTERNATIONAL (country not specifically supported) - stay generic and prudent, and answer in the user language.',
+    institutions: 'You do not know the user local institutions with certainty. NEVER invent a local bank, government agency or reporting body. Reason on universal fraud signals (urgency, unusual link/domain, payment by gift card/crypto/wire, request for codes or credentials) and tell the user to verify by calling the official number on the back of their card or on the official website of their institution.',
+  },
+};
+
+function buildCountryPrompt(country: Country): string {
+  const config = countryConfigs[country] ?? countryConfigs.INTL;
+  const specifics = COUNTRY_SPECIFICS[country] ?? COUNTRY_SPECIFICS.INTL;
+  const orgs = config.reportingOrganizations
+    .map(o => `${o.name}${o.url ? ' | ' + o.url : ''}${o.phone ? ' | ' + o.phone : ''}`)
+    .join('\n');
+  return `
+=== PAYS DE L'UTILISATEUR ===
+${specifics.headline}
+
+Institutions et acteurs locaux a connaitre :
+${specifics.institutions}
+
+Organismes de signalement de CE pays (utilise uniquement ceux-ci) :
+${orgs}
+Votre banque : appelez le numero au DOS de votre carte
+
+Regle stricte : ne cite jamais un organisme d'un autre pays que celui de l'utilisateur.`;
+}
+
+const LEGACY_COUNTRY_PROMPTS: Partial<Record<Country, string>> = {
   CA: `
 Tu es specialise pour le CANADA (Quebec). Tu parles en francais quebecois, de maniere claire et accessible. Tu utilises le "tu".
 
@@ -342,7 +433,8 @@ Votre banque : appelez le numero au DOS de votre carte`,
 };
 
 function getCyrusPrompt(country: Country): string {
-  return CYRUS_BASE_PROMPT + COUNTRY_PROMPTS[country];
+  const legacy = LEGACY_COUNTRY_PROMPTS[country];
+  return CYRUS_BASE_PROMPT + (legacy ?? '') + buildCountryPrompt(country);
 }
 
 function stripMarkdown(text: string): string {
@@ -359,7 +451,7 @@ function stripMarkdown(text: string): string {
 }
 
 function getReportingAdvice(country: Country): string {
-  const orgs = countryConfigs[country].reportingOrganizations;
+  const orgs = (countryConfigs[country] ?? countryConfigs.INTL).reportingOrganizations;
   return orgs.map(o => `- ${o.name}${o.phone ? ' (' + o.phone + ')' : ''}`).join('\n');
 }
 

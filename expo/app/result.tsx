@@ -9,7 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp, useLocalizedScan } from '@/contexts/AppContext';
-import { reportingOrganizations } from '@/mocks/scans';
+import { getCountryConfig, type ReportingOrg } from '@/constants/countries';
 import RiskCircle from '@/components/RiskCircle';
 
 export default function ResultScreen() {
@@ -19,7 +19,7 @@ export default function ResultScreen() {
 
   const scan = useMemo(() => scans.find(s => s.id === scanId), [scans, scanId]);
   const localized = useLocalizedScan(scan ?? scans[0]);
-  const orgs = reportingOrganizations[country] ?? reportingOrganizations.CA;
+  const orgs: ReportingOrg[] = getCountryConfig(country).reportingOrganizations;
 
   if (!scan) {
     return (
@@ -142,7 +142,7 @@ export default function ResultScreen() {
                 {t('reportingOrganizations')}
               </Text>
             </View>
-            {orgs.map((org, idx) => (
+            {orgs.map((org: ReportingOrg, idx: number) => (
               <View key={idx} style={styles.orgItem}>
                 <Text style={styles.orgName}>{language === 'en' ? org.nameEn : org.name}</Text>
                 <View style={styles.orgLinks}>
