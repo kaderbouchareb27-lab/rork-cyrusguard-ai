@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
@@ -81,8 +81,12 @@ export default function PremiumScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
-            <Animated.View style={[styles.crownContainer, { opacity: shineAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.7, 1, 0.7] }) }]}>
-              <Crown size={48} color={Colors.gold} />
+            <Animated.View style={[styles.brandIconFrame, { opacity: shineAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.78, 1, 0.78] }) }]}>
+              <Image
+                source={require('@/assets/images/icon.png')}
+                style={styles.brandIcon}
+                resizeMode="cover"
+              />
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
@@ -308,8 +312,23 @@ const styles = StyleSheet.create({
     paddingTop: 26,
     paddingBottom: 24,
   },
-  crownContainer: {
-    marginBottom: 12,
+  brandIconFrame: {
+    width: 84,
+    height: 84,
+    borderRadius: 24,
+    overflow: 'hidden' as const,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(73, 209, 125, 0.38)',
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  brandIcon: {
+    width: '100%',
+    height: '100%',
   },
   heroTitle: {
     fontSize: 28,

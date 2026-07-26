@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Shield, Lock, Crown, Zap } from 'lucide-react-native';
+import { Shield, Crown, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -42,13 +42,12 @@ export default function PaywallGate({ type: _type }: PaywallGateProps) {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-      <View style={styles.lockCircleOuter}>
-        <LinearGradient
-          colors={['rgba(239,68,68,0.2)', 'rgba(239,68,68,0.05)']}
-          style={styles.lockCircle}
-        >
-          <Lock size={40} color={Colors.danger} />
-        </LinearGradient>
+      <View style={styles.brandIconFrame}>
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.brandIcon}
+          resizeMode="cover"
+        />
       </View>
 
       <Text style={styles.title}>{t('paywallTitle')}</Text>
@@ -97,17 +96,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 16,
   },
-  lockCircleOuter: {
-    marginBottom: 8,
-  },
-  lockCircle: {
+  brandIconFrame: {
     width: 96,
     height: 96,
     borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden' as const,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.25)',
+    borderColor: 'rgba(73, 209, 125, 0.38)',
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  brandIcon: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 22,
