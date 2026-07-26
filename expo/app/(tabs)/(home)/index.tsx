@@ -140,7 +140,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={['#0F172A', '#162032', '#0F172A']}
+        colors={['#06110D', '#0B2117', '#06110D']}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -169,7 +169,7 @@ export default function HomeScreen() {
 
           <Animated.View style={[styles.heroCard, { transform: [{ scale: pulseAnim }] }]}>
             <LinearGradient
-              colors={['rgba(34,197,94,0.12)', 'rgba(34,197,94,0.03)']}
+              colors={['rgba(73,209,125,0.24)', 'rgba(12,42,27,0.92)']}
               style={styles.heroGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -393,11 +393,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 34,
   },
   successBanner: {
     backgroundColor: Colors.accent,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
     marginTop: 8,
     marginBottom: 8,
@@ -409,8 +409,8 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   header: {
-    marginTop: 12,
-    marginBottom: 20,
+    marginTop: 14,
+    marginBottom: 22,
   },
   logoRow: {
     flexDirection: 'row' as const,
@@ -418,15 +418,22 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   logoCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     backgroundColor: Colors.accentMuted,
+    borderWidth: 1,
+    borderColor: Colors.accentGlow,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
   },
   appName: {
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: '800' as const,
     color: Colors.textPrimary,
     letterSpacing: -0.5,
@@ -438,31 +445,43 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginBottom: 24,
-    borderRadius: 20,
+    borderRadius: 26,
     overflow: 'hidden' as const,
     borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.2)',
+    borderColor: Colors.accentGlow,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    elevation: 7,
   },
   heroGradient: {
-    padding: 28,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
     alignItems: 'center',
     gap: 12,
   },
   heroTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
+    fontSize: 17,
+    fontWeight: '700' as const,
     color: Colors.textPrimary,
     textAlign: 'center' as const,
   },
   heroButton: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.accentLight,
     flexDirection: 'row' as const,
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: 16,
     gap: 8,
-    marginTop: 4,
+    marginTop: 6,
+    minHeight: 52,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   heroButtonText: {
     color: Colors.background,
@@ -500,17 +519,22 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
     borderColor: Colors.border,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   actionIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -528,7 +552,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center',
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 14,
+    borderRadius: 18,
     padding: 14,
     gap: 12,
     borderWidth: 1,
@@ -625,7 +649,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 20,
@@ -665,7 +689,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     backgroundColor: 'rgba(255,215,0,0.08)',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 20,

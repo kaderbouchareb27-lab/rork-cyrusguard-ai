@@ -56,7 +56,7 @@ export default function PaywallGate({ type: _type }: PaywallGateProps) {
 
       <View style={styles.featuresCard}>
         <View style={styles.featuresHeader}>
-          <Crown size={16} color="#FFD700" />
+          <Crown size={16} color={Colors.gold} />
           <Text style={styles.featuresTitle}>Premium</Text>
         </View>
         {features.map((feat, idx) => (
@@ -126,10 +126,10 @@ const styles = StyleSheet.create({
   featuresCard: {
     width: '100%',
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.15)',
+    borderColor: Colors.goldMuted,
     gap: 10,
     marginBottom: 4,
   },
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   featuresTitle: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: '#FFD700',
+    color: Colors.gold,
   },
   featureRow: {
     flexDirection: 'row' as const,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   upgradeBtn: {
     width: '100%',
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden' as const,
   },
   upgradeBtnGradient: {
@@ -164,7 +164,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    paddingVertical: 16,
+    paddingVertical: 17,
+    minHeight: 56,
   },
   upgradeBtnText: {
     fontSize: 17,

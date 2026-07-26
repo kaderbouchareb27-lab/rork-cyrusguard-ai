@@ -17,7 +17,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { analyzeImage, analyzeText, cancelActiveRequests, type ContentType } from '@/services/openai';
+import { analyzeImage, analyzeText, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
   type: ContentType;
@@ -28,7 +28,7 @@ interface ContentTypeOption {
 }
 
 const CONTENT_TYPES: ContentTypeOption[] = [
-  { type: 'sms', labelKey: 'contentTypeSms', icon: <MessageSquare size={20} color="#22C55E" />, color: '#22C55E', bgColor: 'rgba(34,197,94,0.15)' },
+  { type: 'sms', labelKey: 'contentTypeSms', icon: <MessageSquare size={20} color={Colors.accent} />, color: Colors.accent, bgColor: Colors.accentMuted },
   { type: 'url', labelKey: 'contentTypeUrl', icon: <Link2 size={20} color="#3B82F6" />, color: '#3B82F6', bgColor: 'rgba(59,130,246,0.15)' },
   { type: 'email', labelKey: 'contentTypeEmail', icon: <Mail size={20} color="#F59E0B" />, color: '#F59E0B', bgColor: 'rgba(245,158,11,0.15)' },
   { type: 'phone', labelKey: 'contentTypePhone', icon: <Phone size={20} color="#EF4444" />, color: '#EF4444', bgColor: 'rgba(239,68,68,0.15)' },
@@ -53,7 +53,6 @@ export default function ScanScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('Messenger');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [_showImageOptions, setShowImageOptions] = useState(false);
   const scanAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -66,7 +65,6 @@ export default function ScanScreen() {
 
     return () => {
       isMountedRef.current = false;
-      cancelActiveRequests();
       if (loopRef.current) {
         loopRef.current.stop();
         loopRef.current = null;
@@ -289,7 +287,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
-        <LinearGradient colors={['#0F172A', '#162032', '#0F172A']} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safe}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -308,7 +306,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
-        <LinearGradient colors={['#0F172A', '#162032', '#0F172A']} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safe}>
           <View style={styles.topBar}>
             <View style={styles.closeBtn} />
@@ -337,7 +335,7 @@ export default function ScanScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={['#0F172A', '#162032', '#0F172A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -382,7 +380,6 @@ export default function ScanScreen() {
                         setSelectedType(ct.type);
                         setTextInput('');
                         setPhoneNumber('');
-                        setShowImageOptions(false);
                       }}
                       activeOpacity={0.7}
                       testID={`type-${ct.type}`}
@@ -525,6 +522,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   closeBtn: {
     width: 40,
@@ -584,11 +583,16 @@ const styles = StyleSheet.create({
   },
   inputSection: {
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 22,
+    padding: 14,
+    backgroundColor: 'rgba(16,37,28,0.76)',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   textArea: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
@@ -651,8 +655,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: Colors.accent,
-    borderRadius: 14,
+    backgroundColor: Colors.accentLight,
+    borderRadius: 16,
     paddingVertical: 16,
     marginTop: 4,
   },
@@ -690,7 +694,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center',
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 14,
+    borderRadius: 18,
     padding: 14,
     gap: 12,
     borderWidth: 1,

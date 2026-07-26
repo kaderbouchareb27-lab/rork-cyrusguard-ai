@@ -51,7 +51,7 @@ export default function ResultScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={['#0F172A', '#162032', '#0F172A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   scoreSection: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 28,
     gap: 16,
   },
   sourceTag: {
@@ -242,11 +242,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: Colors.border,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row' as const,
@@ -305,14 +310,15 @@ const styles = StyleSheet.create({
     color: Colors.accent,
   },
   discussBtn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.accentLight,
     flexDirection: 'row' as const,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 18,
     marginTop: 8,
+    minHeight: 54,
   },
   discussBtnText: {
     color: Colors.background,

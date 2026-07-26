@@ -114,7 +114,7 @@ export default function ManageSubscriptionScreen() {
       isCurrent: user.plan === 'annual',
       isRecommended: true,
       icon: Crown,
-      accentColor: '#FFD700',
+      accentColor: Colors.gold,
     },
   ];
 
@@ -136,9 +136,9 @@ export default function ManageSubscriptionScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.currentPlanCard}>
           <View style={styles.currentPlanHeader}>
-            <View style={[styles.currentPlanIcon, { backgroundColor: user.isPremium ? 'rgba(255,215,0,0.15)' : Colors.surface }]}>
+            <View style={[styles.currentPlanIcon, { backgroundColor: user.isPremium ? Colors.goldMuted : Colors.surface }]}>
               {user.isPremium ? (
-                <Crown size={24} color="#FFD700" />
+                <Crown size={24} color={Colors.gold} />
               ) : (
                 <Shield size={24} color={Colors.textMuted} />
               )}
@@ -190,7 +190,7 @@ export default function ManageSubscriptionScreen() {
             >
               {plan.isRecommended && (
                 <View style={styles.recommendedBadge}>
-                  <Star size={10} color="#FFD700" />
+                  <Star size={10} color={Colors.gold} />
                   <Text style={styles.recommendedText}>{t('recommended')}</Text>
                 </View>
               )}
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   planCard: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 12,
     borderWidth: 1.5,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,215,0,0.12)',
+    backgroundColor: Colors.goldMuted,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   recommendedText: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: '#FFD700',
+    color: Colors.gold,
     textTransform: 'uppercase' as const,
   },
   currentBadge: {

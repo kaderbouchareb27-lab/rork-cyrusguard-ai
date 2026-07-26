@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { sendChatMessage, cancelActiveRequests } from '@/services/openai';
+import { sendChatMessage } from '@/services/openai';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -34,7 +34,6 @@ export default function ChatScreen() {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      cancelActiveRequests();
     };
   }, []);
 
@@ -213,7 +212,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -269,13 +268,13 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   userContent: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.accentDark,
     borderBottomRightRadius: 4,
     marginLeft: 'auto' as const,
   },
   aiContent: {
     backgroundColor: Colors.backgroundCard,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -311,10 +310,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.accent,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: Colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
   },

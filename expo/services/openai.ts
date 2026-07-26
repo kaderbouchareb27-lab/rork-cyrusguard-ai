@@ -396,46 +396,16 @@ Votre banque : appelez le numero au DOS de votre carte
 Regle stricte : ne cite jamais un organisme d'un autre pays que celui de l'utilisateur.`;
 }
 
-const LEGACY_COUNTRY_PROMPTS: Partial<Record<Country, string>> = {
-  CA: `
-Tu es specialise pour le CANADA (Quebec). Tu parles en francais quebecois, de maniere claire et accessible. Tu utilises le "tu".
-
-Organismes de signalement :
-Centre antifraude du Canada : 1-888-495-8501 | antifraudcentre.ca
-Surete du Quebec
-Revenu Quebec : signalement.gouv.qc.ca
-Office de la protection du consommateur
-Autorite des marches financiers (AMF)
-Votre banque : appelez le numero au DOS de votre carte`,
-
-  US: `
-You specialize in the UNITED STATES. You speak clear, friendly American English. Use "you" and be approachable.
-
-Reporting organizations:
-Federal Trade Commission (FTC) : ReportFraud.ftc.gov | 1-877-382-4357
-FBI Internet Crime Complaint Center (IC3) : ic3.gov
-AARP Fraud Watch Network : 877-908-3360
-State Attorney General's office
-Better Business Bureau (BBB)
-Your bank: call the number on the BACK of your card`,
-
-  FR: `
-Tu es specialise pour la FRANCE. Tu parles en francais standard, de maniere claire et accessible. Tu utilises le "vous" par defaut.
-
-Organismes de signalement :
-Cybermalveillance.gouv.fr
-Signal Spam : signal-spam.fr
-Pharos : internet-signalement.gouv.fr
-Info Escroqueries : 0 805 805 817 (appel gratuit)
-3018 (numero national)
-DGCCRF (Direction generale de la concurrence)
-Votre banque : appelez le numero au DOS de votre carte`,
-};
-
 function getCyrusPrompt(country: Country): string {
-  const legacy = LEGACY_COUNTRY_PROMPTS[country];
-  return CYRUS_BASE_PROMPT + (legacy ?? '') + buildCountryPrompt(country);
+  return CYRUS_BASE_PROMPT + buildCountryPrompt(country);
 }
+
+/** Fields ending with "En" must always be English, the others always French. */
+const BILINGUAL_RULE = `
+REGLE DE LANGUE POUR LE JSON (ABSOLUE) :
+- Les champs summary, explanation, suspiciousElements, reassuringElements, advice, verdict, personalizedAdvice sont TOUJOURS en francais, quel que soit le pays.
+- Les champs se terminant par "En" (summaryEn, explanationEn, ...) sont TOUJOURS en anglais.
+- N'utilise JAMAIS une autre langue (espagnol, allemand, italien...) dans ces champs : traduis les noms d'institutions locales mais garde le texte en francais ou en anglais.`;
 
 function stripMarkdown(text: string): string {
   return text
@@ -455,22 +425,34 @@ function getReportingAdvice(country: Country): string {
   return orgs.map(o => `- ${o.name}${o.phone ? ' (' + o.phone + ')' : ''}`).join('\n');
 }
 
-export function cancelActiveRequests() {
-  console.log('[AI] cancelActiveRequests called (no-op with toolkit)');
-}
+/**
+ * Normalizes a scan analysis returned by the model so the UI never receives
+ * missing arrays, out-of-range scores or wrongly-cased risk levels.
+ */
+function normalizeScanResult(result: ScanAnalysisResult): ScanAnalysisResult {
+  const score = Number(result.riskScore);
+  result.riskScore = Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 50;
 
-export async function pingOpenAI(): Promise<{ success: boolean; status?: number; error?: string; message?: string }> {
-  console.log('[AI] === PING TEST START (via Rork Toolkit) ===');
-  try {
-    const result = await generateText({
-      messages: [{ role: 'user', content: 'Say OK' }],
-    });
-    console.log('[AI] Ping result:', result?.substring(0, 50));
-    return { success: true, message: 'Toolkit API is working' };
-  } catch (err: any) {
-    console.error('[AI] Ping failed:', err?.message);
-    return { success: false, error: 'TOOLKIT_ERROR', message: err?.message };
-  }
+  const level = String(result.riskLevel ?? '').toLowerCase();
+  result.riskLevel = level === 'low' || level === 'medium' || level === 'high'
+    ? (level as ScanAnalysisResult['riskLevel'])
+    : result.riskScore >= 70 ? 'high' : result.riskScore >= 40 ? 'medium' : 'low';
+
+  const toArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter(v => typeof v === 'string' && v.trim().length > 0) : [];
+  result.suspiciousElements = toArray(result.suspiciousElements);
+  result.suspiciousElementsEn = toArray(result.suspiciousElementsEn);
+  result.reassuringElements = toArray(result.reassuringElements);
+  result.reassuringElementsEn = toArray(result.reassuringElementsEn);
+  result.advice = toArray(result.advice);
+  result.adviceEn = toArray(result.adviceEn);
+
+  result.summary = result.summary ?? result.summaryEn ?? '';
+  result.summaryEn = result.summaryEn ?? result.summary;
+  result.explanation = result.explanation ?? result.explanationEn ?? '';
+  result.explanationEn = result.explanationEn ?? result.explanation;
+
+  return result;
 }
 
 function parseJsonResponse<T>(response: string): T {
@@ -588,6 +570,7 @@ export async function analyzeImage(
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
+${BILINGUAL_RULE}
 
 You are analyzing a screenshot sent by a user. Extract ALL text from the image and analyze it for fraud indicators.
 
@@ -659,12 +642,7 @@ Explain WHY with concrete country-specific examples when relevant.`;
         : 'Invalid response from AI service. Please try again.');
     }
 
-    if (result.riskScore < 0 || result.riskScore > 100) {
-      result.riskScore = Math.max(0, Math.min(100, result.riskScore));
-    }
-    if (!['low', 'medium', 'high'].includes(result.riskLevel)) {
-      result.riskLevel = result.riskScore >= 70 ? 'high' : result.riskScore >= 40 ? 'medium' : 'low';
-    }
+    normalizeScanResult(result);
     if (!['sms', 'email', 'website', 'url', 'phone', 'social'].includes(result.sourceType)) {
       result.sourceType = 'sms';
     }
@@ -762,6 +740,7 @@ export async function analyzeText(
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
+${BILINGUAL_RULE}
 
 ${typeInstruction}
 
@@ -810,14 +789,7 @@ Give a clear verdict: ✅ Safe / ⚠️ Suspicious / 🚨 Scam detected`;
       throw new Error('Empty response from AI service');
     }
 
-    const result = parseJsonResponse<ScanAnalysisResult>(response);
-
-    if (result.riskScore < 0 || result.riskScore > 100) {
-      result.riskScore = Math.max(0, Math.min(100, result.riskScore));
-    }
-    if (!['low', 'medium', 'high'].includes(result.riskLevel)) {
-      result.riskLevel = result.riskScore >= 70 ? 'high' : result.riskScore >= 40 ? 'medium' : 'low';
-    }
+    const result = normalizeScanResult(parseJsonResponse<ScanAnalysisResult>(response));
     result.sourceType = sourceTypeMap[input.contentType] as ScanAnalysisResult['sourceType'];
 
     console.log('[AI] Text analysis complete, score:', result.riskScore);
@@ -950,6 +922,41 @@ async function fetchSiteData(url: string) {
   };
 }
 
+/**
+ * Normalizes a URL analysis so the UI never crashes on missing fields, and
+ * forces the technical facts (SSL, redirects) to the values we measured.
+ */
+function normalizeUrlResult(result: UrlAnalysisResult, measuredSsl: boolean, measuredRedirects: number): UrlAnalysisResult {
+  const score = Number(result.score);
+  result.score = Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 50;
+  result.ssl = measuredSsl;
+  result.redirects = Number.isFinite(Number(measuredRedirects)) ? Number(measuredRedirects) : 0;
+  result.domainAge = typeof result.domainAge === 'string' && result.domainAge.length > 0 ? result.domainAge : 'Inconnu';
+  result.legalMentions = !!result.legalMentions;
+  result.privacyPolicy = !!result.privacyPolicy;
+  result.termsOfService = !!result.termsOfService;
+  result.physicalAddress = !!result.physicalAddress;
+  result.verdict = result.verdict ?? result.verdictEn ?? '';
+  result.verdictEn = result.verdictEn ?? result.verdict;
+  result.verdictEmoji = result.verdictEmoji || (result.score >= 65 ? '✅' : result.score >= 35 ? '⚠️' : '🚨');
+  result.personalizedAdvice = Array.isArray(result.personalizedAdvice) ? result.personalizedAdvice : [];
+  result.personalizedAdviceEn = Array.isArray(result.personalizedAdviceEn) ? result.personalizedAdviceEn : [];
+
+  if (result.reputation) {
+    result.reputation.dataAvailable = false;
+    result.reputation.trustScore = null;
+    result.reputation.positiveReviews = null;
+    result.reputation.negativeReviews = null;
+    result.reputation.reviews = [];
+  }
+  if (result.complaints) {
+    result.complaints.dataAvailable = false;
+    result.complaints.total = 0;
+    result.complaints.items = [];
+  }
+  return result;
+}
+
 export async function analyzeUrl(
   url: string,
   language: string,
@@ -1029,6 +1036,7 @@ Contact page found: ${siteData.contact ? 'YES' : 'NO'}
 
   const reportingOrgs = getReportingAdvice(country);
   const systemPrompt = `${getCyrusPrompt(country)}
+${BILINGUAL_RULE}
 
 You are an expert in cybersecurity performing a DEEP analysis of a URL.
 
@@ -1098,7 +1106,7 @@ ${reportingOrgs}`;
       throw new Error('Empty response from AI service');
     }
 
-    const result = parseJsonResponse<UrlAnalysisResult>(response);
+    const result = normalizeUrlResult(parseJsonResponse<UrlAnalysisResult>(response), siteData.ssl, siteData.redirectCount);
     console.log('[AI] URL analysis complete, score:', result.score);
     return result;
   } catch (error: any) {

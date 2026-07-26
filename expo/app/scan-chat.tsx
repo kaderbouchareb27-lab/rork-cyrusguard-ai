@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
-import { sendScanChatMessage, cancelActiveRequests } from '@/services/openai';
+import { sendScanChatMessage } from '@/services/openai';
 
 export default function ScanChatScreen() {
   const router = useRouter();
@@ -27,7 +27,6 @@ export default function ScanChatScreen() {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      cancelActiveRequests();
     };
   }, []);
 

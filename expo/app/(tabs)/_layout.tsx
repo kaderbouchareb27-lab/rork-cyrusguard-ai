@@ -14,13 +14,22 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
-          backgroundColor: Colors.backgroundCard,
+          height: 72,
+          paddingTop: 8,
+          paddingBottom: 10,
+          backgroundColor: '#0A1A14',
           borderTopColor: Colors.border,
           borderTopWidth: 1,
+          elevation: 0,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: -8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600' as const,
+          fontWeight: '700' as const,
+          letterSpacing: 0.2,
         },
       }}
     >

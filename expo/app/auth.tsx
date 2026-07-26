@@ -105,7 +105,7 @@ export default function AuthScreen() {
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
       <LinearGradient
-        colors={['#0F172A', '#1A2744', '#0F172A']}
+        colors={['#06110D', '#0D291C', '#06110D']}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={styles.safe}>
@@ -120,7 +120,7 @@ export default function AuthScreen() {
           <View style={styles.iconSection}>
             <View style={styles.shieldOuter}>
               <LinearGradient
-                colors={['rgba(34,197,94,0.2)', 'rgba(34,197,94,0.05)']}
+                colors={['rgba(73,209,125,0.24)', 'rgba(73,209,125,0.05)']}
                 style={styles.shieldGradient}
               >
                 <Shield size={56} color={Colors.accent} />
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.2)',
+    borderColor: Colors.accentGlow,
   },
   title: {
     fontSize: 26,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   benefitsCard: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 18,
+    borderRadius: 22,
     padding: 18,
     gap: 14,
     borderWidth: 1,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   appleBtn: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 16,
     flexDirection: 'row' as const,
     alignItems: 'center',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   guestBtn: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',

@@ -77,11 +77,12 @@ export default function PremiumScreen() {
 
   return (
     <View style={styles.root}>
+      <LinearGradient colors={['#06110D', '#0A1E15', '#06110D']} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
             <Animated.View style={[styles.crownContainer, { opacity: shineAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.7, 1, 0.7] }) }]}>
-              <Crown size={48} color="#FFD700" />
+              <Crown size={48} color={Colors.gold} />
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
@@ -304,14 +305,14 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: 26,
+    paddingBottom: 24,
   },
   crownContainer: {
     marginBottom: 12,
   },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800' as const,
     color: Colors.textPrimary,
     textAlign: 'center' as const,
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(34,197,94,0.08)',
+    backgroundColor: Colors.accentMuted,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
   },
   planCard: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 10,
     borderWidth: 2,
@@ -366,7 +367,12 @@ const styles = StyleSheet.create({
   },
   planCardSelected: {
     borderColor: Colors.accent,
-    backgroundColor: 'rgba(34,197,94,0.06)',
+    backgroundColor: Colors.accentMuted,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    elevation: 5,
   },
   planBadgeRow: {
     flexDirection: 'row' as const,
@@ -377,7 +383,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.accentDark,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -389,7 +395,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   twoMonthsBadge: {
-    backgroundColor: 'rgba(255,215,0,0.2)',
+    backgroundColor: Colors.goldMuted,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -397,7 +403,7 @@ const styles = StyleSheet.create({
   twoMonthsText: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: '#D4A017',
+    color: Colors.gold,
   },
   planContent: {
     flexDirection: 'row' as const,
@@ -451,7 +457,7 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
   subscribeBtn: {
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden' as const,
     marginBottom: 24,
   },
@@ -463,7 +469,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    paddingVertical: 16,
+    paddingVertical: 17,
+    minHeight: 56,
   },
   subscribeBtnText: {
     color: '#FFFFFF',
@@ -487,7 +494,7 @@ const styles = StyleSheet.create({
   },
   featuresSection: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
@@ -509,7 +516,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(34,197,94,0.12)',
+    backgroundColor: Colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -520,7 +527,7 @@ const styles = StyleSheet.create({
   },
   testimonialCard: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 10,
     borderLeftWidth: 3,

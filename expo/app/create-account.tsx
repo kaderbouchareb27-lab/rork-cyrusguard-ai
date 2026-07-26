@@ -121,14 +121,14 @@ export default function CreateAccountScreen() {
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
       <LinearGradient
-        colors={['#0F172A', '#162032', '#0F172A']}
+        colors={['#06110D', '#0B2117', '#06110D']}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={styles.safe}>
         <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Animated.View style={[styles.successCircle, { transform: [{ scale: checkScale }] }]}>
             <LinearGradient
-              colors={['rgba(34,197,94,0.25)', 'rgba(34,197,94,0.08)']}
+              colors={['rgba(73,209,125,0.28)', 'rgba(73,209,125,0.08)']}
               style={styles.successGradient}
             >
               <Check size={48} color={Colors.accent} />
@@ -136,7 +136,7 @@ export default function CreateAccountScreen() {
           </Animated.View>
 
           <View style={styles.premiumActiveBadge}>
-            <Crown size={14} color="#FFD700" />
+            <Crown size={14} color={Colors.gold} />
             <Text style={styles.premiumActiveText}>
               {language === 'fr' ? 'Premium activé' : 'Premium activated'}
             </Text>
@@ -252,25 +252,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(34,197,94,0.3)',
+    borderColor: Colors.accentGlow,
   },
   premiumActiveBadge: {
     flexDirection: 'row' as const,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,215,0,0.12)',
+    backgroundColor: Colors.goldMuted,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
     alignSelf: 'center' as const,
     borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.2)',
+    borderColor: Colors.goldMuted,
   },
   premiumActiveText: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: '#FFD700',
+    color: Colors.gold,
   },
   title: {
     fontSize: 24,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   benefitsCard: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 22,
     padding: 18,
     gap: 12,
     borderWidth: 1,
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   appleBtn: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 16,
     flexDirection: 'row' as const,
     alignItems: 'center',
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   guestBtn: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',

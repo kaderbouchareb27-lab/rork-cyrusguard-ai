@@ -13,7 +13,7 @@ import { useApp } from '@/contexts/AppContext';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
 import RiskCircle from '@/components/RiskCircle';
-import { analyzeUrl as analyzeUrlApi, cancelActiveRequests } from '@/services/openai';
+import { analyzeUrl as analyzeUrlApi } from '@/services/openai';
 import type { UrlAnalysisResult } from '@/services/openai';
 
 const ANALYSIS_STEPS_FR = [
@@ -23,6 +23,13 @@ const ANALYSIS_STEPS_FR = [
   'Vérification de l\'entreprise...',
   'Génération du rapport...',
 ];
+
+/** Accepts "example.com", "www.example.com/path" or a full http(s) URL. */
+function isValidUrlInput(value: string): boolean {
+  const trimmed = value.trim().replace(/^https?:\/\//i, '');
+  const host = trimmed.split(/[/?#]/)[0] ?? '';
+  return /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i.test(host);
+}
 
 const ANALYSIS_STEPS_EN = [
   'Checking domain...',
@@ -52,7 +59,6 @@ export default function UrlAnalyzeScreen() {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      cancelActiveRequests();
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
     };
   }, []);
@@ -65,6 +71,15 @@ export default function UrlAnalyzeScreen() {
 
   const analyze = () => {
     if (!url.trim()) return;
+    if (!isValidUrlInput(url)) {
+      Alert.alert(
+        language === 'fr' ? 'Adresse invalide' : 'Invalid address',
+        language === 'fr'
+          ? 'Entrez une adresse de site valide, par exemple exemple.com ou https://exemple.com.'
+          : 'Enter a valid website address, for example example.com or https://example.com.'
+      );
+      return;
+    }
     if (!hasAcceptedAIDisclosure) {
       setShowDisclosure(true);
       return;
@@ -200,7 +215,7 @@ export default function UrlAnalyzeScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={['#0F172A', '#162032', '#0F172A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -550,15 +565,15 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
-  inputSection: { gap: 12, marginBottom: 20 },
+  inputSection: { gap: 12, marginBottom: 22, padding: 14, backgroundColor: 'rgba(16,37,28,0.76)', borderRadius: 22, borderWidth: 1, borderColor: Colors.border },
   inputRow: {
     flexDirection: 'row' as const, alignItems: 'center', gap: 10,
-    backgroundColor: Colors.backgroundCard, borderRadius: 14,
+    backgroundColor: Colors.backgroundCard, borderRadius: 18,
     paddingHorizontal: 16, borderWidth: 1, borderColor: Colors.border,
   },
   input: { flex: 1, fontSize: 14, color: Colors.textPrimary, paddingVertical: 14 },
   analyzeBtn: {
-    backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: 14,
+    backgroundColor: Colors.accentLight, borderRadius: 16, paddingVertical: 16, minHeight: 54,
     flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'center', gap: 8,
   },
   analyzeBtnDisabled: { backgroundColor: Colors.surface },
@@ -588,7 +603,7 @@ const styles = StyleSheet.create({
   verdictEmoji: { fontSize: 20 },
   verdictText: { fontSize: 15, fontWeight: '700' as const, flex: 1, flexWrap: 'wrap' as const },
   card: {
-    backgroundColor: Colors.backgroundCard, borderRadius: 16, padding: 18,
+    backgroundColor: Colors.backgroundCard, borderRadius: 20, padding: 18,
     marginBottom: 12, borderWidth: 1, borderColor: Colors.border,
   },
   cardHeader: {
