@@ -129,9 +129,9 @@ function checkPremiumFromCustomerInfo(info: CustomerInfo): boolean {
 function getPlanFromCustomerInfo(info: CustomerInfo): 'free' | 'monthly' | 'annual' {
   const entitlement = info.entitlements.active[ENTITLEMENT_ID];
   if (!entitlement) return 'free';
-  const productId = entitlement.productIdentifier ?? '';
-  if (productId.includes('yearly') || productId.includes('annual')) return 'annual';
-  if (productId.includes('monthly')) return 'monthly';
+  const productId = (entitlement.productIdentifier ?? '').toLowerCase();
+  if (productId.includes('yearly') || productId.includes('annual') || productId.includes('annee') || productId.includes('année')) return 'annual';
+  if (productId.includes('monthly') || productId.includes('mois')) return 'monthly';
   if (productId.includes('lifetime')) return 'annual';
   return 'monthly';
 }
