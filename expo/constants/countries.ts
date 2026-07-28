@@ -66,6 +66,9 @@ export const countryConfigs: Record<Country, CountryConfig> = {
     reportingOrganizations: [
       { name: 'Federal Trade Commission (FTC)', nameEn: 'Federal Trade Commission (FTC)', url: 'https://reportfraud.ftc.gov', phone: '1-877-382-4357' },
       { name: 'FBI Internet Crime Complaint Center (IC3)', nameEn: 'FBI Internet Crime Complaint Center (IC3)', url: 'https://www.ic3.gov', phone: '' },
+      { name: 'IdentityTheft.gov (vol d\'identité)', nameEn: 'IdentityTheft.gov (identity theft)', url: 'https://www.identitytheft.gov', phone: '1-877-438-4338' },
+      { name: 'CFPB (plaintes bancaires)', nameEn: 'CFPB (financial complaints)', url: 'https://www.consumerfinance.gov/complaint', phone: '1-855-411-2372' },
+      { name: 'US Postal Inspection Service (arnaques par courrier/colis)', nameEn: 'US Postal Inspection Service (mail & package scams)', url: 'https://www.uspis.gov/report', phone: '1-877-876-2455' },
       { name: 'AARP Fraud Watch Network', nameEn: 'AARP Fraud Watch Network', url: 'https://www.aarp.org/money/scams-fraud', phone: '877-908-3360' },
     ],
     pricing: PRICING_USD,

@@ -40,23 +40,102 @@ function isSupportedCountry(value: string | null): value is Country {
   return !!value && (SUPPORTED_COUNTRIES as string[]).includes(value);
 }
 
+/** Regions without their own profile that map to the closest supported one. */
+const REGION_ALIASES: Record<string, Country> = {
+  UK: 'GB',
+  AT: 'DE',
+  PR: 'US',
+  VI: 'US',
+  GU: 'US',
+  AS: 'US',
+  MP: 'US',
+  MC: 'FR',
+  GP: 'FR',
+  MQ: 'FR',
+  GF: 'FR',
+  RE: 'FR',
+  YT: 'FR',
+  NC: 'FR',
+  PF: 'FR',
+  AD: 'ES',
+  SM: 'IT',
+  VA: 'IT',
+  LI: 'CH',
+  NZ: 'AU',
+};
+
 /**
- * Detects the user's country from the device locale (e.g. "es-ES" -> ES).
- * Falls back to the international profile so every country gets relevant
- * anti-fraud organizations instead of Canadian ones.
+ * Timezone -> country fallback, used when the device locale exposes no region
+ * (common on iOS when the language is set without a region, e.g. "en").
+ */
+const TIMEZONE_PREFIX_COUNTRIES: { prefix: string; country: Country }[] = [
+  { prefix: 'America/Toronto', country: 'CA' },
+  { prefix: 'America/Montreal', country: 'CA' },
+  { prefix: 'America/Vancouver', country: 'CA' },
+  { prefix: 'America/Edmonton', country: 'CA' },
+  { prefix: 'America/Winnipeg', country: 'CA' },
+  { prefix: 'America/Halifax', country: 'CA' },
+  { prefix: 'America/St_Johns', country: 'CA' },
+  { prefix: 'America/Mexico', country: 'MX' },
+  { prefix: 'America/Monterrey', country: 'MX' },
+  { prefix: 'America/Cancun', country: 'MX' },
+  { prefix: 'America/Tijuana', country: 'MX' },
+  { prefix: 'America/', country: 'US' },
+  { prefix: 'US/', country: 'US' },
+  { prefix: 'Pacific/Honolulu', country: 'US' },
+  { prefix: 'Europe/Paris', country: 'FR' },
+  { prefix: 'Europe/Brussels', country: 'BE' },
+  { prefix: 'Europe/Zurich', country: 'CH' },
+  { prefix: 'Europe/Luxembourg', country: 'LU' },
+  { prefix: 'Europe/London', country: 'GB' },
+  { prefix: 'Europe/Dublin', country: 'IE' },
+  { prefix: 'Europe/Madrid', country: 'ES' },
+  { prefix: 'Atlantic/Canary', country: 'ES' },
+  { prefix: 'Europe/Lisbon', country: 'PT' },
+  { prefix: 'Europe/Rome', country: 'IT' },
+  { prefix: 'Europe/Berlin', country: 'DE' },
+  { prefix: 'Europe/Vienna', country: 'DE' },
+  { prefix: 'Europe/Amsterdam', country: 'NL' },
+  { prefix: 'Africa/Casablanca', country: 'MA' },
+  { prefix: 'Australia/', country: 'AU' },
+];
+
+function countryFromTimezone(): Country | null {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+    if (!tz) return null;
+    const match = TIMEZONE_PREFIX_COUNTRIES.find(entry => tz.startsWith(entry.prefix));
+    return match ? match.country : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Detects the user's country so the AI cites the right national anti-fraud
+ * bodies (FTC/IC3 in the US, CAFC in Canada, Cybermalveillance in France...).
+ * Order: device region -> alias -> timezone -> international profile.
+ * Never falls back to Canada for a non-Canadian device.
  */
 function detectDeviceCountry(): Country {
   try {
-    const locale = Intl.DateTimeFormat().resolvedOptions().locale ?? '';
-    const region = locale.split('-')[1]?.toUpperCase() ?? '';
+    const options = Intl.DateTimeFormat().resolvedOptions();
+    const locales: string[] = [options.locale ?? ''];
+    const region = locales
+      .map(l => l.split(/[-_]/)[1]?.toUpperCase() ?? '')
+      .find(r => r.length === 2) ?? '';
+
     if (isSupportedCountry(region)) return region;
-    if (region === 'AT') return 'DE';
-    if (region === 'GB' || region === 'UK') return 'GB';
-    if (region) return 'INTL';
-    return 'CA';
+    const alias = REGION_ALIASES[region];
+    if (alias) return alias;
+
+    const fromTz = countryFromTimezone();
+    if (fromTz) return fromTz;
+
+    return 'INTL';
   } catch (e) {
     console.log('[AppContext] Locale detection failed:', e);
-    return 'CA';
+    return countryFromTimezone() ?? 'INTL';
   }
 }
 

@@ -393,7 +393,11 @@ Organismes de signalement de CE pays (utilise uniquement ceux-ci) :
 ${orgs}
 Votre banque : appelez le numero au DOS de votre carte
 
-Regle stricte : ne cite jamais un organisme d'un autre pays que celui de l'utilisateur.`;
+Regles strictes :
+- Ne cite JAMAIS un organisme, une banque ou une agence d'un autre pays que celui de l'utilisateur.
+- N'invente jamais un organisme local : si tu n'es pas sur, renvoie vers la banque de l'utilisateur (numero au dos de la carte) ou le site officiel de l'institution.
+- Si le message analyse invoque une institution d'un AUTRE pays que celui de l'utilisateur (ex: IRS ou USPS pour un utilisateur europeen, impots.gouv.fr pour un utilisateur americain), traite cette incoherence geographique comme un signal d'arnaque supplementaire et explique-le.
+- Adapte les exemples, montants, devises et formats de numeros aux usages de CE pays.`;
 }
 
 function getCyrusPrompt(country: Country): string {
