@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { useApp } from '@/contexts/AppContext';
 import { getCountryAlerts, getTrendingScams, getAlertsSectionTitle, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
 
-function AlertCard({ alert }: { alert: AlertData }) {
+const AlertCard = React.memo(function AlertCard({ alert }: { alert: AlertData }) {
   const isHigh = alert.severity === 'high';
 
   return (
@@ -27,7 +27,7 @@ function AlertCard({ alert }: { alert: AlertData }) {
       <Text style={alertStyles.desc} numberOfLines={3}>{alert.desc}</Text>
     </View>
   );
-}
+});
 
 const alertStyles = StyleSheet.create({
   card: {
@@ -123,7 +123,11 @@ export default function HomeScreen() {
     }
   }, [showPaymentSuccess, bannerAnim, setShowPaymentSuccess]);
 
-  const recentScans = scans.slice(0, 3);
+  const recentScans = useMemo(() => scans.slice(0, 3), [scans]);
+
+  const openScan = useCallback((scanId: string) => {
+    router.push({ pathname: '/result' as any, params: { scanId } });
+  }, [router]);
 
   const alertsSectionTitle = useMemo(() => {
     return getAlertsSectionTitle(country, language) ?? t('countryAlerts');
@@ -340,7 +344,7 @@ export default function HomeScreen() {
                 <ScanCard
                   key={scan.id}
                   scan={scan}
-                  onPress={() => router.push({ pathname: '/result' as any, params: { scanId: scan.id } })}
+                  onPress={() => openScan(scan.id)}
                 />
               ))}
             </>
@@ -523,11 +527,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     marginTop: 4,
-  },
-  viewAll: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: Colors.accent,
   },
   actionsGrid: {
     flexDirection: 'row' as const,

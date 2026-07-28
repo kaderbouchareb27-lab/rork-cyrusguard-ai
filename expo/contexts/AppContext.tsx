@@ -289,7 +289,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
         return null;
       }
     },
-    refetchInterval: 60000,
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   const offeringsQuery = useQuery({
@@ -501,12 +502,20 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setAuth(newAuth);
     await AsyncStorage.setItem(STORAGE_KEYS.auth, JSON.stringify(newAuth));
 
-    const updatedUser: UserProfile = {
-      ...user,
-      email: params.email ?? user.email,
-      name: params.fullName ?? user.name,
+    let updatedUser: UserProfile = {
+      email: '',
+      name: '',
+      isPremium: false,
+      plan: 'free',
     };
-    setUser(updatedUser);
+    setUser(prev => {
+      updatedUser = {
+        ...prev,
+        email: params.email ?? prev.email,
+        name: params.fullName ?? prev.name,
+      };
+      return updatedUser;
+    });
     await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updatedUser));
 
     if (rcConfigured && params.uid) {
@@ -528,7 +537,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         console.log('[RC] logIn after auth error:', e);
       }
     }
-  }, [user, queryClient]);
+  }, [queryClient]);
 
   const logoutUser = useCallback(async () => {
     console.log('[Auth] Logging out user');
