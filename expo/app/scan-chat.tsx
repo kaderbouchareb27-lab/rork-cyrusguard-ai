@@ -2,12 +2,14 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
-import { ChevronLeft, Send, Shield } from 'lucide-react-native';
+import { ChevronLeft, Send } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 import { sendScanChatMessage } from '@/services/openai';
 
 export default function ScanChatScreen() {
@@ -124,7 +126,7 @@ export default function ScanChatScreen() {
       <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
         {!isUser && (
           <View style={styles.aiAvatar}>
-            <Shield size={14} color={Colors.accent} />
+            <GuardianMark size={28} />
           </View>
         )}
         <View style={[styles.bubbleContent, isUser ? styles.userContent : styles.aiContent]}>
@@ -137,12 +139,16 @@ export default function ScanChatScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.topTitle}>{t('scanChat')}</Text>
+          <View style={styles.titleSection}>
+            <Text style={styles.topEyebrow}>{language === 'fr' ? 'ANALYSE EN COURS' : 'SCAN CONTEXT'}</Text>
+            <Text style={styles.topTitle}>{t('scanChat')}</Text>
+          </View>
           <View style={styles.backBtn} />
         </View>
 
@@ -213,6 +219,8 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 12,
     backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
   },
+  titleSection: { alignItems: 'center' as const },
+  topEyebrow: { fontSize: 9, fontWeight: '800' as const, letterSpacing: 0.9, color: Colors.accent, marginBottom: 2 },
   topTitle: { fontSize: 16, fontWeight: '700' as const, color: Colors.textPrimary },
   messagesList: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
   messageBubble: { flexDirection: 'row' as const, alignItems: 'flex-end', gap: 8, marginBottom: 4 },
@@ -224,7 +232,7 @@ const styles = StyleSheet.create({
   },
   bubbleContent: { maxWidth: '75%', borderRadius: 16, padding: 14 },
   userContent: { backgroundColor: Colors.accent, borderBottomRightRadius: 4, marginLeft: 'auto' as const },
-  aiContent: { backgroundColor: Colors.backgroundCard, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+  aiContent: { backgroundColor: 'rgba(16, 37, 28, 0.94)', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.borderLight },
   messageText: { fontSize: 14, color: Colors.textPrimary, lineHeight: 20 },
   userMessageText: { color: Colors.background },
   inputSafe: { borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.background },

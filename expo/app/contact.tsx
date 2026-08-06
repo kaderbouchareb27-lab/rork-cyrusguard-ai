@@ -5,6 +5,8 @@ import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, Mail, Globe, MessageCircle, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 export default function ContactScreen() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function ContactScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -22,6 +25,7 @@ export default function ContactScreen() {
           <View style={styles.backBtn} />
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <View style={styles.brandLine}><GuardianMark size={42} /><Text style={styles.brandLineText}>CYRUSGUARD SUPPORT</Text></View>
           <Text style={styles.heading}>
             {language === 'fr' ? 'Contactez-nous' : 'Contact Us'}
           </Text>
@@ -109,12 +113,15 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingTop: 16 },
+  brandLine: { flexDirection: 'row' as const, alignItems: 'center', gap: 10, marginBottom: 18 },
+  brandLineText: { fontSize: 10, fontWeight: '800' as const, letterSpacing: 1.1, color: Colors.accent },
   heading: { fontSize: 24, fontWeight: '800' as const, color: Colors.textPrimary, marginBottom: 8 },
   subtext: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: 28 },
   contactCard: {
     backgroundColor: Colors.backgroundCard, borderRadius: 16, padding: 18,
     flexDirection: 'row' as const, alignItems: 'center', gap: 14,
-    marginBottom: 12, borderWidth: 1, borderColor: Colors.border,
+    marginBottom: 12, borderWidth: 1, borderColor: Colors.borderLight,
+    shadowColor: '#000000', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 3,
   },
   iconBg: {
     width: 48, height: 48, borderRadius: 14,

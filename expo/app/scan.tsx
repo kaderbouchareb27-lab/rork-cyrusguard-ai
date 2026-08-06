@@ -7,16 +7,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
-  Camera, ImagePlus, Scan, X, Loader, MessageSquare, Link2, Mail,
+  Camera, ImagePlus, X, Loader, MessageSquare, Link2, Mail,
   Phone, MessagesSquare, ChevronRight, Send,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 import { analyzeImage, analyzeText, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
@@ -287,7 +288,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
-        <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
+        <AppBackdrop />
         <SafeAreaView style={styles.safe}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -306,7 +307,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
-        <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
+        <AppBackdrop />
         <SafeAreaView style={styles.safe}>
           <View style={styles.topBar}>
             <View style={styles.closeBtn} />
@@ -335,7 +336,7 @@ export default function ScanScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -358,7 +359,11 @@ export default function ScanScreen() {
           >
             <Animated.View style={{ opacity: fadeAnim }}>
               <View style={styles.iconHeader}>
-                <Scan size={32} color={Colors.accent} />
+                <GuardianMark size={72} glow />
+                <View style={styles.liveStatus}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveStatusText}>{language === 'fr' ? 'DÉTECTION IA PRÊTE' : 'AI DETECTION READY'}</Text>
+                </View>
                 <Text style={styles.subtitle}>{t('scanMultiSubtitle')}</Text>
               </View>
 
@@ -544,10 +549,23 @@ const styles = StyleSheet.create({
   },
   iconHeader: {
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-    paddingTop: 4,
+    gap: 10,
+    marginBottom: 22,
+    paddingTop: 12,
   },
+  liveStatus: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.accentMuted,
+    borderWidth: 1,
+    borderColor: Colors.accentGlow,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.accent },
+  liveStatusText: { color: Colors.accentLight, fontSize: 10, fontWeight: '800' as const, letterSpacing: 0.7 },
   subtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
@@ -585,10 +603,15 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 22,
     padding: 14,
-    backgroundColor: 'rgba(16,37,28,0.76)',
-    borderRadius: 22,
+    backgroundColor: 'rgba(16,37,28,0.9)',
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 4,
   },
   textArea: {
     backgroundColor: Colors.backgroundCard,

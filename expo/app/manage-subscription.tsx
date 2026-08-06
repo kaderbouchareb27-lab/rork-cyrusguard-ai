@@ -8,6 +8,7 @@ import {
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
+import AppBackdrop from '@/components/AppBackdrop';
 
 type PlanType = 'free' | 'monthly' | 'annual';
 
@@ -133,6 +134,7 @@ export default function ManageSubscriptionScreen() {
           ),
         }}
       />
+      <AppBackdrop />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.currentPlanCard}>
           <View style={styles.currentPlanHeader}>

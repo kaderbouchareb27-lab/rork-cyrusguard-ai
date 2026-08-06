@@ -6,11 +6,12 @@ import {
   AlertTriangle, CheckCircle, MessageCircle, ExternalLink,
   Phone, ChevronLeft, Lightbulb, Flag
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp, useLocalizedScan } from '@/contexts/AppContext';
 import { getCountryConfig, type ReportingOrg } from '@/constants/countries';
 import RiskCircle from '@/components/RiskCircle';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function ResultScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -68,6 +69,10 @@ export default function ResultScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.scoreSection}>
+            <View style={styles.resultHeaderMark}>
+              <GuardianMark size={42} glow />
+              <Text style={styles.resultHeaderText}>{language === 'fr' ? 'RAPPORT DU SCANNER' : 'SCANNER REPORT'}</Text>
+            </View>
             <RiskCircle score={scan.riskScore} level={scan.riskLevel} levelLabel={levelLabel} size={180} />
             <View style={[styles.sourceTag, { backgroundColor: riskColor + '20' }]}>
               <Text style={[styles.sourceTagText, { color: riskColor }]}>
@@ -227,9 +232,17 @@ const styles = StyleSheet.create({
   },
   scoreSection: {
     alignItems: 'center',
-    paddingVertical: 28,
+    paddingVertical: 24,
     gap: 16,
   },
+  resultHeaderMark: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 9,
+    alignSelf: 'stretch' as const,
+    justifyContent: 'center',
+  },
+  resultHeaderText: { color: Colors.accentLight, fontSize: 11, fontWeight: '800' as const, letterSpacing: 1.1 },
   sourceTag: {
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -246,7 +259,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.1,

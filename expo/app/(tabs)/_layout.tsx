@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Home, Crown, User } from 'lucide-react-native';
+import { View } from 'react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
@@ -14,17 +15,17 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
-          height: 72,
-          paddingTop: 8,
-          paddingBottom: 10,
-          backgroundColor: '#0A1A14',
-          borderTopColor: Colors.border,
+          height: 76,
+          paddingTop: 9,
+          paddingBottom: 11,
+          backgroundColor: '#091811',
+          borderTopColor: 'rgba(145, 242, 183, 0.16)',
           borderTopWidth: 1,
-          elevation: 0,
+          elevation: 12,
           shadowColor: '#000000',
-          shadowOffset: { width: 0, height: -8 },
-          shadowOpacity: 0.2,
-          shadowRadius: 16,
+          shadowOffset: { width: 0, height: -10 },
+          shadowOpacity: 0.28,
+          shadowRadius: 20,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -37,21 +38,33 @@ export default function TabLayout() {
         name="(home)"
         options={{
           title: t('home'),
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+          tabBarIcon: ({ color, focused, size }) => (
+            <View style={focused ? { backgroundColor: Colors.accentMuted, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 } : undefined}>
+              <Home size={size} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="premium"
         options={{
           title: t('premium'),
-          tabBarIcon: ({ color, size }) => <Crown size={size} color={color} />,
+          tabBarIcon: ({ color, focused, size }) => (
+            <View style={focused ? { backgroundColor: Colors.accentMuted, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 } : undefined}>
+              <Crown size={size} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: t('profile'),
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+          tabBarIcon: ({ color, focused, size }) => (
+            <View style={focused ? { backgroundColor: Colors.accentMuted, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 } : undefined}>
+              <User size={size} color={color} />
+            </View>
+          ),
         }}
       />
     </Tabs>

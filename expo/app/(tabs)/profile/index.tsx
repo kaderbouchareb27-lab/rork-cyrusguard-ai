@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
@@ -10,6 +11,8 @@ import Colors from '@/constants/colors';
 import { useApp, type Country } from '@/contexts/AppContext';
 import { countryConfigs, countryList, getCountryLabel } from '@/constants/countries';
 import type { Language } from '@/constants/translations';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -105,14 +108,18 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
+      <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <Text style={styles.title}>{t('profileTitle')}</Text>
 
-          <View style={styles.profileCard}>
-            <View style={styles.avatarCircle}>
-              <User size={28} color={Colors.accent} />
-            </View>
+          <LinearGradient
+            colors={['rgba(73, 209, 125, 0.18)', 'rgba(16, 37, 28, 0.96)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.profileCard}
+          >
+            <GuardianMark size={56} glow />
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{auth.isAuthenticated ? (auth.fullName || user.name || (language === 'fr' ? 'Utilisateur' : 'User')) : (language === 'fr' ? 'Invité' : 'Guest')}</Text>
               <Text style={styles.profileEmail}>{auth.isAuthenticated ? (auth.email || t('accountConnected')) : t('notConnected')}</Text>
@@ -123,7 +130,7 @@ export default function ProfileScreen() {
                 <Text style={styles.premiumTagText}>PREMIUM</Text>
               </View>
             )}
-          </View>
+          </LinearGradient>
 
           {menuSections.map((section, sIdx) => (
             <View key={sIdx} style={styles.section}>
@@ -264,22 +271,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#000000',
+    borderColor: Colors.accentGlow,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.13,
     shadowRadius: 16,
     elevation: 3,
   },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 20,
-    backgroundColor: Colors.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
+
   profileInfo: {
     flex: 1,
   },

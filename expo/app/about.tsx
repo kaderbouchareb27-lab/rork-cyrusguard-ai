@@ -5,6 +5,7 @@ import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import AppBackdrop from '@/components/AppBackdrop';
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function AboutScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>

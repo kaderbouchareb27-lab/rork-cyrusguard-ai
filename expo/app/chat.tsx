@@ -2,12 +2,14 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ChevronLeft, Send, Shield, Lock } from 'lucide-react-native';
+import { ChevronLeft, Send, Lock } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import type { ChatMessage } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 import { sendChatMessage } from '@/services/openai';
 
 export default function ChatScreen() {
@@ -108,7 +110,7 @@ export default function ChatScreen() {
       <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
         {!isUser && (
           <View style={styles.aiAvatar}>
-            <Shield size={14} color={Colors.accent} />
+            <GuardianMark size={28} />
           </View>
         )}
         <View style={[styles.bubbleContent, isUser ? styles.userContent : styles.aiContent]}>
@@ -123,12 +125,14 @@ export default function ChatScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <View style={styles.titleSection}>
+            <Text style={styles.topEyebrow}>{language === 'fr' ? 'GARDIEN CYRUS' : 'CYRUS GUARDIAN'}</Text>
             <Text style={styles.topTitle}>{t('chatTitle')}</Text>
             {user.isPremium && (
               <Text style={styles.msgCount}>Premium</Text>
@@ -227,6 +231,7 @@ const styles = StyleSheet.create({
   titleSection: {
     alignItems: 'center',
   },
+  topEyebrow: { fontSize: 9, fontWeight: '800' as const, letterSpacing: 0.9, color: Colors.accent, marginBottom: 2 },
   topTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
@@ -273,10 +278,10 @@ const styles = StyleSheet.create({
     marginLeft: 'auto' as const,
   },
   aiContent: {
-    backgroundColor: Colors.backgroundCard,
+    backgroundColor: 'rgba(16, 37, 28, 0.94)',
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   messageText: {
     fontSize: 14,

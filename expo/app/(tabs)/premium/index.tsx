@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackdrop from '@/components/AppBackdrop';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
@@ -77,7 +78,7 @@ export default function PremiumScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#06110D', '#0A1E15', '#06110D']} style={StyleSheet.absoluteFill} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
@@ -313,8 +314,8 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: 'center',
-    paddingTop: 26,
-    paddingBottom: 24,
+    paddingTop: 30,
+    paddingBottom: 28,
   },
   brandIconFrame: {
     width: 84,
@@ -402,12 +403,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   planCard: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 10,
+    backgroundColor: 'rgba(16, 37, 28, 0.94)',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 12,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 9 },
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 4,
   },
   planCardMonthly: {
     marginBottom: 16,

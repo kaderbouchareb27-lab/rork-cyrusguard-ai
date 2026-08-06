@@ -5,6 +5,7 @@ import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import AppBackdrop from '@/components/AppBackdrop';
 
 export default function FaqPageScreen() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function FaqPageScreen() {
     { q: 'Comment fonctionne l\'analyse IA ?', a: 'Notre IA utilise GPT-4o Vision pour analyser les images et détecter des signes d\'arnaque. L\'analyse prend en compte le texte, les logos, les URLs et d\'autres éléments visuels pour fournir un score de risque précis.' },
     { q: 'Mes données sont-elles en sécurité ?', a: 'Absolument. Les images sont analysées puis immédiatement supprimées. Aucune donnée n\'est partagée avec des tiers. Nous respectons le RGPD et toutes les réglementations sur la protection des données.' },
     { q: 'Puis-je annuler mon abonnement ?', a: 'Oui, vous pouvez annuler à tout moment depuis votre profil. L\'annulation prend effet à la fin de la période de facturation en cours.' },
-    { q: 'Combien de scans puis-je faire gratuitement ?', a: 'Les utilisateurs gratuits peuvent effectuer 3 scans par jour et envoyer 5 messages au chatbot Cyrus par jour.' },
+    { q: 'Combien de scans puis-je faire gratuitement ?', a: 'Les utilisateurs gratuits bénéficient de 2 analyses offertes. CyrusGuard Premium débloque des analyses et des échanges sans limite.' },
     { q: 'L\'application fonctionne-t-elle hors ligne ?', a: 'L\'analyse IA nécessite une connexion internet. Cependant, votre historique de scans est disponible hors ligne.' },
     { q: 'Comment signaler une arnaque ?', a: 'Après chaque analyse, nous affichons les organismes de signalement officiels de votre pays avec leurs coordonnées.' },
     { q: 'Quels types de fraudes pouvez-vous détecter ?', a: 'Nous détectons les SMS de phishing, emails frauduleux, faux sites web, arnaques aux cryptomonnaies, fraudes bancaires, arnaques à l\'emploi, et bien d\'autres.' },
@@ -23,7 +24,7 @@ export default function FaqPageScreen() {
     { q: 'How does the AI analysis work?', a: 'Our AI uses GPT-4o Vision to analyze images and detect signs of scams. The analysis considers text, logos, URLs, and other visual elements to provide a precise risk score.' },
     { q: 'Is my data secure?', a: 'Absolutely. Images are analyzed then immediately deleted. No data is shared with third parties. We comply with GDPR and all data protection regulations.' },
     { q: 'Can I cancel my subscription?', a: 'Yes, you can cancel at any time from your profile. Cancellation takes effect at the end of the current billing period.' },
-    { q: 'How many free scans can I do?', a: 'Free users can perform 3 scans per day and send 5 messages to the Cyrus chatbot per day.' },
+    { q: 'How many free scans can I do?', a: 'Free users receive 2 complimentary analyses. CyrusGuard Premium unlocks unlimited analyses and conversations.' },
     { q: 'Does the app work offline?', a: 'AI analysis requires an internet connection. However, your scan history is available offline.' },
     { q: 'How do I report a scam?', a: 'After each analysis, we display official reporting organizations from your country with their contact information.' },
     { q: 'What types of fraud can you detect?', a: 'We detect phishing SMS, fraudulent emails, fake websites, cryptocurrency scams, bank fraud, employment scams, and many more.' },
@@ -32,6 +33,7 @@ export default function FaqPageScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>

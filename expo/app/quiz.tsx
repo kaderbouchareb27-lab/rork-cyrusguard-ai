@@ -2,10 +2,12 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ChevronLeft, Shield, CheckCircle, XCircle, RotateCcw, Home, Award } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle, XCircle, RotateCcw, Home, Award } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 import { quizQuestions } from '@/mocks/scans';
 
 export default function QuizScreen() {
@@ -102,6 +104,7 @@ export default function QuizScreen() {
     return (
       <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
+        <AppBackdrop />
         <SafeAreaView style={styles.safe}>
           <Animated.View style={[styles.finishContainer, { opacity: finishOpacityAnim, transform: [{ scale: finishScaleAnim }] }]}>
             <View style={[styles.scoreCircle, { borderColor: getScoreColor() }]}>
@@ -136,6 +139,7 @@ export default function QuizScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -163,7 +167,7 @@ export default function QuizScreen() {
 
         <View style={styles.content}>
           <View style={styles.questionCard}>
-            <Shield size={24} color={Colors.accent} />
+            <GuardianMark size={48} glow />
             <Text style={styles.questionText}>{questionText}</Text>
           </View>
 

@@ -8,6 +8,7 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCountryAlerts, getTrendingScams, getAlertsSectionTitle, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
+import AppBackdrop from '@/components/AppBackdrop';
 
 const AlertCard = React.memo(function AlertCard({ alert }: { alert: AlertData }) {
   const isHigh = alert.severity === 'high';
@@ -31,13 +32,18 @@ const AlertCard = React.memo(function AlertCard({ alert }: { alert: AlertData })
 
 const alertStyles = StyleSheet.create({
   card: {
-    width: 260,
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 14,
+    width: 272,
+    backgroundColor: 'rgba(16, 37, 28, 0.92)',
+    borderRadius: 20,
     padding: 16,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 4,
   },
   cardHeader: {
     flexDirection: 'row' as const,
@@ -143,10 +149,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={['#06110D', '#0B2117', '#06110D']}
-        style={StyleSheet.absoluteFill}
-      />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView 
           style={styles.scroll} 
@@ -575,8 +578,8 @@ const styles = StyleSheet.create({
   },
   actionsGrid: {
     flexDirection: 'row' as const,
-    gap: 10,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 18,
   },
   actionCard: {
     flex: 1,
@@ -586,7 +589,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,

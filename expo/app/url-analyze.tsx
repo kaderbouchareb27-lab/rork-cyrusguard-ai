@@ -7,12 +7,13 @@ import {
   Clock, MapPin, FileText, Star, MessageSquareWarning, Building2, ShoppingCart,
   Lightbulb, Lock, ArrowRight, ThumbsUp, ThumbsDown, Phone, Info
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
 import RiskCircle from '@/components/RiskCircle';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 import { analyzeUrl as analyzeUrlApi } from '@/services/openai';
 import type { UrlAnalysisResult } from '@/services/openai';
 
@@ -215,7 +216,7 @@ export default function UrlAnalyzeScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={['#06110D', '#0B2117', '#06110D']} style={StyleSheet.absoluteFill} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -232,6 +233,13 @@ export default function UrlAnalyzeScreen() {
         <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
+            <View style={styles.urlHero}>
+              <GuardianMark size={56} glow />
+              <View style={styles.urlHeroCopy}>
+                <Text style={styles.urlHeroEyebrow}>{language === 'fr' ? 'VÉRIFICATION DE LIEN' : 'LINK VERIFICATION'}</Text>
+                <Text style={styles.urlHeroText}>{language === 'fr' ? 'Analysez un site avant de lui faire confiance.' : 'Analyze a website before you trust it.'}</Text>
+              </View>
+            </View>
             <View style={styles.inputRow}>
               <Globe size={20} color={Colors.textMuted} />
               <TextInput
@@ -565,7 +573,11 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
-  inputSection: { gap: 12, marginBottom: 22, padding: 14, backgroundColor: 'rgba(16,37,28,0.76)', borderRadius: 22, borderWidth: 1, borderColor: Colors.border },
+  inputSection: { gap: 14, marginBottom: 22, padding: 16, backgroundColor: 'rgba(16,37,28,0.9)', borderRadius: 26, borderWidth: 1, borderColor: Colors.borderLight, shadowColor: '#000000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.16, shadowRadius: 18, elevation: 4 },
+  urlHero: { flexDirection: 'row' as const, alignItems: 'center', gap: 12 },
+  urlHeroCopy: { flex: 1 },
+  urlHeroEyebrow: { fontSize: 10, fontWeight: '800' as const, color: Colors.accent, letterSpacing: 1 },
+  urlHeroText: { fontSize: 14, fontWeight: '600' as const, color: Colors.textPrimary, marginTop: 3, lineHeight: 19 },
   inputRow: {
     flexDirection: 'row' as const, alignItems: 'center', gap: 10,
     backgroundColor: Colors.backgroundCard, borderRadius: 18,

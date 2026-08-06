@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, Lock, UserPlus, Fingerprint } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackdrop from '@/components/AppBackdrop';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
@@ -104,10 +105,7 @@ export default function AuthScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={['#06110D', '#0D291C', '#06110D']}
-        style={StyleSheet.absoluteFill}
-      />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} testID="auth-back-btn">

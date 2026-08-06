@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react-native';
-import { Shield, Eye } from 'lucide-react-native';
+import { Shield } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import GuardianMark from '@/components/GuardianMark';
 
 interface AIDisclosureModalProps {
   visible: boolean;
@@ -38,11 +39,7 @@ export default function AIDisclosureModal({ visible, onAccept, onDecline }: AIDi
       <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
         <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
           <View style={styles.iconContainer}>
-            <View style={styles.iconOuter}>
-              <View style={styles.iconInner}>
-                <Eye size={28} color={Colors.accent} />
-              </View>
-            </View>
+            <GuardianMark size={76} glow />
           </View>
 
           <Text style={styles.title}>{t('aiDisclosureTitle')}</Text>
@@ -91,27 +88,17 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.28,
+    shadowRadius: 28,
+    elevation: 10,
   },
   iconContainer: {
     marginBottom: 20,
   },
-  iconOuter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconInner: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   title: {
     fontSize: 20,
     fontWeight: '700' as const,
