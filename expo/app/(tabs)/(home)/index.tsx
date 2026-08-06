@@ -163,50 +163,45 @@ export default function HomeScreen() {
           )}
 
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-            <View style={styles.logoRow}>
-              <View style={styles.logoCircle}>
-                <Image
-                  source={require('@/assets/images/icon.png')}
-                  style={styles.logoImage}
-                  resizeMode="cover"
-                />
-              </View>
-              <View>
-                <Text style={styles.appName}>{t('appName')}</Text>
-                <Text style={styles.slogan}>{t('slogan')}</Text>
-              </View>
+            <View style={styles.brandBar}>
+              <View style={styles.brandSignal}><View style={styles.brandSignalDot} /><Text style={styles.brandSignalText}>{language === 'fr' ? 'RÉSEAU DE PROTECTION' : 'PROTECTION NETWORK'}</Text></View>
+              <Text style={styles.brandVersion}>AI · 2.0</Text>
             </View>
+            <Text style={styles.appName}>{t('appName')}</Text>
+            <Text style={styles.slogan}>{language === 'fr' ? 'Détectez la fraude avant qu’elle ne vous atteigne.' : 'Spot fraud before it reaches you.'}</Text>
           </Animated.View>
 
           <Animated.View style={[styles.heroCard, { transform: [{ scale: pulseAnim }] }]}>
             <LinearGradient
-              colors={['rgba(73,209,125,0.24)', 'rgba(12,42,27,0.92)']}
+              colors={['#173D2A', '#0B1C15', '#06110D']}
               style={styles.heroGradient}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              end={{ x: 0.9, y: 1 }}
             >
+              <View style={styles.heroOrbOne} />
+              <View style={styles.heroOrbTwo} />
               <View style={styles.heroScannerBadge}>
                 <View style={styles.scannerDot} />
-                <ScanLine size={14} color={Colors.accentLight} />
-                <Text style={styles.scannerText}>{language === 'fr' ? 'SCANNEUR IA ACTIF' : 'AI SCANNER ACTIVE'}</Text>
+                <ScanLine size={13} color={Colors.accentLight} />
+                <Text style={styles.scannerText}>{language === 'fr' ? 'CYRUS EN VEILLE' : 'CYRUS ON WATCH'}</Text>
               </View>
               <View style={styles.heroLogoFrame}>
-                <Image
-                  source={require('@/assets/images/icon.png')}
-                  style={styles.heroLogo}
-                  resizeMode="cover"
-                />
+                <Image source={require('@/assets/images/icon.png')} style={styles.heroLogo} resizeMode="cover" />
+                <View style={styles.heroScanBeam} />
               </View>
-              <Text style={styles.heroTitle}>{t('protectedBy')}</Text>
+              <Text style={styles.heroTitle}>{language === 'fr' ? 'Votre gardien numérique.' : 'Your digital guardian.'}</Text>
+              <Text style={styles.heroDescription}>{language === 'fr' ? 'Analysez un message, une image ou un lien suspect en quelques secondes.' : 'Analyze a suspicious message, image, or link in seconds.'}</Text>
               <TouchableOpacity
                 style={styles.heroButton}
                 onPress={() => router.push('/scan' as any)}
                 activeOpacity={0.8}
                 testID="scan-now-btn"
               >
-                <Camera size={20} color={Colors.background} />
+                <View style={styles.heroButtonIcon}><Camera size={18} color={Colors.background} /></View>
                 <Text style={styles.heroButtonText}>{t('scanNow')}</Text>
+                <ChevronRight size={18} color={Colors.background} />
               </TouchableOpacity>
+              <View style={styles.heroFootnote}><View style={styles.heroFootnoteLine} /><Text style={styles.heroFootnoteText}>{language === 'fr' ? 'ANALYSE CONFIDENTIELLE' : 'PRIVATE ANALYSIS'}</Text><View style={styles.heroFootnoteLine} /></View>
             </LinearGradient>
           </Animated.View>
 
@@ -432,52 +427,35 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 14,
-    marginBottom: 22,
+    marginBottom: 18,
   },
-  logoRow: {
+  brandBar: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  logoCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: Colors.accentMuted,
-    borderWidth: 1,
-    borderColor: Colors.accentGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  logoImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 17,
-  },
+  brandSignal: { flexDirection: 'row' as const, alignItems: 'center', gap: 7 },
+  brandSignalDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.accent, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 7, elevation: 3 },
+  brandSignalText: { color: Colors.accentLight, fontSize: 10, fontWeight: '800' as const, letterSpacing: 1.1 },
+  brandVersion: { color: Colors.textMuted, fontSize: 10, fontWeight: '700' as const, letterSpacing: 0.7 },
   heroLogoFrame: {
-    width: 92,
-    height: 92,
-    borderRadius: 30,
-    padding: 4,
-    backgroundColor: 'rgba(73, 209, 125, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(145, 242, 183, 0.32)',
+    width: 154,
+    height: 154,
+    borderRadius: 77,
+    padding: 5,
+    overflow: 'hidden' as const,
+    backgroundColor: '#06110D',
+    borderWidth: 1.5,
+    borderColor: 'rgba(145, 242, 183, 0.58)',
     shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.28,
-    shadowRadius: 20,
-    elevation: 6,
+    shadowOpacity: 0.58,
+    shadowRadius: 30,
+    elevation: 12,
   },
-  heroLogo: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 26,
-  },
+  heroLogo: { width: '100%', height: '100%', borderRadius: 72 },
+  heroScanBeam: { position: 'absolute' as const, left: -10, right: -10, top: 74, height: 2, backgroundColor: '#9EFFBC', shadowColor: Colors.accent, shadowOpacity: 1, shadowRadius: 10, elevation: 8 },
   heroScannerBadge: {
     flexDirection: 'row' as const,
     alignItems: 'center',
@@ -502,62 +480,23 @@ const styles = StyleSheet.create({
     fontWeight: '800' as const,
     letterSpacing: 0.8,
   },
-  appName: {
-    fontSize: 23,
-    fontWeight: '800' as const,
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  slogan: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
+  appName: { fontSize: 28, fontWeight: '900' as const, color: Colors.textPrimary, letterSpacing: -1.1 },
+  slogan: { fontSize: 14, color: Colors.textSecondary, marginTop: 5, lineHeight: 20 },
   heroCard: {
-    marginBottom: 24,
-    borderRadius: 26,
-    overflow: 'hidden' as const,
-    borderWidth: 1,
-    borderColor: Colors.accentGlow,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.24,
-    shadowRadius: 24,
-    elevation: 7,
+    marginBottom: 24, borderRadius: 32, overflow: 'hidden' as const, borderWidth: 1,
+    borderColor: 'rgba(145, 242, 183, 0.28)', shadowColor: '#000000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.34, shadowRadius: 28, elevation: 9,
   },
-  heroGradient: {
-    paddingVertical: 24,
-    paddingHorizontal: 28,
-    alignItems: 'center',
-    gap: 12,
-  },
-  heroTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: Colors.textPrimary,
-    textAlign: 'center' as const,
-  },
-  heroButton: {
-    backgroundColor: Colors.accentLight,
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 16,
-    gap: 8,
-    marginTop: 6,
-    minHeight: 52,
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  heroButtonText: {
-    color: Colors.background,
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
+  heroGradient: { paddingTop: 21, paddingBottom: 19, paddingHorizontal: 22, alignItems: 'center', gap: 11, overflow: 'hidden' as const },
+  heroOrbOne: { position: 'absolute' as const, width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(73,209,125,0.14)', top: -130, right: -90 },
+  heroOrbTwo: { position: 'absolute' as const, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(73,209,125,0.08)', bottom: -110, left: -45 },
+  heroTitle: { fontSize: 24, fontWeight: '900' as const, color: Colors.white, textAlign: 'center' as const, letterSpacing: -0.7, marginTop: 2 },
+  heroDescription: { color: Colors.textSecondary, fontSize: 14, lineHeight: 20, textAlign: 'center' as const, maxWidth: 275, marginBottom: 5 },
+  heroButton: { width: '100%', backgroundColor: Colors.accentLight, flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: 17, gap: 9, minHeight: 54, shadowColor: Colors.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.26, shadowRadius: 12, elevation: 5 },
+  heroButtonIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: 'rgba(6,17,13,0.13)', alignItems: 'center', justifyContent: 'center' },
+  heroButtonText: { flex: 1, color: Colors.background, fontSize: 16, fontWeight: '800' as const, textAlign: 'center' as const },
+  heroFootnote: { flexDirection: 'row' as const, alignItems: 'center', gap: 8, marginTop: 1 },
+  heroFootnoteLine: { height: 1, width: 34, backgroundColor: 'rgba(145,242,183,0.26)' },
+  heroFootnoteText: { color: Colors.textMuted, fontSize: 9, fontWeight: '800' as const, letterSpacing: 1.1 },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700' as const,

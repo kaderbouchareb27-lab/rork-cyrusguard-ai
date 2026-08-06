@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
@@ -8,6 +8,7 @@ import AppBackdrop from '@/components/AppBackdrop';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
+import GuardianMark from '@/components/GuardianMark';
 
 export default function PremiumScreen() {
   const router = useRouter();
@@ -83,11 +84,8 @@ export default function PremiumScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
             <Animated.View style={[styles.brandIconFrame, { opacity: shineAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.78, 1, 0.78] }) }]}>
-              <Image
-                source={require('@/assets/images/icon.png')}
-                style={styles.brandIcon}
-                resizeMode="cover"
-              />
+              <GuardianMark size={118} glow />
+              <View style={styles.brandScanBeam} />
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
@@ -317,24 +315,8 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 28,
   },
-  brandIconFrame: {
-    width: 84,
-    height: 84,
-    borderRadius: 24,
-    overflow: 'hidden' as const,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 209, 125, 0.38)',
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  brandIcon: {
-    width: '100%',
-    height: '100%',
-  },
+  brandIconFrame: { width: 128, height: 128, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  brandScanBeam: { position: 'absolute' as const, left: 0, right: 0, top: 63, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 10, elevation: 9 },
   heroTitle: {
     fontSize: 28,
     fontWeight: '800' as const,

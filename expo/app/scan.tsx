@@ -359,11 +359,12 @@ export default function ScanScreen() {
           >
             <Animated.View style={{ opacity: fadeAnim }}>
               <View style={styles.iconHeader}>
-                <GuardianMark size={72} glow />
+                <View style={styles.scannerMarkWrap}><GuardianMark size={112} glow /><View style={styles.scannerBeam} /></View>
                 <View style={styles.liveStatus}>
                   <View style={styles.liveDot} />
                   <Text style={styles.liveStatusText}>{language === 'fr' ? 'DÉTECTION IA PRÊTE' : 'AI DETECTION READY'}</Text>
                 </View>
+                <Text style={styles.scanHeadline}>{language === 'fr' ? 'Confiez le doute à Cyrus.' : 'Give Cyrus the doubt.'}</Text>
                 <Text style={styles.subtitle}>{t('scanMultiSubtitle')}</Text>
               </View>
 
@@ -547,12 +548,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  iconHeader: {
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 22,
-    paddingTop: 12,
-  },
+  iconHeader: { alignItems: 'center', gap: 10, marginBottom: 24, paddingTop: 14 },
+  scannerMarkWrap: { width: 124, height: 124, alignItems: 'center', justifyContent: 'center' },
+  scannerBeam: { position: 'absolute' as const, left: 0, right: 0, top: 61, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 10, elevation: 7 },
+  scanHeadline: { fontSize: 22, fontWeight: '900' as const, color: Colors.textPrimary, letterSpacing: -0.5, textAlign: 'center' as const, marginTop: 2 },
   liveStatus: {
     flexDirection: 'row' as const,
     alignItems: 'center',

@@ -234,7 +234,7 @@ export default function UrlAnalyzeScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
             <View style={styles.urlHero}>
-              <GuardianMark size={56} glow />
+              <View style={styles.urlMarkWrap}><GuardianMark size={88} glow /><View style={styles.urlMarkBeam} /></View>
               <View style={styles.urlHeroCopy}>
                 <Text style={styles.urlHeroEyebrow}>{language === 'fr' ? 'VÉRIFICATION DE LIEN' : 'LINK VERIFICATION'}</Text>
                 <Text style={styles.urlHeroText}>{language === 'fr' ? 'Analysez un site avant de lui faire confiance.' : 'Analyze a website before you trust it.'}</Text>
@@ -574,7 +574,9 @@ const styles = StyleSheet.create({
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
   inputSection: { gap: 14, marginBottom: 22, padding: 16, backgroundColor: 'rgba(16,37,28,0.9)', borderRadius: 26, borderWidth: 1, borderColor: Colors.borderLight, shadowColor: '#000000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.16, shadowRadius: 18, elevation: 4 },
-  urlHero: { flexDirection: 'row' as const, alignItems: 'center', gap: 12 },
+  urlHero: { flexDirection: 'row' as const, alignItems: 'center', gap: 14, paddingBottom: 2 },
+  urlMarkWrap: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
+  urlMarkBeam: { position: 'absolute' as const, left: 0, right: 0, top: 47, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8 },
   urlHeroCopy: { flex: 1 },
   urlHeroEyebrow: { fontSize: 10, fontWeight: '800' as const, color: Colors.accent, letterSpacing: 1 },
   urlHeroText: { fontSize: 14, fontWeight: '600' as const, color: Colors.textPrimary, marginTop: 3, lineHeight: 19 },

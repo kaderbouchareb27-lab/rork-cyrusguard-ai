@@ -1,10 +1,11 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Shield, Crown, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import GuardianMark from '@/components/GuardianMark';
 
 interface PaywallGateProps {
   type: 'scan' | 'chat' | 'url' | 'scan-chat';
@@ -43,11 +44,8 @@ export default function PaywallGate({ type: _type }: PaywallGateProps) {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
       <View style={styles.brandIconFrame}>
-        <Image
-          source={require('@/assets/images/icon.png')}
-          style={styles.brandIcon}
-          resizeMode="cover"
-        />
+        <GuardianMark size={112} glow />
+        <View style={styles.brandScanBeam} />
       </View>
 
       <Text style={styles.title}>{t('paywallTitle')}</Text>
@@ -96,24 +94,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 16,
   },
-  brandIconFrame: {
-    width: 96,
-    height: 96,
-    borderRadius: 28,
-    overflow: 'hidden' as const,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 209, 125, 0.38)',
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  brandIcon: {
-    width: '100%',
-    height: '100%',
-  },
+  brandIconFrame: { width: 122, height: 122, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  brandScanBeam: { position: 'absolute' as const, left: 0, right: 0, top: 60, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 9, elevation: 9 },
   title: {
     fontSize: 22,
     fontWeight: '800' as const,
