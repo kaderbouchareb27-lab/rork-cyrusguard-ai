@@ -9,6 +9,7 @@ import Purchases, {
   type PurchasesPackage,
   LOG_LEVEL,
 } from 'react-native-purchases';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { translations, type Language } from '@/constants/translations';
 import { type ScanResult } from '@/mocks/scans';
 import { countryConfigs, type Currency } from '@/constants/countries';
@@ -167,9 +168,20 @@ const STORAGE_KEYS = {
   auth: 'cyrusguard_auth',
 };
 
+/**
+ * True when the app runs inside Expo Go, where RevenueCat's native store
+ * (StoreKit / Google Play Billing) is unavailable. In that case only the
+ * RevenueCat Test Store key works.
+ */
+export const isExpoGo: boolean =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 function getRCApiKey(): string {
   const testKey = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
-  if (Platform.OS === 'web') return testKey;
+  if (Platform.OS === 'web' || isExpoGo) {
+    console.log('[RC] Using RevenueCat Test Store key (Expo Go / web)');
+    return testKey;
+  }
   const platformKey = Platform.select({
     ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
     android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
@@ -532,6 +544,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
     console.log('[AppContext] AI disclosure accepted');
   }, []);
 
+  const resetFreeCredits = useCallback(async () => {
+    setCreditsUsed(0);
+    await AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, '0');
+    console.log('[AppContext] Free credits reset');
+  }, []);
+
   const consumeCredit = useCallback(() => {
     if (user.isPremium) return;
     setCreditsUsed(prev => {
@@ -677,6 +695,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     remainingCredits,
     creditsUsed,
     consumeCredit,
+    resetFreeCredits,
+    isExpoGo,
     canUseFeature,
     freeCredits: FREE_CREDITS,
     countryConfig,
@@ -705,7 +725,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }), [
     language, country, currency, currencySymbol, availableLanguages, countryConfig,
     user, scans, canScan,
-    remainingCredits, creditsUsed, consumeCredit,
+    remainingCredits, creditsUsed, consumeCredit, resetFreeCredits,
     canUseFeature, needsPaywall, needsAccountCreation, showPaymentSuccess,
     hasAcceptedAIDisclosure, acceptAIDisclosure,
     auth, loginUser, logoutUser,

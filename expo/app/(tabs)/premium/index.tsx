@@ -15,6 +15,7 @@ export default function PremiumScreen() {
   const {
     t, language, country, upgradeToPremium, user, remainingCredits, freeCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
+    isExpoGo, resetFreeCredits,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -112,6 +113,30 @@ export default function PremiumScreen() {
                   />
                 ))}
               </View>
+            </View>
+          )}
+
+          {isExpoGo && (
+            <View style={styles.devNotice}>
+              <Text style={styles.devNoticeTitle}>
+                {language === 'fr' ? 'Mode test (Expo Go)' : 'Test mode (Expo Go)'}
+              </Text>
+              <Text style={styles.devNoticeText}>
+                {language === 'fr'
+                  ? 'Les achats reels App Store ne fonctionnent pas dans Expo Go. Le Test Store RevenueCat est utilise pour les essais.'
+                  : 'Real App Store purchases do not work inside Expo Go. The RevenueCat Test Store is used for trials.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.devResetBtn}
+                onPress={() => { void resetFreeCredits(); }}
+                activeOpacity={0.7}
+                testID="dev-reset-credits"
+              >
+                <RotateCcw size={14} color={Colors.accent} />
+                <Text style={styles.devResetBtnText}>
+                  {language === 'fr' ? 'Reinitialiser mes credits gratuits' : 'Reset my free credits'}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -611,6 +636,41 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  devNotice: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(73,209,125,0.28)',
+    backgroundColor: 'rgba(73,209,125,0.07)',
+    padding: 14,
+    marginBottom: 16,
+    gap: 8,
+  },
+  devNoticeTitle: {
+    color: Colors.accent,
+    fontSize: 13,
+    fontWeight: '700' as const,
+    letterSpacing: 0.4,
+  },
+  devNoticeText: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  devResetBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    alignSelf: 'flex-start' as const,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(73,209,125,0.12)',
+  },
+  devResetBtnText: {
+    color: Colors.accent,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   restoreBtnDisabled: {
     opacity: 0.6,
