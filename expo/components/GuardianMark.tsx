@@ -19,14 +19,14 @@ export default function GuardianMark({ size = 44, glow = false }: GuardianMarkPr
           width: size,
           height: size,
           borderRadius: radius,
-          padding: Math.max(2, Math.round(size * 0.045)),
+          padding: 0,
         },
         glow && styles.glow,
       ]}
     >
       <Image
         source={require('@/assets/images/icon.png')}
-        style={{ width: '100%', height: '100%', borderRadius: Math.max(2, radius - 3) }}
+        style={{ width: '100%', height: '100%', borderRadius: Math.max(2, radius - 1) }}
         resizeMode="cover"
       />
     </View>
@@ -35,7 +35,8 @@ export default function GuardianMark({ size = 44, glow = false }: GuardianMarkPr
 
 const styles = StyleSheet.create({
   frame: {
-    backgroundColor: 'rgba(73, 209, 125, 0.12)',
+    overflow: 'hidden' as const,
+    backgroundColor: '#06110D',
     borderWidth: 1,
     borderColor: Colors.accentGlow,
   },
