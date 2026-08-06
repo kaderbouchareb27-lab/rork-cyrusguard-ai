@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { 
-  AlertTriangle, CheckCircle, MessageCircle, ExternalLink,
-  Phone, ChevronLeft, Lightbulb, Flag
+  AlertTriangle, CheckCircle, ExternalLink,
+  Phone, ChevronLeft, Lightbulb, Flag, ShieldCheck
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp, useLocalizedScan } from '@/contexts/AppContext';
@@ -59,12 +59,7 @@ export default function ResultScreen() {
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('analysisComplete')}</Text>
-          <TouchableOpacity
-            style={styles.chatBtn}
-            onPress={() => router.push({ pathname: '/scan-chat' as any, params: { scanId: scan.id } })}
-          >
-            <MessageCircle size={20} color={Colors.accent} />
-          </TouchableOpacity>
+          <View style={styles.topSpacer} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -170,11 +165,12 @@ export default function ResultScreen() {
 
           <TouchableOpacity
             style={styles.discussBtn}
-            onPress={() => router.push({ pathname: '/scan-chat' as any, params: { scanId: scan.id } })}
+            onPress={() => router.replace('/scan' as any)}
             activeOpacity={0.8}
+            testID="new-scan-btn"
           >
-            <MessageCircle size={20} color={Colors.background} />
-            <Text style={styles.discussBtnText}>{t('scanChat')}</Text>
+            <ShieldCheck size={20} color={Colors.background} />
+            <Text style={styles.discussBtnText}>{t('newAnalysis')}</Text>
           </TouchableOpacity>
 
           <View style={styles.bottomSpace} />
@@ -218,13 +214,9 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textPrimary,
   },
-  chatBtn: {
+  topSpacer: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   content: {
     paddingHorizontal: 20,

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ChevronLeft, Mail, Globe, MessageCircle, MapPin } from 'lucide-react-native';
+import { ChevronLeft, Mail, Globe, ScanLine, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
@@ -64,13 +64,13 @@ export default function ContactScreen() {
           </TouchableOpacity>
 
           <View style={styles.contactCard}>
-            <View style={[styles.iconBg, { backgroundColor: 'rgba(168,85,247,0.15)' }]}>
-              <MessageCircle size={22} color="#A855F7" />
+            <View style={[styles.iconBg, { backgroundColor: Colors.accentMuted }]}>
+              <ScanLine size={22} color={Colors.accent} />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactLabel}>{language === 'fr' ? 'Chat in-app' : 'In-app Chat'}</Text>
+              <Text style={styles.contactLabel}>{language === 'fr' ? 'Analyse instantanée' : 'Instant analysis'}</Text>
               <Text style={styles.contactValue}>
-                {language === 'fr' ? 'Utilisez Cyrus pour une aide immédiate' : 'Use Cyrus for immediate help'}
+                {language === 'fr' ? 'Scannez une capture d’écran ou un lien suspect dans l’app' : 'Scan a screenshot or a suspicious link in the app'}
               </Text>
             </View>
           </View>

@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import GuardianMark from '@/components/GuardianMark';
 
 interface PaywallGateProps {
-  type: 'scan' | 'chat' | 'url' | 'scan-chat';
+  type: 'scan' | 'url';
 }
 
 export default function PaywallGate({ type: _type }: PaywallGateProps) {

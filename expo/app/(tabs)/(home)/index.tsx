@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail, ScanLine } from 'lucide-react-native';
+import { Shield, Camera, Link, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail, ScanLine } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -95,7 +95,7 @@ const alertStyles = StyleSheet.create({
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { t, language, country, scans, showPaymentSuccess, setShowPaymentSuccess, user, remainingCredits, canScan, canChat } = useApp();
+  const { t, language, country, scans, showPaymentSuccess, setShowPaymentSuccess, user, remainingCredits, canScan } = useApp();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bannerAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -266,30 +266,6 @@ export default function HomeScreen() {
                 <Link size={22} color={Colors.info} />
               </View>
               <Text style={styles.actionLabel}>{t('analyzeUrl')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionCard, !canChat && styles.actionCardLocked]}
-              onPress={() => {
-                if (canChat) {
-                  router.push('/chat' as any);
-                } else {
-                  router.push('/(tabs)/premium' as any);
-                }
-              }}
-              activeOpacity={0.7}
-              testID="action-chat"
-            >
-              {!canChat && (
-                <View style={styles.premiumBadge}>
-                  <Crown size={10} color="#FFD700" />
-                  <Text style={styles.premiumBadgeText}>Premium</Text>
-                </View>
-              )}
-              <View style={[styles.actionIcon, { backgroundColor: canChat ? 'rgba(168,85,247,0.15)' : 'rgba(255,215,0,0.1)' }]}>
-                <MessageCircle size={22} color={canChat ? '#A855F7' : '#94A3B8'} />
-              </View>
-              <Text style={[styles.actionLabel, !canChat && styles.actionLabelLocked]}>{t('chatWithCyrus')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -726,8 +702,5 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#FFD700',
     letterSpacing: 0.3,
-  },
-  actionLabelLocked: {
-    color: '#94A3B8',
   },
 });
