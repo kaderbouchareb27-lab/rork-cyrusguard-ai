@@ -124,7 +124,7 @@ export default function AuthScreen() {
                 style={styles.shieldGradient}
               >
                 <Image
-                  source={require('@/assets/images/logo.png')}
+                  source={require('@/assets/images/icon.png')}
                   style={styles.shieldLogo}
                   resizeMode="cover"
                 />
@@ -232,22 +232,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   shieldOuter: {
-    borderRadius: 32,
+    borderRadius: 36,
     overflow: 'hidden' as const,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 22,
+    elevation: 8,
   },
   shieldGradient: {
-    width: 110,
-    height: 110,
-    borderRadius: 32,
+    width: 118,
+    height: 118,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.accentGlow,
   },
   shieldLogo: {
-    width: 92,
-    height: 92,
-    borderRadius: 26,
+    width: 104,
+    height: 104,
+    borderRadius: 31,
   },
   title: {
     fontSize: 26,

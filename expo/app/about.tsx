@@ -25,28 +25,28 @@ export default function AboutScreen() {
           <View style={styles.logoSection}>
             <View style={styles.logoCircle}>
               <Image
-                source={require('@/assets/images/logo.png')}
+                source={require('@/assets/images/icon.png')}
                 style={styles.logoImage}
                 resizeMode="cover"
               />
             </View>
             <Text style={styles.appName}>CyrusGuard AI</Text>
-            <Text style={styles.version}>v1.0.0</Text>
+            <Text style={styles.version}>AI Fraud Scanner · v2.0.0</Text>
           </View>
 
           <Text style={styles.description}>
             {language === 'fr'
-              ? 'CyrusGuard AI est votre bouclier intelligent contre la fraude numérique. Propulsé par l\'intelligence artificielle GPT-4o, notre application analyse instantanément les messages suspects, emails et sites web pour vous protéger des arnaques.\n\nNotre mission est de démocratiser la cybersécurité en la rendant accessible à tous, avec un support en français et en anglais pour les marchés canadien, français et américain.'
-              : 'CyrusGuard AI is your intelligent shield against digital fraud. Powered by GPT-4o artificial intelligence, our application instantly analyzes suspicious messages, emails, and websites to protect you from scams.\n\nOur mission is to democratize cybersecurity by making it accessible to everyone, with support in French and English for the Canadian, French, and American markets.'}
+              ? 'CyrusGuard AI est votre scanner de protection contre la fraude numérique. Son gardien IA analyse les messages, courriels, liens et sites suspects afin de vous aider à repérer les signaux d’arnaque avant qu’ils ne vous atteignent.\n\nNotre mission : rendre la vigilance numérique simple, claire et accessible, avec une protection adaptée à votre pays, en français et en anglais.'
+              : 'CyrusGuard AI is your protection scanner against digital fraud. Its AI guardian analyzes suspicious messages, emails, links, and websites to help you spot scam signals before they reach you.\n\nOur mission: make digital vigilance simple, clear, and accessible, with country-aware protection in French and English.'}
           </Text>
 
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>{language === 'fr' ? 'Technologie' : 'Technology'}</Text>
-            <Text style={styles.infoValue}>OpenAI GPT-4o Vision</Text>
+            <Text style={styles.infoValue}>{language === 'fr' ? 'Scanner IA de fraude' : 'AI fraud scanner'}</Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>{language === 'fr' ? 'Marchés' : 'Markets'}</Text>
-            <Text style={styles.infoValue}>🇨🇦 Canada  🇫🇷 France  🇺🇸 USA</Text>
+            <Text style={styles.infoValue}>{language === 'fr' ? '17 profils de protection' : '17 protection profiles'}</Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>{language === 'fr' ? 'Langues' : 'Languages'}</Text>
@@ -87,10 +87,12 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingTop: 8 },
   logoSection: { alignItems: 'center', paddingVertical: 30, gap: 8 },
   logoCircle: {
-    width: 80, height: 80, borderRadius: 24,
+    width: 90, height: 90, borderRadius: 28,
     backgroundColor: Colors.accentMuted, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.accentGlow,
+    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.24, shadowRadius: 18, elevation: 6,
   },
-  logoImage: { width: 78, height: 78, borderRadius: 23 },
+  logoImage: { width: 82, height: 82, borderRadius: 24 },
   appName: { fontSize: 24, fontWeight: '800' as const, color: Colors.textPrimary },
   version: { fontSize: 13, color: Colors.textMuted },
   description: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: 24 },

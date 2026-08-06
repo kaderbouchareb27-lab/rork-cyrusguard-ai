@@ -11,7 +11,7 @@ import { countryConfigs } from '@/constants/countries';
 export default function PremiumScreen() {
   const router = useRouter();
   const {
-    t, country, upgradeToPremium, user, remainingCredits, freeCredits,
+    t, language, country, upgradeToPremium, user, remainingCredits, freeCredits,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
@@ -90,6 +90,10 @@ export default function PremiumScreen() {
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
+            <View style={styles.scannerStatus}>
+              <View style={styles.scannerStatusDot} />
+              <Text style={styles.scannerStatusText}>{language === 'fr' ? 'PROTECTION IA SANS LIMITE' : 'UNLIMITED AI PROTECTION'}</Text>
+            </View>
           </View>
 
           {!user.isPremium && (
@@ -340,6 +344,30 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  scannerStatus: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: Colors.accentMuted,
+    borderWidth: 1,
+    borderColor: Colors.accentGlow,
+  },
+  scannerStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.accent,
+  },
+  scannerStatusText: {
+    color: Colors.accentLight,
+    fontSize: 10,
+    fontWeight: '800' as const,
+    letterSpacing: 0.7,
   },
 
   creditCounter: {

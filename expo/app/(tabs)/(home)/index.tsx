@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail } from 'lucide-react-native';
+import { Shield, Camera, Link, MessageCircle, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail, ScanLine } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -163,7 +163,7 @@ export default function HomeScreen() {
             <View style={styles.logoRow}>
               <View style={styles.logoCircle}>
                 <Image
-                  source={require('@/assets/images/logo.png')}
+                  source={require('@/assets/images/icon.png')}
                   style={styles.logoImage}
                   resizeMode="cover"
                 />
@@ -182,11 +182,18 @@ export default function HomeScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <Image
-                source={require('@/assets/images/logo.png')}
-                style={styles.heroLogo}
-                resizeMode="cover"
-              />
+              <View style={styles.heroScannerBadge}>
+                <View style={styles.scannerDot} />
+                <ScanLine size={14} color={Colors.accentLight} />
+                <Text style={styles.scannerText}>{language === 'fr' ? 'SCANNEUR IA ACTIF' : 'AI SCANNER ACTIVE'}</Text>
+              </View>
+              <View style={styles.heroLogoFrame}>
+                <Image
+                  source={require('@/assets/images/icon.png')}
+                  style={styles.heroLogo}
+                  resizeMode="cover"
+                />
+              </View>
               <Text style={styles.heroTitle}>{t('protectedBy')}</Text>
               <TouchableOpacity
                 style={styles.heroButton}
@@ -449,10 +456,48 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 17,
   },
+  heroLogoFrame: {
+    width: 92,
+    height: 92,
+    borderRadius: 30,
+    padding: 4,
+    backgroundColor: 'rgba(73, 209, 125, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(145, 242, 183, 0.32)',
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
+    elevation: 6,
+  },
   heroLogo: {
-    width: 76,
-    height: 76,
-    borderRadius: 24,
+    width: '100%',
+    height: '100%',
+    borderRadius: 26,
+  },
+  heroScannerBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'center' as const,
+    backgroundColor: 'rgba(6, 17, 13, 0.54)',
+    borderColor: 'rgba(145, 242, 183, 0.2)',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  scannerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.accent,
+  },
+  scannerText: {
+    color: Colors.accentLight,
+    fontSize: 10,
+    fontWeight: '800' as const,
+    letterSpacing: 0.8,
   },
   appName: {
     fontSize: 23,
@@ -478,7 +523,7 @@ const styles = StyleSheet.create({
     elevation: 7,
   },
   heroGradient: {
-    paddingVertical: 32,
+    paddingVertical: 24,
     paddingHorizontal: 28,
     alignItems: 'center',
     gap: 12,
