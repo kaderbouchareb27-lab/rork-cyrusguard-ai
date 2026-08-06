@@ -471,7 +471,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
   });
 
   const currentOffering = useMemo<PurchasesOffering | null>(() => {
-    return offeringsQuery.data?.current ?? null;
+    const data = offeringsQuery.data;
+    if (!data) return null;
+    const current = data.current;
+    if (current && current.availablePackages.length > 0) return current;
+    const fallback = Object.values(data.all).find(o => o.availablePackages.length > 0) ?? null;
+    if (fallback) {
+      console.log('[RC] Current offering empty, falling back to:', fallback.identifier);
+    }
+    return fallback;
   }, [offeringsQuery.data]);
 
   const countryConfig = useMemo(() => countryConfigs[country] ?? countryConfigs.INTL, [country]);
@@ -652,7 +660,16 @@ export const [AppProvider, useApp] = createContextHook(() => {
       return;
     }
     const packageId = plan === 'monthly' ? '$rc_monthly' : '$rc_annual';
-    const pkg = currentOffering.availablePackages.find(p => p.identifier === packageId);
+    const matchesPlan = (identifier: string): boolean => {
+      const id = identifier.toLowerCase();
+      return plan === 'monthly'
+        ? id.includes('month') || id.includes('mois')
+        : id.includes('annual') || id.includes('year') || id.includes('annee') || id.includes('année');
+    };
+    const pkg =
+      currentOffering.availablePackages.find(p => p.identifier === packageId) ??
+      currentOffering.availablePackages.find(p => matchesPlan(p.identifier)) ??
+      currentOffering.availablePackages.find(p => matchesPlan(p.product?.identifier ?? ''));
     if (!pkg) {
       console.log('[RC] Package not found:', packageId);
       Alert.alert('Error', language === 'fr'

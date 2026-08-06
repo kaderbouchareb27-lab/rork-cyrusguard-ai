@@ -23,8 +23,8 @@ export default function ManageSubscriptionScreen() {
   const config = countryConfigs[country] ?? countryConfigs.INTL;
   const currencySymbol = config.currencySymbol;
 
-  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly');
-  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual');
+  const monthlyPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_monthly' || /monthly|mois/i.test(p.product?.identifier ?? ''));
+  const annualPkg = currentOffering?.availablePackages.find(p => p.identifier === '$rc_annual' || /yearly|annual|annee|année/i.test(p.product?.identifier ?? ''));
 
   const prices = {
     monthly: monthlyPkg?.product?.priceString ?? `${currencySymbol}${config.pricing.monthly}`,
