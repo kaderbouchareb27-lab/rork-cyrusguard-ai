@@ -576,23 +576,7 @@ export async function analyzeImage(
   const systemPrompt = `${getCyrusPrompt(country)}
 ${BILINGUAL_RULE}
 
-You are analyzing a SCREENSHOT sent by a user. Extract ALL text visible in the image (including sender names, phone numbers, short codes, URLs, timestamps, buttons, page names, follower counts, prices) and analyze it for fraud indicators.
-
-The screenshot can come from ANY source. Identify the source yourself from the visual layout:
-- SMS / text message (iMessage, Android Messages, unknown short code)
-- Email or webmail (Gmail, Outlook, Apple Mail) - phishing, fake invoices, fake receipts
-- WhatsApp conversation (unknown number, international prefix, wrong-number scam, investment or crypto pitch)
-- Messenger, Instagram DM, TikTok or Snapchat message (fake friend, hacked account, romance scam, fake giveaway)
-- Facebook advertisement, sponsored post, page or group post (fake store, unrealistic discount, fake celebrity endorsement, fake contest)
-- Facebook Marketplace, Kijiji, Craigslist or classified listing (fake seller, deposit request, overpayment scam)
-- Missed call, voicemail transcript or call log screenshot (spoofed bank number, fake government agency, tech support)
-- Website page, checkout page or login page (fake bank login, fake parcel tracking, fake refund form)
-- Bank or payment app notification (Interac, e-Transfer, PayPal, Zelle, Revolut)
-- Job offer, work-from-home or recruiting message (fake recruiter, package reshipping, money mule)
-
-Set sourceType to the closest match and mention the detected source explicitly in the summary so the user knows Cyrus understood what they sent.
-
-If the screenshot contains no readable text or nothing related to a message, ad, call or website, say so honestly in the summary with a LOW score instead of inventing a threat.
+You are analyzing a screenshot sent by a user. Extract ALL text from the image and analyze it for fraud indicators.
 
 You MUST respond with a valid JSON object and NOTHING else. No markdown, no code blocks, just pure JSON.
 
@@ -600,7 +584,7 @@ The JSON must have this exact structure:
 {
   "riskScore": <number 0-100>,
   "riskLevel": "<low|medium|high>",
-  "sourceType": "<sms|email|website|url|phone|social>",
+  "sourceType": "<sms|email|website|url>",
   "summary": "<French summary>",
   "summaryEn": "<English summary>",
   "explanation": "<detailed French explanation>",
@@ -715,8 +699,8 @@ function getContentTypePrompt(contentType: ContentType, language: string): strin
       en: 'Analyze this phone call description for signs of fraud.',
     },
     social: {
-      fr: 'Analyse ce contenu de réseau social (message privé, publication, annonce sponsorisée, page, groupe ou petite annonce Marketplace) pour détecter des signes de fraude : faux marchand, rabais irréaliste, faux concours, fausse célébrité, compte piraté, arnaque amoureuse, demande de dépôt ou de virement.',
-      en: 'Analyze this social media content (direct message, post, sponsored ad, page, group or Marketplace listing) for fraud indicators: fake store, unrealistic discount, fake contest, fake celebrity endorsement, hacked account, romance scam, deposit or wire transfer request.',
+      fr: 'Analyse ce message de réseau social pour détecter des signes de fraude.',
+      en: 'Analyze this social media message for signs of fraud.',
     },
   };
   return prompts[contentType]?.[language === 'fr' ? 'fr' : 'en'] ?? prompts.sms.en;
@@ -746,7 +730,7 @@ export async function analyzeText(
       contentDescription = `Phone call description:\n"${input.text}"${input.phoneNumber ? `\nCaller number: ${input.phoneNumber}` : ''}`;
       break;
     case 'social':
-      contentDescription = `Social media content${input.platform ? ` (${input.platform})` : ''} - can be a private message, a post, a sponsored ad, a page or a Marketplace listing:\n"${input.text}"`;
+      contentDescription = `Social media message${input.platform ? ` (${input.platform})` : ''}:\n"${input.text}"`;
       break;
   }
 

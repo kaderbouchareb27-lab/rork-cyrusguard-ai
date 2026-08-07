@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
   Camera, ImagePlus, X, Loader, MessageSquare, Link2, Mail,
-  Phone, MessagesSquare, ChevronRight, Send, ScanEye,
+  Phone, MessagesSquare, ChevronRight, Send,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Colors from '@/constants/colors';
@@ -502,14 +502,6 @@ export default function ScanScreen() {
                   <ChevronRight size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
               </View>
-
-              <View style={styles.sourcesCard}>
-                <View style={styles.sourcesHeader}>
-                  <ScanEye size={15} color={Colors.accent} />
-                  <Text style={styles.sourcesTitle}>{t('supportedSourcesTitle')}</Text>
-                </View>
-                <Text style={styles.sourcesText}>{t('supportedSources')}</Text>
-              </View>
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -523,32 +515,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  sourcesCard: {
-    marginTop: 20,
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(73,209,125,0.2)',
-    backgroundColor: 'rgba(73,209,125,0.05)',
-    gap: 8,
-  },
-  sourcesHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 7,
-  },
-  sourcesTitle: {
-    color: Colors.accentLight,
-    fontSize: 11.5,
-    fontWeight: '700' as const,
-    letterSpacing: 1,
-    textTransform: 'uppercase' as const,
-  },
-  sourcesText: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
   },
   flex1: {
     flex: 1,

@@ -254,7 +254,6 @@ export default function HomeScreen() {
                 <Camera size={22} color={canScan ? Colors.accent : Colors.danger} />
               </View>
               <Text style={styles.actionLabel}>{t('scanImage')}</Text>
-              <Text style={styles.actionHint}>{t('scanImageHint')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -267,7 +266,6 @@ export default function HomeScreen() {
                 <Link size={22} color={Colors.info} />
               </View>
               <Text style={styles.actionLabel}>{t('analyzeUrl')}</Text>
-              <Text style={styles.actionHint}>{t('analyzeUrlHint')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -525,14 +523,6 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: Colors.textPrimary,
     textAlign: 'center' as const,
-  },
-  actionHint: {
-    fontSize: 9.5,
-    fontWeight: '600' as const,
-    color: Colors.textMuted,
-    textAlign: 'center' as const,
-    marginTop: 4,
-    letterSpacing: 0.2,
   },
   quickToolsRow: {
     gap: 10,
