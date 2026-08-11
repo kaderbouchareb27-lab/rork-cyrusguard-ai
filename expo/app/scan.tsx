@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
-  Camera, ImagePlus, X, Loader, MessageSquare, Link2, Mail,
+  Camera, ImagePlus, X, MessageSquare, Link2, Mail,
   Phone, MessagesSquare, ChevronRight, Send,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,7 +17,7 @@ import type { ScanResult } from '@/mocks/scans';
 import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
 import AppBackdrop from '@/components/AppBackdrop';
-import GuardianMark from '@/components/GuardianMark';
+import GuardianHero from '@/components/GuardianHero';
 import { analyzeImage, analyzeText, type ContentType } from '@/services/openai';
 
 interface ContentTypeOption {
@@ -315,10 +315,8 @@ export default function ScanScreen() {
             <View style={styles.closeBtn} />
           </View>
           <View style={styles.analyzingContainer}>
-            <Animated.View style={[styles.scanCircle, { opacity: scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }]}>
-              <View style={styles.scanCircleInner}>
-                <Loader size={40} color={Colors.accent} />
-              </View>
+            <Animated.View style={{ opacity: scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0.58, 1] }) }}>
+              <GuardianHero size={190} markSize={132} />
             </Animated.View>
             <Text style={styles.analyzingTitle}>{t('analyzing')}</Text>
             <View style={styles.progressBar}>
@@ -359,7 +357,7 @@ export default function ScanScreen() {
           >
             <Animated.View style={{ opacity: fadeAnim }}>
               <View style={styles.iconHeader}>
-                <View style={styles.scannerMarkWrap}><GuardianMark size={112} glow /><View style={styles.scannerBeam} /></View>
+                <GuardianHero size={180} markSize={126} />
                 <View style={styles.liveStatus}>
                   <View style={styles.liveDot} />
                   <Text style={styles.liveStatusText}>{language === 'fr' ? 'DÉTECTION IA PRÊTE' : 'AI DETECTION READY'}</Text>
@@ -529,7 +527,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.borderLight,
   },
   closeBtn: {
     width: 40,
@@ -548,9 +546,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  iconHeader: { alignItems: 'center', gap: 10, marginBottom: 24, paddingTop: 14 },
-  scannerMarkWrap: { width: 124, height: 124, alignItems: 'center', justifyContent: 'center' },
-  scannerBeam: { position: 'absolute' as const, left: 0, right: 0, top: 61, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 10, elevation: 7 },
+  iconHeader: { alignItems: 'center', gap: 10, marginBottom: 24, paddingTop: 4 },
   scanHeadline: { fontSize: 22, fontWeight: '900' as const, color: Colors.textPrimary, letterSpacing: -0.5, textAlign: 'center' as const, marginTop: 2 },
   liveStatus: {
     flexDirection: 'row' as const,
@@ -602,13 +598,13 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 22,
     padding: 14,
-    backgroundColor: 'rgba(13,36,24,0.92)',
+    backgroundColor: Colors.backgroundCard,
     borderRadius: 26,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: '#000000',
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.08,
     shadowRadius: 18,
     elevation: 4,
   },
@@ -678,9 +674,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     backgroundColor: Colors.accentLight,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 16,
     marginTop: 4,
+    minHeight: 56,
+    shadowColor: Colors.accent,
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 5,
   },
   analyzeBtnDisabled: {
     backgroundColor: Colors.surface,

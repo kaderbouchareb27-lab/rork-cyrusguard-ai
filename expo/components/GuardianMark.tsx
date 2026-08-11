@@ -8,6 +8,8 @@ interface GuardianMarkProps {
   glow?: boolean;
   /** Sweeps a scanner beam across the visor. */
   scanning?: boolean;
+  /** Hero mode removes the tile-like frame so the mark blends into the radar. */
+  presentation?: 'tile' | 'hero';
 }
 
 /**
@@ -18,6 +20,7 @@ export default function GuardianMark({
   size = 44,
   glow = false,
   scanning = false,
+  presentation = 'tile',
 }: GuardianMarkProps): React.ReactElement {
   const radius = Math.round(size * 0.28);
   const beam = useRef(new Animated.Value(0)).current;
@@ -44,12 +47,22 @@ export default function GuardianMark({
       <View
         style={[
           styles.frame,
-          { width: size, height: size, borderRadius: radius, borderWidth: Math.max(1, size * 0.018) },
+          presentation === 'hero' && styles.heroFrame,
+          {
+            width: size,
+            height: size,
+            borderRadius: presentation === 'hero' ? size / 2 : radius,
+            borderWidth: presentation === 'hero' ? 0 : Math.max(1, size * 0.018),
+          },
         ]}
       >
         <Image
           source={require('@/assets/images/logo-mark.png')}
-          style={{ width: '100%', height: '100%', borderRadius: Math.max(2, radius - 2) }}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: presentation === 'hero' ? size / 2 : Math.max(2, radius - 2),
+          }}
           resizeMode="cover"
         />
         {scanning && (
@@ -77,6 +90,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden' as const,
     backgroundColor: Colors.background,
     borderColor: Colors.chromeEdge,
+  },
+  heroFrame: {
+    backgroundColor: 'transparent',
   },
   beam: {
     position: 'absolute' as const,

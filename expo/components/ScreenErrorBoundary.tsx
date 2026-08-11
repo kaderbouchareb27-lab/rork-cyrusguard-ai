@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AlertTriangle, RotateCcw, WifiOff } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 interface Props {
   children: React.ReactNode;
@@ -45,6 +47,8 @@ export default class ScreenErrorBoundary extends React.Component<Props, State> {
 
       return (
         <View style={styles.container}>
+          <AppBackdrop />
+          <GuardianMark size={88} glow presentation="hero" />
           <View style={[styles.iconCircle, { backgroundColor: iconColor + '20' }]}>
             <Icon size={32} color={iconColor} />
           </View>
@@ -82,12 +86,15 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -28,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   title: {
     fontSize: 22,
@@ -106,7 +113,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     backgroundColor: Colors.accent,
-    borderRadius: 14,
+    borderRadius: 18,
+    shadowColor: Colors.accent,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,
   },

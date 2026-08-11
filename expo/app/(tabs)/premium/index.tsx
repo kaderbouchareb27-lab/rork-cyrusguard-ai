@@ -8,7 +8,7 @@ import AppBackdrop from '@/components/AppBackdrop';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
-import GuardianMark from '@/components/GuardianMark';
+import GuardianHero from '@/components/GuardianHero';
 
 export default function PremiumScreen() {
   const router = useRouter();
@@ -85,7 +85,7 @@ export default function PremiumScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
             <Animated.View style={[styles.brandIconFrame, { opacity: shineAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.78, 1, 0.78] }) }]}>
-              <GuardianMark size={118} glow scanning />
+              <GuardianHero size={190} markSize={132} />
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
@@ -223,7 +223,7 @@ export default function PremiumScreen() {
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <>
-                    <Crown size={20} color="#FFFFFF" />
+                    <Crown size={20} color={Colors.background} />
                     <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
                   </>
                 )}
@@ -336,10 +336,10 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: 'center',
-    paddingTop: 30,
+    paddingTop: 12,
     paddingBottom: 28,
   },
-  brandIconFrame: { width: 128, height: 128, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  brandIconFrame: { width: 190, height: 190, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   heroTitle: {
     fontSize: 28,
     fontWeight: '900' as const,
@@ -409,15 +409,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   planCard: {
-    backgroundColor: 'rgba(13, 36, 24, 0.94)',
+    backgroundColor: Colors.backgroundCard,
     borderRadius: 24,
     padding: 18,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: Colors.borderLight,
-    shadowColor: '#000000',
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 9 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
   },
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   subscribeBtnText: {
-    color: '#FFFFFF',
+    color: Colors.background,
     fontSize: 17,
     fontWeight: '800' as const,
   },
@@ -722,6 +722,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   bottomSpace: {
-    height: 30,
+    height: 90,
   },
 });

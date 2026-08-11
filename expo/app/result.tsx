@@ -65,7 +65,7 @@ export default function ResultScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.scoreSection}>
             <View style={styles.resultHeaderMark}>
-              <GuardianMark size={42} glow />
+              <GuardianMark size={48} glow scanning />
               <Text style={styles.resultHeaderText}>{language === 'fr' ? 'RAPPORT DU SCANNER' : 'SCANNER REPORT'}</Text>
             </View>
             <RiskCircle score={scan.riskScore} level={scan.riskLevel} levelLabel={levelLabel} size={180} />
@@ -206,6 +206,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -252,9 +254,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: '#000000',
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 14,
     elevation: 2,
   },
@@ -323,7 +325,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 18,
     marginTop: 8,
-    minHeight: 54,
+    minHeight: 56,
+    shadowColor: Colors.accent,
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 5,
   },
   discussBtnText: {
     color: Colors.background,

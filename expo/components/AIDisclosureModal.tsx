@@ -39,7 +39,7 @@ export default function AIDisclosureModal({ visible, onAccept, onDecline }: AIDi
       <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
         <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
           <View style={styles.iconContainer}>
-            <GuardianMark size={76} glow />
+            <GuardianMark size={82} glow scanning presentation="hero" />
           </View>
 
           <Text style={styles.title}>{t('aiDisclosureTitle')}</Text>
@@ -91,9 +91,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: '#000000',
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.12,
     shadowRadius: 28,
     elevation: 10,
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
     flexDirection: 'row' as const,
     gap: 12,
   },
@@ -130,8 +130,12 @@ const styles = StyleSheet.create({
   },
   acceptBtn: {
     backgroundColor: Colors.accent,
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 16,
+    shadowColor: Colors.accent,
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 5,
     paddingHorizontal: 32,
     width: '100%',
     alignItems: 'center',

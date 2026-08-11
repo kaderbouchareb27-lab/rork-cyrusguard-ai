@@ -4,10 +4,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { Shield, Crown, Check } from 'lucide-react-native';
+import { Shield, Crown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
 if (Platform.OS === 'ios') {
@@ -120,10 +122,7 @@ export default function CreateAccountScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
-      <LinearGradient
-        colors={['#04100A', '#0A2115', '#04100A']}
-        style={StyleSheet.absoluteFill}
-      />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Animated.View style={[styles.successCircle, { transform: [{ scale: checkScale }] }]}>
@@ -131,7 +130,7 @@ export default function CreateAccountScreen() {
               colors={['rgba(47,232,107,0.30)', 'rgba(47,232,107,0.08)']}
               style={styles.successGradient}
             >
-              <Check size={48} color={Colors.accent} />
+              <GuardianMark size={88} glow scanning presentation="hero" />
             </LinearGradient>
           </Animated.View>
 
@@ -246,9 +245,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   successGradient: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 112,
+    height: 112,
+    borderRadius: 56,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -292,7 +291,7 @@ const styles = StyleSheet.create({
     padding: 18,
     gap: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   benefitRow: {
     flexDirection: 'row' as const,
@@ -339,7 +338,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   guestBtnText: {
     fontSize: 15,

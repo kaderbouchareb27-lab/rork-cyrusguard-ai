@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ActivityIndicator, Alert, Image,
+  View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, Lock, UserPlus, Fingerprint } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import AppBackdrop from '@/components/AppBackdrop';
+import GuardianHero from '@/components/GuardianHero';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
@@ -116,18 +116,7 @@ export default function AuthScreen() {
 
         <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.iconSection}>
-            <View style={styles.shieldOuter}>
-              <LinearGradient
-                colors={['rgba(47,232,107,0.26)', 'rgba(47,232,107,0.05)']}
-                style={styles.shieldGradient}
-              >
-                <Image
-                  source={require('@/assets/images/logo-mark.png')}
-                  style={styles.shieldLogo}
-                  resizeMode="cover"
-                />
-              </LinearGradient>
-            </View>
+            <GuardianHero size={154} markSize={108} />
           </View>
 
           <Text style={styles.title}>{t('authTitle')}</Text>
@@ -227,31 +216,9 @@ const styles = StyleSheet.create({
   },
   iconSection: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
   },
-  shieldOuter: {
-    borderRadius: 36,
-    overflow: 'hidden' as const,
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.28,
-    shadowRadius: 22,
-    elevation: 8,
-  },
-  shieldGradient: {
-    width: 118,
-    height: 118,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.accentGlow,
-  },
-  shieldLogo: {
-    width: 104,
-    height: 104,
-    borderRadius: 31,
-  },
+
   title: {
     fontSize: 26,
     fontWeight: '800' as const,
@@ -272,7 +239,7 @@ const styles = StyleSheet.create({
     padding: 18,
     gap: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   benefitRow: {
     flexDirection: 'row' as const,
@@ -322,7 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   guestBtnText: {
     fontSize: 15,

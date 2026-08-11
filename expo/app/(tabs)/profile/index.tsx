@@ -111,15 +111,21 @@ export default function ProfileScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <Text style={styles.title}>{t('profileTitle')}</Text>
+          <View style={styles.titleBlock}>
+            <View style={styles.titleSignal}>
+              <View style={styles.titleDot} />
+              <Text style={styles.titleEyebrow}>{language === 'fr' ? 'CENTRE DE CONTRÔLE' : 'CONTROL CENTER'}</Text>
+            </View>
+            <Text style={styles.title}>{t('profileTitle')}</Text>
+          </View>
 
           <LinearGradient
-            colors={['rgba(47, 232, 107, 0.20)', 'rgba(13, 36, 24, 0.96)']}
+            colors={['rgba(47, 240, 122, 0.16)', 'rgba(3, 24, 15, 0.96)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileCard}
           >
-            <GuardianMark size={56} glow />
+            <GuardianMark size={62} glow scanning />
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{auth.isAuthenticated ? (auth.fullName || user.name || (language === 'fr' ? 'Utilisateur' : 'User')) : (language === 'fr' ? 'Invité' : 'Guest')}</Text>
               <Text style={styles.profileEmail}>{auth.isAuthenticated ? (auth.email || t('accountConnected')) : t('notConnected')}</Text>
@@ -256,12 +262,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
+  titleBlock: { paddingTop: 12, marginBottom: 20 },
+  titleSignal: { flexDirection: 'row' as const, alignItems: 'center', gap: 7, marginBottom: 7 },
+  titleDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.accent, shadowColor: Colors.accent, shadowOpacity: 1, shadowRadius: 7 },
+  titleEyebrow: { color: Colors.accent, fontSize: 10, fontWeight: '800' as const, letterSpacing: 1.4 },
   title: {
-    fontSize: 28,
-    fontWeight: '800' as const,
+    fontSize: 30,
+    fontWeight: '900' as const,
     color: Colors.textPrimary,
-    paddingTop: 12,
-    marginBottom: 20,
+    letterSpacing: -1,
   },
   profileCard: {
     backgroundColor: Colors.backgroundCard,
@@ -322,7 +331,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundCard,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
     overflow: 'hidden' as const,
   },
   menuItem: {
@@ -411,7 +420,7 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   bottomSpace: {
-    height: 20,
+    height: 88,
   },
   modalBackdrop: {
     flex: 1,

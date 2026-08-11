@@ -5,7 +5,7 @@ import { Shield, Crown, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import GuardianMark from '@/components/GuardianMark';
+import GuardianHero from '@/components/GuardianHero';
 
 interface PaywallGateProps {
   type: 'scan' | 'url';
@@ -44,7 +44,7 @@ export default function PaywallGate({ type: _type }: PaywallGateProps) {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
       <View style={styles.brandIconFrame}>
-        <GuardianMark size={112} glow scanning />
+        <GuardianHero size={180} markSize={124} />
       </View>
 
       <Text style={styles.title}>{t('paywallTitle')}</Text>
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 16,
   },
-  brandIconFrame: { width: 122, height: 122, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  brandIconFrame: { width: 180, height: 180, alignItems: 'center', justifyContent: 'center', marginBottom: -4 },
   title: {
     fontSize: 22,
     fontWeight: '800' as const,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.goldMuted,
+    borderColor: Colors.borderLight,
     gap: 10,
     marginBottom: 4,
   },

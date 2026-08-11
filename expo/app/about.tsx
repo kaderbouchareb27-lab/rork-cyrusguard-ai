@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: Colors.backgroundCard, borderRadius: 14, padding: 16,
     flexDirection: 'row' as const, justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 8, borderWidth: 1, borderColor: Colors.border,
+    marginBottom: 8, borderWidth: 1, borderColor: Colors.borderLight,
   },
   infoLabel: { fontSize: 14, fontWeight: '600' as const, color: Colors.textPrimary },
   infoValue: { fontSize: 13, color: Colors.textSecondary },

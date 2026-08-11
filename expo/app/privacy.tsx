@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   topBar: {
     flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn: {
     width: 40, height: 40, borderRadius: 12,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingTop: 8 },
-  section: { marginBottom: 20 },
+  section: { marginBottom: 12, padding: 17, borderRadius: 18, backgroundColor: Colors.backgroundCard, borderWidth: 1, borderColor: Colors.border },
   heading: { fontSize: 16, fontWeight: '700' as const, color: Colors.textPrimary, marginBottom: 6 },
   body: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
   bottomSpace: { height: 40 },

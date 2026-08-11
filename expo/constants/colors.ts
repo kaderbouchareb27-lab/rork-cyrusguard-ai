@@ -3,15 +3,15 @@
  * deep forest shadow, emerald visor glow, and brushed-chrome edges.
  */
 const Colors = {
-  background: '#04100A',
-  backgroundLight: '#081A11',
-  backgroundCard: '#0D2418',
-  surface: '#143221',
-  surfaceLight: '#1D452E',
+  background: '#010906',
+  backgroundLight: '#03140D',
+  backgroundCard: 'rgba(4, 24, 15, 0.88)',
+  surface: 'rgba(8, 36, 23, 0.92)',
+  surfaceLight: 'rgba(13, 53, 32, 0.94)',
 
-  accent: '#2FE86B',
-  accentDark: '#12A24A',
-  accentLight: '#8CFFB4',
+  accent: '#2FF07A',
+  accentDark: '#09A94A',
+  accentLight: '#6CFFA3',
   accentMuted: 'rgba(47, 232, 107, 0.13)',
   accentGlow: 'rgba(47, 232, 107, 0.30)',
 
@@ -33,15 +33,15 @@ const Colors = {
 
   white: '#FFFFFF',
   textPrimary: '#F2FBF5',
-  textSecondary: '#AFC5B7',
-  textMuted: '#6E877A',
+  textSecondary: '#A1AEA8',
+  textMuted: '#61736B',
 
-  border: 'rgba(160, 205, 178, 0.13)',
-  borderLight: 'rgba(184, 229, 199, 0.22)',
+  border: 'rgba(47, 232, 107, 0.14)',
+  borderLight: 'rgba(47, 240, 122, 0.28)',
   overlay: 'rgba(2, 8, 5, 0.72)',
   gradient: {
-    start: '#04100A',
-    end: '#0C2417',
+    start: '#010906',
+    end: '#08271A',
   },
 };
 

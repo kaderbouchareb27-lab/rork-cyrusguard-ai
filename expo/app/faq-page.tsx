@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   topBar: {
     flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn: {
     width: 40, height: 40, borderRadius: 12,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingTop: 8 },
   faqItem: {
     backgroundColor: Colors.backgroundCard, borderRadius: 14, padding: 16,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.border,
+    marginBottom: 10, borderWidth: 1, borderColor: Colors.borderLight,
   },
   faqHeader: { flexDirection: 'row' as const, justifyContent: 'space-between', alignItems: 'center' },
   faqQ: { flex: 1, fontSize: 14, fontWeight: '600' as const, color: Colors.textPrimary, marginRight: 8 },

@@ -5,6 +5,8 @@ import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, AlertTriangle, Trash2 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function DeleteAccountScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
+      <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -46,7 +49,8 @@ export default function DeleteAccountScreen() {
 
         <View style={styles.content}>
           <View style={styles.warningCard}>
-            <AlertTriangle size={40} color={Colors.danger} />
+            <GuardianMark size={82} glow presentation="hero" />
+            <View style={styles.warningBadge}><AlertTriangle size={18} color={Colors.danger} /></View>
             <Text style={styles.warningTitle}>{t('deleteAccountTitle')}</Text>
             <Text style={styles.warningText}>{t('deleteAccountWarning')}</Text>
           </View>
@@ -100,8 +104,9 @@ const styles = StyleSheet.create({
   warningCard: {
     backgroundColor: Colors.dangerMuted, borderRadius: 16, padding: 24,
     alignItems: 'center', gap: 12, marginBottom: 28,
-    borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)',
+    borderWidth: 1, borderColor: 'rgba(255,95,112,0.35)',
   },
+  warningBadge: { width: 38, height: 38, marginTop: -28, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dangerMuted, borderWidth: 1, borderColor: 'rgba(255,95,112,0.45)' },
   warningTitle: { fontSize: 20, fontWeight: '800' as const, color: Colors.danger },
   warningText: {
     fontSize: 14, color: Colors.textSecondary, textAlign: 'center' as const, lineHeight: 22,
@@ -112,7 +117,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: Colors.backgroundCard, borderRadius: 14, paddingHorizontal: 16,
     paddingVertical: 14, fontSize: 16, color: Colors.textPrimary,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 20, textAlign: 'center' as const,
+    borderWidth: 1, borderColor: Colors.borderLight, marginBottom: 20, textAlign: 'center' as const,
     letterSpacing: 2,
   },
   deleteBtn: {

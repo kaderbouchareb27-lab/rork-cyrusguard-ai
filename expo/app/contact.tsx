@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundCard, borderRadius: 16, padding: 18,
     flexDirection: 'row' as const, alignItems: 'center', gap: 14,
     marginBottom: 12, borderWidth: 1, borderColor: Colors.borderLight,
-    shadowColor: '#000000', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 3,
+    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.05, shadowRadius: 14, elevation: 3,
   },
   iconBg: {
     width: 48, height: 48, borderRadius: 14,
