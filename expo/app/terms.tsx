@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
+import { useSafeBack } from '@/lib/navigation';
 
 export default function TermsScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack();
   const { language } = useApp();
 
   const content = language === 'fr' ? {
@@ -47,7 +48,7 @@ export default function TermsScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={goBack} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{content.title}</Text>

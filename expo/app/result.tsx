@@ -12,9 +12,11 @@ import { getCountryConfig, type ReportingOrg } from '@/constants/countries';
 import RiskCircle from '@/components/RiskCircle';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianMark from '@/components/GuardianMark';
+import { useSafeBack } from '@/lib/navigation';
 
 export default function ResultScreen() {
   const router = useRouter();
+  const goBack = useSafeBack();
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const { t, scans, language, country } = useApp();
 
@@ -55,7 +57,7 @@ export default function ResultScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={goBack} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('analysisComplete')}</Text>

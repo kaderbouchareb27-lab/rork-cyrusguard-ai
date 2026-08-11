@@ -10,6 +10,7 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianMark from '@/components/GuardianMark';
+import { useSafeBack } from '@/lib/navigation';
 
 let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
 if (Platform.OS === 'ios') {
@@ -22,6 +23,7 @@ if (Platform.OS === 'ios') {
 
 export default function CreateAccountScreen() {
   const router = useRouter();
+  const goBack = useSafeBack();
   const { loginUser, language, auth } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -41,9 +43,9 @@ export default function CreateAccountScreen() {
   useEffect(() => {
     if (auth.isAuthenticated) {
       console.log('[CreateAccount] User already authenticated, going back');
-      router.back();
+      goBack();
     }
-  }, [auth.isAuthenticated, router]);
+  }, [auth.isAuthenticated, goBack]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -83,7 +85,7 @@ export default function CreateAccountScreen() {
         provider: 'apple',
       });
 
-      router.back();
+      goBack();
     } catch (error: any) {
       if (error?.code === 'ERR_REQUEST_CANCELED') {
         console.log('[CreateAccount] Apple Sign In cancelled');
@@ -99,7 +101,7 @@ export default function CreateAccountScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [language, loginUser, router]);
+  }, [goBack, language, loginUser]);
 
   const handleGuestAccount = useCallback(async () => {
     setIsLoading(true);
@@ -111,13 +113,13 @@ export default function CreateAccountScreen() {
         fullName: language === 'fr' ? 'Utilisateur' : 'User',
         provider: 'guest',
       });
-      router.back();
+      goBack();
     } catch (error) {
       console.log('[CreateAccount] Guest error:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [language, loginUser, router]);
+  }, [goBack, language, loginUser]);
 
   return (
     <View style={styles.root}>

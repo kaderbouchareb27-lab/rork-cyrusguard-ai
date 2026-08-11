@@ -7,9 +7,11 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianMark from '@/components/GuardianMark';
+import { useSafeBack } from '@/lib/navigation';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
+  const goBack = useSafeBack();
   const { t, deleteAllData, language } = useApp();
   const [confirmation, setConfirmation] = useState('');
 
@@ -40,7 +42,7 @@ export default function DeleteAccountScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={goBack} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('deleteAccountTitle')}</Text>
@@ -79,7 +81,7 @@ export default function DeleteAccountScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={goBack}>
             <Text style={styles.cancelText}>{t('cancel')}</Text>
           </TouchableOpacity>
         </View>

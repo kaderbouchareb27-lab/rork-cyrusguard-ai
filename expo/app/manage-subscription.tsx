@@ -9,11 +9,13 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 import AppBackdrop from '@/components/AppBackdrop';
+import { useSafeBack } from '@/lib/navigation';
 
 type PlanType = 'monthly' | 'annual';
 
 export default function ManageSubscriptionScreen() {
   const router = useRouter();
+  const goBack = useSafeBack('/(tabs)/profile');
   const {
     t, country, language, upgradeToPremium, subscriptionStatus,
     restorePurchases, isPurchasing, isRestoring, currentOffering,
@@ -107,7 +109,7 @@ export default function ManageSubscriptionScreen() {
           headerStyle: { backgroundColor: Colors.background },
           headerTintColor: Colors.textPrimary,
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={goBack} style={styles.backBtn}>
               <ChevronLeft size={24} color={Colors.textPrimary} />
             </TouchableOpacity>
           ),

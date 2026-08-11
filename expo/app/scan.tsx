@@ -18,6 +18,7 @@ import AIDisclosureModal from '@/components/AIDisclosureModal';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianHero from '@/components/GuardianHero';
 import { analyzeImage, analyzeText, type ContentType } from '@/services/openai';
+import { useSafeBack } from '@/lib/navigation';
 
 interface ContentTypeOption {
   type: ContentType;
@@ -45,6 +46,7 @@ const PLATFORM_KEYS: Record<string, string> = {
 
 export default function ScanScreen() {
   const router = useRouter();
+  const goBack = useSafeBack();
   const { t, addScan, language, country, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -316,7 +318,7 @@ export default function ScanScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <TouchableOpacity onPress={goBack} style={styles.closeBtn}>
             <X size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('scanTitle')}</Text>

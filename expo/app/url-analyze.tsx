@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import {
   ChevronLeft, Globe, Search, AlertTriangle, CheckCircle,
   Clock, MapPin, FileText, Star, MessageSquareWarning, Building2, ShoppingCart,
@@ -15,6 +15,7 @@ import AppBackdrop from '@/components/AppBackdrop';
 import GuardianMark from '@/components/GuardianMark';
 import { analyzeUrl as analyzeUrlApi } from '@/services/openai';
 import type { UrlAnalysisResult } from '@/services/openai';
+import { useSafeBack } from '@/lib/navigation';
 
 const ANALYSIS_STEPS_FR = [
   'Vérification du domaine...',
@@ -40,7 +41,7 @@ const ANALYSIS_STEPS_EN = [
 ];
 
 export default function UrlAnalyzeScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack();
   const { t, language, country, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [url, setUrl] = useState('');
@@ -217,7 +218,7 @@ export default function UrlAnalyzeScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={goBack} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('analyzeUrlTitle')}</Text>

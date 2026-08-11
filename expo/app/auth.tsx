@@ -3,12 +3,13 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { ChevronLeft, Lock, UserPlus, Fingerprint } from 'lucide-react-native';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianHero from '@/components/GuardianHero';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { useSafeBack } from '@/lib/navigation';
 
 let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
 if (Platform.OS === 'ios') {
@@ -20,7 +21,7 @@ if (Platform.OS === 'ios') {
 }
 
 export default function AuthScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack();
   const { t, loginUser, language } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -66,7 +67,7 @@ export default function AuthScreen() {
         provider: 'apple',
       });
 
-      router.back();
+      goBack();
     } catch (error: any) {
       if (error?.code === 'ERR_REQUEST_CANCELED') {
         console.log('[Auth] Apple Sign In cancelled');
@@ -82,7 +83,7 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [language, loginUser, router]);
+  }, [goBack, language, loginUser]);
 
   const handleGuestContinue = useCallback(async () => {
     setIsLoading(true);
@@ -94,13 +95,13 @@ export default function AuthScreen() {
         fullName: language === 'fr' ? 'Utilisateur' : 'User',
         provider: 'guest',
       });
-      router.back();
+      goBack();
     } catch (error) {
       console.log('[Auth] Guest continue error:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [language, loginUser, router]);
+  }, [goBack, language, loginUser]);
 
   return (
     <View style={styles.root}>
@@ -108,7 +109,7 @@ export default function AuthScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} testID="auth-back-btn">
+          <TouchableOpacity onPress={goBack} style={styles.backBtn} testID="auth-back-btn">
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <View style={styles.backBtn} />

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { ChevronLeft, CheckCircle, XCircle, RotateCcw, Home, Award } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -9,9 +9,10 @@ import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianMark from '@/components/GuardianMark';
 import { quizQuestions } from '@/mocks/scans';
+import { useSafeBack } from '@/lib/navigation';
 
 export default function QuizScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack();
   const { t, language } = useApp();
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
@@ -120,7 +121,7 @@ export default function QuizScreen() {
                 <RotateCcw size={18} color={Colors.textPrimary} />
                 <Text style={styles.retryBtnText}>{t('quizRetry')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.homeBtn} onPress={() => router.back()} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.homeBtn} onPress={goBack} activeOpacity={0.8}>
                 <Home size={18} color={Colors.background} />
                 <Text style={styles.homeBtnText}>{t('quizBackHome')}</Text>
               </TouchableOpacity>
@@ -142,7 +143,7 @@ export default function QuizScreen() {
       <AppBackdrop />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={goBack} style={styles.backBtn}>
             <ChevronLeft size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.topTitle}>{t('quizTitle')}</Text>
