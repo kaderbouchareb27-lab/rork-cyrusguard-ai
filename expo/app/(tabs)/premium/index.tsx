@@ -85,8 +85,7 @@ export default function PremiumScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
             <Animated.View style={[styles.brandIconFrame, { opacity: shineAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.78, 1, 0.78] }) }]}>
-              <GuardianMark size={118} glow />
-              <View style={styles.brandScanBeam} />
+              <GuardianMark size={118} glow scanning />
             </Animated.View>
             <Text style={styles.heroTitle}>{t('premiumTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('premiumSubtitle')}</Text>
@@ -341,12 +340,12 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   brandIconFrame: { width: 128, height: 128, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  brandScanBeam: { position: 'absolute' as const, left: 0, right: 0, top: 63, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 10, elevation: 9 },
   heroTitle: {
     fontSize: 28,
-    fontWeight: '800' as const,
-    color: Colors.textPrimary,
+    fontWeight: '900' as const,
+    color: Colors.chromeLight,
     textAlign: 'center' as const,
+    letterSpacing: -0.8,
   },
   heroSubtitle: {
     fontSize: 15,
@@ -410,7 +409,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   planCard: {
-    backgroundColor: 'rgba(16, 37, 28, 0.94)',
+    backgroundColor: 'rgba(13, 36, 24, 0.94)',
     borderRadius: 24,
     padding: 18,
     marginBottom: 12,
@@ -558,7 +557,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.chromeEdge,
   },
   sectionTitle: {
     fontSize: 18,
@@ -640,8 +639,8 @@ const styles = StyleSheet.create({
   devNotice: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(73,209,125,0.28)',
-    backgroundColor: 'rgba(73,209,125,0.07)',
+    borderColor: Colors.accentGlow,
+    backgroundColor: Colors.accentMuted,
     padding: 14,
     marginBottom: 16,
     gap: 8,
@@ -665,7 +664,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: 'rgba(73,209,125,0.12)',
+    backgroundColor: Colors.accentMuted,
   },
   devResetBtnText: {
     color: Colors.accent,

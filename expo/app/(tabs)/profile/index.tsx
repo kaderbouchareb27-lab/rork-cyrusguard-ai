@@ -114,7 +114,7 @@ export default function ProfileScreen() {
           <Text style={styles.title}>{t('profileTitle')}</Text>
 
           <LinearGradient
-            colors={['rgba(73, 209, 125, 0.18)', 'rgba(16, 37, 28, 0.96)']}
+            colors={['rgba(47, 232, 107, 0.20)', 'rgba(13, 36, 24, 0.96)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileCard}

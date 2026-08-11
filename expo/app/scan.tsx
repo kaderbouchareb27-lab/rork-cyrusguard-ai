@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 22,
     padding: 14,
-    backgroundColor: 'rgba(16,37,28,0.9)',
+    backgroundColor: 'rgba(13,36,24,0.92)',
     borderRadius: 26,
     borderWidth: 1,
     borderColor: Colors.borderLight,

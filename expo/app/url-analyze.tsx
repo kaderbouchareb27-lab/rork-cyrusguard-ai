@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
-  inputSection: { gap: 14, marginBottom: 22, padding: 16, backgroundColor: 'rgba(16,37,28,0.9)', borderRadius: 26, borderWidth: 1, borderColor: Colors.borderLight, shadowColor: '#000000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.16, shadowRadius: 18, elevation: 4 },
+  inputSection: { gap: 14, marginBottom: 22, padding: 16, backgroundColor: 'rgba(13,36,24,0.92)', borderRadius: 26, borderWidth: 1, borderColor: Colors.borderLight, shadowColor: '#000000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.16, shadowRadius: 18, elevation: 4 },
   urlHero: { flexDirection: 'row' as const, alignItems: 'center', gap: 14, paddingBottom: 2 },
   urlMarkWrap: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
   urlMarkBeam: { position: 'absolute' as const, left: 0, right: 0, top: 47, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8 },

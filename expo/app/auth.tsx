@@ -118,7 +118,7 @@ export default function AuthScreen() {
           <View style={styles.iconSection}>
             <View style={styles.shieldOuter}>
               <LinearGradient
-                colors={['rgba(73,209,125,0.24)', 'rgba(73,209,125,0.05)']}
+                colors={['rgba(47,232,107,0.26)', 'rgba(47,232,107,0.05)']}
                 style={styles.shieldGradient}
               >
                 <Image

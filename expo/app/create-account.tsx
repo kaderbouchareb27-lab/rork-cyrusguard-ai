@@ -121,14 +121,14 @@ export default function CreateAccountScreen() {
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
       <LinearGradient
-        colors={['#06110D', '#0B2117', '#06110D']}
+        colors={['#04100A', '#0A2115', '#04100A']}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={styles.safe}>
         <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Animated.View style={[styles.successCircle, { transform: [{ scale: checkScale }] }]}>
             <LinearGradient
-              colors={['rgba(73,209,125,0.28)', 'rgba(73,209,125,0.08)']}
+              colors={['rgba(47,232,107,0.30)', 'rgba(47,232,107,0.08)']}
               style={styles.successGradient}
             >
               <Check size={48} color={Colors.accent} />

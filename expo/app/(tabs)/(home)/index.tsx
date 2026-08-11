@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Shield, Camera, Link, ChevronRight, AlertTriangle, Crown, Lock, Bell, HelpCircle, FileText, Mail, ScanLine } from 'lucide-react-native';
@@ -9,6 +9,7 @@ import { useApp } from '@/contexts/AppContext';
 import { getCountryAlerts, getTrendingScams, getAlertsSectionTitle, type AlertData } from '@/constants/countries';
 import ScanCard from '@/components/ScanCard';
 import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 const AlertCard = React.memo(function AlertCard({ alert }: { alert: AlertData }) {
   const isHigh = alert.severity === 'high';
@@ -33,7 +34,7 @@ const AlertCard = React.memo(function AlertCard({ alert }: { alert: AlertData })
 const alertStyles = StyleSheet.create({
   card: {
     width: 272,
-    backgroundColor: 'rgba(16, 37, 28, 0.92)',
+    backgroundColor: 'rgba(13, 36, 24, 0.94)',
     borderRadius: 20,
     padding: 16,
     marginRight: 12,
@@ -173,7 +174,7 @@ export default function HomeScreen() {
 
           <Animated.View style={[styles.heroCard, { transform: [{ scale: pulseAnim }] }]}>
             <LinearGradient
-              colors={['#173D2A', '#0B1C15', '#06110D']}
+              colors={['#15462B', '#0A2115', '#04100A']}
               style={styles.heroGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 0.9, y: 1 }}
@@ -186,8 +187,7 @@ export default function HomeScreen() {
                 <Text style={styles.scannerText}>{language === 'fr' ? 'CYRUS EN VEILLE' : 'CYRUS ON WATCH'}</Text>
               </View>
               <View style={styles.heroLogoFrame}>
-                <Image source={require('@/assets/images/icon.png')} style={styles.heroLogo} resizeMode="cover" />
-                <View style={styles.heroScanBeam} />
+                <GuardianMark size={144} scanning />
               </View>
               <Text style={styles.heroTitle}>{language === 'fr' ? 'Votre gardien numérique.' : 'Your digital guardian.'}</Text>
               <Text style={styles.heroDescription}>{language === 'fr' ? 'Analysez un message, une image ou un lien suspect en quelques secondes.' : 'Analyze a suspicious message, image, or link in seconds.'}</Text>
@@ -421,9 +421,9 @@ const styles = StyleSheet.create({
     borderRadius: 77,
     padding: 5,
     overflow: 'hidden' as const,
-    backgroundColor: '#06110D',
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: 'rgba(145, 242, 183, 0.58)',
+    borderColor: Colors.chromeEdge,
     shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.58,
@@ -431,14 +431,14 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   heroLogo: { width: '100%', height: '100%', borderRadius: 72 },
-  heroScanBeam: { position: 'absolute' as const, left: -10, right: -10, top: 74, height: 2, backgroundColor: '#9EFFBC', shadowColor: Colors.accent, shadowOpacity: 1, shadowRadius: 10, elevation: 8 },
+  heroScanBeam: { position: 'absolute' as const, left: -10, right: -10, top: 74, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 1, shadowRadius: 10, elevation: 8 },
   heroScannerBadge: {
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 6,
     alignSelf: 'center' as const,
-    backgroundColor: 'rgba(6, 17, 13, 0.54)',
-    borderColor: 'rgba(145, 242, 183, 0.2)',
+    backgroundColor: 'rgba(4, 16, 10, 0.58)',
+    borderColor: Colors.chromeEdge,
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -460,18 +460,18 @@ const styles = StyleSheet.create({
   slogan: { fontSize: 14, color: Colors.textSecondary, marginTop: 5, lineHeight: 20 },
   heroCard: {
     marginBottom: 24, borderRadius: 32, overflow: 'hidden' as const, borderWidth: 1,
-    borderColor: 'rgba(145, 242, 183, 0.28)', shadowColor: '#000000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.34, shadowRadius: 28, elevation: 9,
+    borderColor: Colors.chromeEdge, shadowColor: '#000000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.34, shadowRadius: 28, elevation: 9,
   },
   heroGradient: { paddingTop: 21, paddingBottom: 19, paddingHorizontal: 22, alignItems: 'center', gap: 11, overflow: 'hidden' as const },
-  heroOrbOne: { position: 'absolute' as const, width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(73,209,125,0.14)', top: -130, right: -90 },
-  heroOrbTwo: { position: 'absolute' as const, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(73,209,125,0.08)', bottom: -110, left: -45 },
+  heroOrbOne: { position: 'absolute' as const, width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(47,232,107,0.15)', top: -130, right: -90 },
+  heroOrbTwo: { position: 'absolute' as const, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(201,214,206,0.05)', bottom: -110, left: -45 },
   heroTitle: { fontSize: 24, fontWeight: '900' as const, color: Colors.white, textAlign: 'center' as const, letterSpacing: -0.7, marginTop: 2 },
   heroDescription: { color: Colors.textSecondary, fontSize: 14, lineHeight: 20, textAlign: 'center' as const, maxWidth: 275, marginBottom: 5 },
   heroButton: { width: '100%', backgroundColor: Colors.accentLight, flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: 17, gap: 9, minHeight: 54, shadowColor: Colors.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.26, shadowRadius: 12, elevation: 5 },
-  heroButtonIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: 'rgba(6,17,13,0.13)', alignItems: 'center', justifyContent: 'center' },
+  heroButtonIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: 'rgba(4,16,10,0.14)', alignItems: 'center', justifyContent: 'center' },
   heroButtonText: { flex: 1, color: Colors.background, fontSize: 16, fontWeight: '800' as const, textAlign: 'center' as const },
   heroFootnote: { flexDirection: 'row' as const, alignItems: 'center', gap: 8, marginTop: 1 },
-  heroFootnoteLine: { height: 1, width: 34, backgroundColor: 'rgba(145,242,183,0.26)' },
+  heroFootnoteLine: { height: 1, width: 34, backgroundColor: Colors.chromeEdge },
   heroFootnoteText: { color: Colors.textMuted, fontSize: 9, fontWeight: '800' as const, letterSpacing: 1.1 },
   sectionTitle: {
     fontSize: 17,
