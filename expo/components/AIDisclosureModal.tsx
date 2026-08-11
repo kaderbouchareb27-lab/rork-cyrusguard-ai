@@ -64,7 +64,9 @@ export default function AIDisclosureModal({ visible, onAccept, onDecline }: AIDi
             activeOpacity={0.7}
             testID="ai-disclosure-decline-btn"
           >
-            <Text style={styles.declineBtnText}>{t('aiDisclosureDecline') || (language === 'fr' ? 'Refuser' : 'Decline')}</Text>
+            <Text style={styles.declineBtnText}>
+              {language === 'fr' ? 'Refuser et annuler l\u2019analyse' : 'Decline and cancel analysis'}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
