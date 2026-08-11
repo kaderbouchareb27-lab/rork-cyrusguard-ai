@@ -89,8 +89,8 @@ export default function ContactScreen() {
 
           <Text style={styles.responseTime}>
             {language === 'fr'
-              ? 'Temps de réponse moyen : 24h (gratuit) / 4h (Premium)'
-              : 'Average response time: 24h (free) / 4h (Premium)'}
+              ? 'Temps de réponse moyen : moins de 24 heures'
+              : 'Average response time: under 24 hours'}
           </Text>
 
           <View style={styles.bottomSpace} />

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Shield, Sparkles } from 'lucide-react-native';
+import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackdrop from '@/components/AppBackdrop';
 import Colors from '@/constants/colors';
@@ -13,9 +13,9 @@ import GuardianHero from '@/components/GuardianHero';
 export default function PremiumScreen() {
   const router = useRouter();
   const {
-    t, language, country, upgradeToPremium, user, remainingCredits, freeCredits,
+    t, language, country, upgradeToPremium, subscriptionStatus,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
-    isExpoGo, resetFreeCredits,
+    isExpoGo,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -70,9 +70,11 @@ export default function PremiumScreen() {
   ];
 
   const testimonials = [t('testimonial1'), t('testimonial2'), t('testimonial3')];
-
-  const creditsLeft = remainingCredits === Infinity ? freeCredits : remainingCredits;
-  const creditSlots = Array.from({ length: freeCredits }, (_, i) => i);
+  const trialEndDate = subscriptionStatus.expiresAt
+    ? new Intl.DateTimeFormat(language === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'long' }).format(new Date(subscriptionStatus.expiresAt))
+    : null;
+  const selectedPrice = selectedPlan === 'annual' ? annualPrice : monthlyPrice;
+  const selectedPeriod = selectedPlan === 'annual' ? t('perYear') : t('perMonth');
 
   const handleSubscribe = () => {
     void upgradeToPremium(selectedPlan);
@@ -95,22 +97,26 @@ export default function PremiumScreen() {
             </View>
           </View>
 
-          {!user.isPremium && (
-            <View style={styles.creditCounter}>
-              <Shield size={16} color={creditsLeft > 0 ? Colors.accent : Colors.danger} />
-              <Text style={styles.creditCounterText}>
-                {creditsLeft}/{freeCredits} {t('creditsRemaining')}
-              </Text>
-              <View style={styles.creditDots}>
-                {creditSlots.map(i => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.creditDot,
-                      i < creditsLeft ? styles.creditDotActive : styles.creditDotUsed,
-                    ]}
-                  />
-                ))}
+          {!subscriptionStatus.isActive && (
+            <View style={styles.trialBanner}>
+              <Sparkles size={18} color={Colors.accent} />
+              <View style={styles.trialBannerCopy}>
+                <Text style={styles.trialBannerTitle}>{t('trial7Days')}</Text>
+                <Text style={styles.trialBannerText}>{t('trialNoCharge')}</Text>
+              </View>
+            </View>
+          )}
+
+          {subscriptionStatus.isTrial && (
+            <View style={styles.activeTrialCard}>
+              <Sparkles size={18} color={Colors.accent} />
+              <View style={styles.trialBannerCopy}>
+                <Text style={styles.trialBannerTitle}>{t('trialActive')}</Text>
+                <Text style={styles.trialBannerText}>
+                  {trialEndDate
+                    ? `${subscriptionStatus.willRenew ? t('firstChargeOn') : t('accessUntil')} ${trialEndDate}`
+                    : t('trialFullAccess')}
+                </Text>
               </View>
             </View>
           )}
@@ -125,17 +131,6 @@ export default function PremiumScreen() {
                   ? 'Les achats reels App Store ne fonctionnent pas dans Expo Go. Le Test Store RevenueCat est utilise pour les essais.'
                   : 'Real App Store purchases do not work inside Expo Go. The RevenueCat Test Store is used for trials.'}
               </Text>
-              <TouchableOpacity
-                style={styles.devResetBtn}
-                onPress={() => { void resetFreeCredits(); }}
-                activeOpacity={0.7}
-                testID="dev-reset-credits"
-              >
-                <RotateCcw size={14} color={Colors.accent} />
-                <Text style={styles.devResetBtnText}>
-                  {language === 'fr' ? 'Reinitialiser mes credits gratuits' : 'Reset my free credits'}
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
 
@@ -155,7 +150,7 @@ export default function PremiumScreen() {
                   <Text style={styles.bestValueText}>{t('bestValue')}</Text>
                 </View>
                 <View style={styles.twoMonthsBadge}>
-                  <Text style={styles.twoMonthsText}>{t('twoMonthsFree')}</Text>
+                  <Text style={styles.twoMonthsText}>{t('trial7Days')}</Text>
                 </View>
               </View>
 
@@ -167,6 +162,7 @@ export default function PremiumScreen() {
                 </View>
                 <View style={styles.planInfo}>
                   <Text style={styles.planName}>{t('annualPlan')}</Text>
+                  <Text style={styles.planTrial}>{t('thenAfterTrial')}</Text>
                   <Text style={styles.planEquivalent}>
                     {monthlyEquivalent}{t('perMonthBilled')}
                   </Text>
@@ -197,6 +193,7 @@ export default function PremiumScreen() {
               </View>
               <View style={styles.planInfo}>
                 <Text style={styles.planName}>{t('monthlyPlan')}</Text>
+                <Text style={styles.planTrial}>{t('trial7Days')}</Text>
               </View>
               <View style={styles.planPriceBlock}>
                 <Text style={styles.planPriceMain}>{monthlyPrice}</Text>
@@ -205,7 +202,7 @@ export default function PremiumScreen() {
             </View>
           </TouchableOpacity>
 
-          {!user.isPremium ? (
+          {!subscriptionStatus.isActive ? (
             <TouchableOpacity
               style={[styles.subscribeBtn, (isPurchasing || isOfferingsLoading) && styles.subscribeBtnDisabled]}
               onPress={handleSubscribe}
@@ -224,7 +221,7 @@ export default function PremiumScreen() {
                 ) : (
                   <>
                     <Crown size={20} color={Colors.background} />
-                    <Text style={styles.subscribeBtnText}>{t('subscribe')}</Text>
+                    <Text style={styles.subscribeBtnText}>{t('startFreeTrial')}</Text>
                   </>
                 )}
               </LinearGradient>
@@ -234,6 +231,14 @@ export default function PremiumScreen() {
               <Check size={18} color={Colors.accent} />
               <Text style={styles.currentPlanText}>{t('currentPlan')}</Text>
             </View>
+          )}
+
+          {!subscriptionStatus.isActive && (
+            <Text style={styles.trialTerms}>
+              {language === 'fr'
+                ? `7 jours gratuits pour les nouveaux abonnés éligibles, puis ${selectedPrice}${selectedPeriod}. Aucun prélèvement pendant l’essai. Annulez au moins 24 h avant sa fin pour éviter le renouvellement.`
+                : `7 days free for eligible new subscribers, then ${selectedPrice}${selectedPeriod}. No charge during the trial. Cancel at least 24 hours before it ends to avoid renewal.`}
+            </Text>
           )}
 
           <View style={styles.featuresSection}>
@@ -377,37 +382,31 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
   },
 
-  creditCounter: {
+  trialBanner: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
     backgroundColor: Colors.accentMuted,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 20,
-    gap: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    padding: 16,
+    marginBottom: 18,
   },
-  creditCounterText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: Colors.textSecondary,
-  },
-  creditDots: {
+  activeTrialCard: {
     flexDirection: 'row' as const,
-    gap: 5,
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.accentMuted,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    padding: 16,
+    marginBottom: 18,
   },
-  creditDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  creditDotActive: {
-    backgroundColor: Colors.accent,
-  },
-  creditDotUsed: {
-    backgroundColor: Colors.border,
-  },
+  trialBannerCopy: { flex: 1 },
+  trialBannerTitle: { color: Colors.accent, fontSize: 15, fontWeight: '800' as const },
+  trialBannerText: { color: Colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 3 },
   planCard: {
     backgroundColor: Colors.backgroundCard,
     borderRadius: 24,
@@ -497,6 +496,12 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textPrimary,
   },
+  planTrial: {
+    fontSize: 12,
+    color: Colors.accent,
+    fontWeight: '700' as const,
+    marginTop: 3,
+  },
   planEquivalent: {
     fontSize: 13,
     color: Colors.textSecondary,
@@ -535,6 +540,15 @@ const styles = StyleSheet.create({
     color: Colors.background,
     fontSize: 17,
     fontWeight: '800' as const,
+  },
+  trialTerms: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: 'center' as const,
+    marginTop: -12,
+    marginBottom: 22,
+    paddingHorizontal: 8,
   },
   currentPlanBadge: {
     flexDirection: 'row' as const,
@@ -655,21 +669,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: 12,
     lineHeight: 17,
-  },
-  devResetBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    alignSelf: 'flex-start' as const,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: Colors.accentMuted,
-  },
-  devResetBtnText: {
-    color: Colors.accent,
-    fontSize: 12,
-    fontWeight: '600' as const,
   },
   restoreBtnDisabled: {
     opacity: 0.6,

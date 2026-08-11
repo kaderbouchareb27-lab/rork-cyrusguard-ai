@@ -3,22 +3,23 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
-  Crown, CreditCard, Check, ChevronLeft, Shield, Zap, XCircle, Star, RotateCcw,
+  Crown, Check, ChevronLeft, Zap, XCircle, Star, RotateCcw,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 import AppBackdrop from '@/components/AppBackdrop';
 
-type PlanType = 'free' | 'monthly' | 'annual';
+type PlanType = 'monthly' | 'annual';
 
 export default function ManageSubscriptionScreen() {
   const router = useRouter();
   const {
-    t, user, country, upgradeToPremium, remainingCredits, freeCredits,
+    t, country, language, upgradeToPremium, subscriptionStatus,
     restorePurchases, isPurchasing, isRestoring, currentOffering,
   } = useApp();
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>(user.plan);
+  const activePlan: PlanType = /year|annual|annee|année/i.test(subscriptionStatus.productIdentifier ?? '') ? 'annual' : 'monthly';
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>(activePlan);
 
   const config = countryConfigs[country] ?? countryConfigs.INTL;
   const currencySymbol = config.currencySymbol;
@@ -32,46 +33,35 @@ export default function ManageSubscriptionScreen() {
   };
 
   const currentPlanLabel = (): string => {
-    if (user.plan === 'monthly') return t('monthlyPlanLabel');
-    if (user.plan === 'annual') return t('annualPlanLabel');
-    return t('freePlan');
+    return activePlan === 'annual' ? t('annualPlanLabel') : t('monthlyPlanLabel');
   };
 
   const currentPlanPrice = (): string => {
-    if (user.plan === 'monthly') return `${prices.monthly}${t('perMonth')}`;
-    if (user.plan === 'annual') return `${prices.annual}${t('perYear')}`;
-    return `${currencySymbol}0`;
+    return activePlan === 'annual'
+      ? `${prices.annual}${t('perYear')}`
+      : `${prices.monthly}${t('perMonth')}`;
   };
 
   const handleChangePlan = (plan: PlanType) => {
-    if (plan === 'free') return;
-    const cycle = plan === 'monthly' ? 'monthly' : 'annual';
-    void upgradeToPremium(cycle);
+    void upgradeToPremium(plan);
     setSelectedPlan(plan);
   };
 
-  const handleCancelSubscription = () => {
-    Alert.alert(
-      t('cancelSubscription'),
-      t('cancelSubRedirect'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('openSettings'),
-          style: 'default',
-          onPress: () => {
-            if (Platform.OS === 'ios') {
-              void Linking.openURL('https://apps.apple.com/account/subscriptions');
-            } else if (Platform.OS === 'android') {
-              void Linking.openURL('https://play.google.com/store/account/subscriptions');
-            } else {
-              Alert.alert('', t('cancelSubManual'));
-            }
-          },
-        },
-      ]
-    );
+  const handleManageSubscription = async (): Promise<void> => {
+    const fallbackUrl = Platform.OS === 'ios'
+      ? 'https://apps.apple.com/account/subscriptions'
+      : 'https://play.google.com/store/account/subscriptions';
+    const targetUrl = subscriptionStatus.managementURL ?? fallbackUrl;
+    try {
+      await Linking.openURL(targetUrl);
+    } catch {
+      Alert.alert(t('manageSubscription'), t('cancelSubManual'));
+    }
   };
+
+  const trialEndDate = subscriptionStatus.expiresAt
+    ? new Intl.DateTimeFormat(language === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'long' }).format(new Date(subscriptionStatus.expiresAt))
+    : null;
 
   const plansList: {
     key: PlanType;
@@ -85,23 +75,12 @@ export default function ManageSubscriptionScreen() {
     accentColor: string;
   }[] = [
     {
-      key: 'free',
-      label: t('freePlan'),
-      price: `${currencySymbol}0`,
-      billing: '',
-      features: [t('freeFeature1'), t('freeFeature2'), t('freeFeature3')],
-      isCurrent: user.plan === 'free',
-      isRecommended: false,
-      icon: Shield,
-      accentColor: Colors.textMuted,
-    },
-    {
       key: 'monthly',
       label: t('monthlyPlanLabel'),
       price: prices.monthly,
       billing: t('billedMonthly'),
       features: [t('premiumFeature1'), t('premiumFeature2'), t('premiumFeature3'), t('premiumFeature6')],
-      isCurrent: user.plan === 'monthly',
+      isCurrent: activePlan === 'monthly',
       isRecommended: false,
       icon: Zap,
       accentColor: Colors.accent,
@@ -112,7 +91,7 @@ export default function ManageSubscriptionScreen() {
       price: prices.annual,
       billing: t('billedAnnually'),
       features: [t('premiumFeature1'), t('premiumFeature2'), t('premiumFeature3'), t('premiumFeature6'), t('premiumFeature7'), t('premiumFeature8')],
-      isCurrent: user.plan === 'annual',
+      isCurrent: activePlan === 'annual',
       isRecommended: true,
       icon: Crown,
       accentColor: Colors.gold,
@@ -138,37 +117,27 @@ export default function ManageSubscriptionScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.currentPlanCard}>
           <View style={styles.currentPlanHeader}>
-            <View style={[styles.currentPlanIcon, { backgroundColor: user.isPremium ? Colors.goldMuted : Colors.surface }]}>
-              {user.isPremium ? (
-                <Crown size={24} color={Colors.gold} />
-              ) : (
-                <Shield size={24} color={Colors.textMuted} />
-              )}
+            <View style={[styles.currentPlanIcon, { backgroundColor: subscriptionStatus.isTrial ? Colors.accentMuted : Colors.goldMuted }]}>
+              <Crown size={24} color={subscriptionStatus.isTrial ? Colors.accent : Colors.gold} />
             </View>
             <View style={styles.currentPlanInfo}>
               <Text style={styles.currentPlanLabel}>{t('yourCurrentPlan')}</Text>
               <Text style={styles.currentPlanName}>{currentPlanLabel()}</Text>
             </View>
-            {user.isPremium && (
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>{t('active')}</Text>
-              </View>
-            )}
+            <View style={styles.activeBadge}>
+              <Text style={styles.activeBadgeText}>{subscriptionStatus.isTrial ? t('trialActive') : t('active')}</Text>
+            </View>
           </View>
 
           <View style={styles.currentPlanDetails}>
             <Text style={styles.currentPlanPrice}>{currentPlanPrice()}</Text>
             <Text style={styles.currentPlanDesc}>
-              {user.isPremium ? t('premiumPlanDesc') : t('freePlanDesc')}
+              {subscriptionStatus.isTrial
+                ? (trialEndDate
+                  ? `${subscriptionStatus.willRenew ? t('firstChargeOn') : t('accessUntil')} ${trialEndDate}`
+                  : t('trialFullAccess'))
+                : t('premiumPlanDesc')}
             </Text>
-            {!user.isPremium && (
-              <View style={styles.creditsRow}>
-                <CreditCard size={14} color={Colors.accent} />
-                <Text style={styles.creditsText}>
-                  {remainingCredits === Infinity ? '∞' : remainingCredits}/{freeCredits} {t('creditsRemaining')}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -210,7 +179,7 @@ export default function ManageSubscriptionScreen() {
                   <Text style={styles.planName}>{plan.label}</Text>
                   {plan.billing ? <Text style={styles.planBilling}>{plan.billing}</Text> : null}
                 </View>
-                <Text style={[styles.planPrice, plan.key !== 'free' && { color: Colors.accent }]}>
+                <Text style={[styles.planPrice, { color: Colors.accent }]}>
                   {plan.price}
                   {plan.key === 'monthly' && (
                     <Text style={styles.planPeriod}>{t('perMonth')}</Text>
@@ -224,13 +193,13 @@ export default function ManageSubscriptionScreen() {
               <View style={styles.planFeatures}>
                 {plan.features.map((feature, idx) => (
                   <View key={idx} style={styles.featureRow}>
-                    <Check size={14} color={plan.key === 'free' ? Colors.textMuted : Colors.accent} />
+                    <Check size={14} color={Colors.accent} />
                     <Text style={styles.featureText}>{feature}</Text>
                   </View>
                 ))}
               </View>
 
-              {!plan.isCurrent && plan.key !== 'free' && isSelected && (
+              {!plan.isCurrent && isSelected && (
                 <TouchableOpacity
                   style={[styles.changePlanBtn, isPurchasing && styles.changePlanBtnDisabled]}
                   onPress={() => handleChangePlan(plan.key)}
@@ -242,7 +211,7 @@ export default function ManageSubscriptionScreen() {
                     <ActivityIndicator color={Colors.background} size="small" />
                   ) : (
                     <Text style={styles.changePlanBtnText}>
-                      {user.isPremium ? t('changePlan') : t('upgradeNow')}
+                      {t('changePlan')}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -251,17 +220,15 @@ export default function ManageSubscriptionScreen() {
           );
         })}
 
-        {user.isPremium && (
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={handleCancelSubscription}
-            activeOpacity={0.7}
-            testID="cancel-subscription-btn"
-          >
-            <XCircle size={18} color={Colors.danger} />
-            <Text style={styles.cancelBtnText}>{t('cancelSubscription')}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.cancelBtn}
+          onPress={() => { void handleManageSubscription(); }}
+          activeOpacity={0.7}
+          testID="manage-apple-subscription-btn"
+        >
+          <XCircle size={18} color={Colors.danger} />
+          <Text style={styles.cancelBtnText}>{t('manageOrCancel')}</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.restoreBtn, isRestoring && styles.restoreBtnDisabled]}
@@ -380,22 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 20,
-  },
-  creditsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    backgroundColor: Colors.accentMuted,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignSelf: 'flex-start' as const,
-  },
-  creditsText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: Colors.accent,
   },
   sectionTitle: {
     fontSize: 16,

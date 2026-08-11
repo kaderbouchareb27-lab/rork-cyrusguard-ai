@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import Colors from "@/constants/colors";
+import AppBackdrop from "@/components/AppBackdrop";
+import GuardianMark from "@/components/GuardianMark";
 
 try {
   void SplashScreen.preventAutoHideAsync();
@@ -16,23 +18,39 @@ try {
 
 const queryClient = new QueryClient();
 
-function AccountCreationGuard({ children }: { children: React.ReactNode }) {
-  const { needsAccountCreation, isLoading } = useApp();
+function AccessGuard({ children }: { children: React.ReactNode }) {
+  const { auth, needsPaywall, isLoading, isSubscriptionLoading } = useApp();
+  const pathname = usePathname();
   const router = useRouter();
-  const hasRedirected = useRef(false);
+  const isReady = !isLoading && !isSubscriptionLoading;
+  const publicSubscriptionPaths = pathname === '/subscribe' || pathname === '/terms' || pathname === '/privacy';
 
   useEffect(() => {
-    if (!isLoading && needsAccountCreation && !hasRedirected.current) {
-      hasRedirected.current = true;
-      console.log('[Layout] Premium active but no account — redirecting to create-account');
-      setTimeout(() => {
-        router.push('/create-account' as any);
-      }, 500);
+    if (!isReady) return;
+    if (needsPaywall && !publicSubscriptionPaths) {
+      console.log('[Layout] Subscription required — redirecting to mandatory paywall');
+      router.replace('/subscribe' as any);
+      return;
     }
-    if (!needsAccountCreation) {
-      hasRedirected.current = false;
+    if (!needsPaywall && !auth.isAuthenticated && pathname !== '/create-account') {
+      console.log('[Layout] Subscription active — requesting account creation');
+      router.replace('/create-account' as any);
+      return;
     }
-  }, [needsAccountCreation, isLoading, router]);
+    if (!needsPaywall && auth.isAuthenticated && (pathname === '/subscribe' || pathname === '/create-account')) {
+      router.replace('/(tabs)/(home)' as any);
+    }
+  }, [auth.isAuthenticated, isReady, needsPaywall, pathname, publicSubscriptionPaths, router]);
+
+  if (!isReady || (needsPaywall && !publicSubscriptionPaths)) {
+    return (
+      <View style={guardStyles.container}>
+        <AppBackdrop />
+        <GuardianMark size={92} glow scanning presentation="hero" />
+        <ActivityIndicator color={Colors.accent} size="small" />
+      </View>
+    );
+  }
 
   return <>{children}</>;
 }
@@ -47,6 +65,7 @@ function RootLayoutNav() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="subscribe" options={{ gestureEnabled: false, animation: 'fade' }} />
       <Stack.Screen name="scan" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="result" />
       <Stack.Screen name="url-analyze" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
@@ -95,6 +114,16 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
+const guardStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    backgroundColor: Colors.background,
+  },
+});
+
 const errorStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center', padding: 32 },
   title: { fontSize: 24, fontWeight: '800' as const, color: Colors.danger, marginBottom: 12 },
@@ -129,9 +158,9 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <AppProvider>
             <StatusBar style="light" />
-            <AccountCreationGuard>
+            <AccessGuard>
               <RootLayoutNav />
-            </AccountCreationGuard>
+            </AccessGuard>
           </AppProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

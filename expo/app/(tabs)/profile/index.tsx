@@ -16,7 +16,7 @@ import GuardianMark from '@/components/GuardianMark';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { t, language, country, currencySymbol, user, availableLanguages, setLanguageSafe, setCountry, auth, logoutUser } = useApp();
+  const { t, language, country, currencySymbol, user, subscriptionStatus, availableLanguages, setLanguageSafe, setCountry, auth, logoutUser } = useApp();
 
   const allLanguageOptions: { key: Language; label: string }[] = [
     { key: 'fr', label: t('french') },
@@ -35,6 +35,12 @@ export default function ProfileScreen() {
   const currentLanguageLabel = languageOptions.find(l => l.key === language)?.label ?? languageOptions[0]?.label ?? '';
   const currentCountryLabel = `${countryConfigs[country].flag} ${getCountryLabel(country, language)}`;
   const currencyDisplay = `${countryConfigs[country].currency} (${currencySymbol})`;
+  const trialEndDate = subscriptionStatus.expiresAt
+    ? new Intl.DateTimeFormat(language === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' }).format(new Date(subscriptionStatus.expiresAt))
+    : null;
+  const subscriptionLabel = subscriptionStatus.isTrial
+    ? `${t('trialActive')}${trialEndDate ? ` · ${trialEndDate}` : ''}`
+    : 'Premium';
 
   const toggleLanguage = () => {
     if (availableLanguages.length <= 1) return;
@@ -56,8 +62,8 @@ export default function ProfileScreen() {
         {
           icon: Crown,
           label: t('currentPlan'),
-          value: user.isPremium ? 'Premium' : t('freePlan'),
-          color: user.isPremium ? '#FFD700' : Colors.textMuted,
+          value: subscriptionLabel,
+          color: subscriptionStatus.isTrial ? Colors.accent : '#FFD700',
           onPress: () => router.push('/(tabs)/premium' as any),
         },
         {
@@ -130,12 +136,12 @@ export default function ProfileScreen() {
               <Text style={styles.profileName}>{auth.isAuthenticated ? (auth.fullName || user.name || (language === 'fr' ? 'Utilisateur' : 'User')) : (language === 'fr' ? 'Invité' : 'Guest')}</Text>
               <Text style={styles.profileEmail}>{auth.isAuthenticated ? (auth.email || t('accountConnected')) : t('notConnected')}</Text>
             </View>
-            {user.isPremium && (
-              <View style={styles.premiumTag}>
-                <Crown size={12} color="#FFD700" />
-                <Text style={styles.premiumTagText}>PREMIUM</Text>
-              </View>
-            )}
+            <View style={styles.premiumTag}>
+              <Crown size={12} color={subscriptionStatus.isTrial ? Colors.accent : '#FFD700'} />
+              <Text style={[styles.premiumTagText, subscriptionStatus.isTrial && { color: Colors.accent }]}>
+                {subscriptionStatus.isTrial ? (language === 'fr' ? 'ESSAI' : 'TRIAL') : 'PREMIUM'}
+              </Text>
+            </View>
           </LinearGradient>
 
           {menuSections.map((section, sIdx) => (

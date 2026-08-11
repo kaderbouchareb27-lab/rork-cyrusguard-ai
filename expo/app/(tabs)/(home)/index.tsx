@@ -39,7 +39,7 @@ export default function HomeScreen(): React.ReactElement {
   const router = useRouter();
   const {
     t, language, country, scans, showPaymentSuccess, setShowPaymentSuccess,
-    user, remainingCredits, canScan,
+    subscriptionStatus,
   } = useApp();
   const fadeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
   const slideAnim = useRef<Animated.Value>(new Animated.Value(16)).current;
@@ -65,6 +65,10 @@ export default function HomeScreen(): React.ReactElement {
   const alertsTitle = useMemo(() => getAlertsSectionTitle(country, language) ?? t('countryAlerts'), [country, language, t]);
   const topAlerts = useMemo(() => getCountryAlerts(country, language).slice(0, 4), [country, language]);
   const trendingScams = useMemo(() => getTrendingScams(country, language), [country, language]);
+  const trialEndDate = useMemo(() => {
+    if (!subscriptionStatus.isTrial || !subscriptionStatus.expiresAt) return null;
+    return new Intl.DateTimeFormat(language === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium' }).format(new Date(subscriptionStatus.expiresAt));
+  }, [language, subscriptionStatus.expiresAt, subscriptionStatus.isTrial]);
   const openScan = useCallback((scanId: string): void => {
     router.push({ pathname: '/result' as any, params: { scanId } });
   }, [router]);
@@ -141,22 +145,18 @@ export default function HomeScreen(): React.ReactElement {
               <View style={styles.activePill}><View style={styles.liveDotSmall} /><Text style={styles.activeText}>{language === 'fr' ? 'Actif' : 'Active'}</Text></View>
             </View>
 
-            {!user.isPremium ? (
-              <View style={styles.creditsRow}>
-                <Text style={[styles.creditsText, remainingCredits === 0 && { color: Colors.danger }]}>
-                  {remainingCredits}/2 {t('creditsRemaining')}
-                </Text>
-                <View style={styles.creditDots}>
-                  {[0, 1].map((index: number) => <View key={index} style={[styles.creditDot, index < remainingCredits && styles.creditDotActive]} />)}
-                </View>
-              </View>
-            ) : (
-              <View style={styles.premiumRow}><Crown size={15} color={Colors.gold} /><Text style={styles.premiumText}>{t('unlimitedAccess')}</Text></View>
-            )}
+            <View style={styles.premiumRow}>
+              <Crown size={15} color={subscriptionStatus.isTrial ? Colors.accent : Colors.gold} />
+              <Text style={[styles.premiumText, subscriptionStatus.isTrial && { color: Colors.accent }]}>
+                {subscriptionStatus.isTrial
+                  ? `${t('trialActive')}${trialEndDate ? ` · ${trialEndDate}` : ''}`
+                  : t('unlimitedAccess')}
+              </Text>
+            </View>
 
             <Text style={styles.sectionEyebrow}>{t('quickActions').toUpperCase()}</Text>
             <View style={styles.actionsGrid}>
-              <TouchableOpacity style={[styles.actionCard, !canScan && styles.lockedCard]} onPress={() => router.push('/scan' as any)} activeOpacity={0.78} testID="action-scan">
+              <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/scan' as any)} activeOpacity={0.78} testID="action-scan">
                 <View style={styles.actionGlow} />
                 <View style={styles.actionIconGreen}><Camera size={25} color={Colors.accent} /></View>
                 <Text style={styles.actionTitle}>{t('scanImage')}</Text>
@@ -274,11 +274,6 @@ const styles = StyleSheet.create({
   protectionSub: { color: Colors.textSecondary, fontSize: 11, marginTop: 3 },
   activePill: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   activeText: { color: Colors.accent, fontSize: 11, fontWeight: '700' },
-  creditsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingHorizontal: 4 },
-  creditsText: { color: Colors.textSecondary, fontSize: 11, fontWeight: '600' },
-  creditDots: { flexDirection: 'row', gap: 5 },
-  creditDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
-  creditDotActive: { backgroundColor: Colors.accent },
   premiumRow: { flexDirection: 'row', alignSelf: 'center', gap: 7, marginTop: 12 },
   premiumText: { color: Colors.gold, fontSize: 12, fontWeight: '700' },
   sectionEyebrow: { color: Colors.accent, fontSize: 11, letterSpacing: 1.6, fontWeight: '800', marginTop: 27, marginBottom: 13 },
@@ -286,7 +281,6 @@ const styles = StyleSheet.create({
   actionCard: { flex: 1, minHeight: 190, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: Colors.borderLight, backgroundColor: 'rgba(3,25,15,0.90)', overflow: 'hidden' },
   actionCardBlue: { borderColor: 'rgba(95,178,255,0.28)', backgroundColor: 'rgba(2,20,19,0.90)' },
   actionGlow: { position: 'absolute', right: -40, top: -45, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(47,240,122,0.05)' },
-  lockedCard: { opacity: 0.74 },
   actionIconGreen: { width: 54, height: 54, borderRadius: 18, borderWidth: 1, borderColor: Colors.accent, backgroundColor: Colors.accentMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 17 },
   actionIconBlue: { width: 54, height: 54, borderRadius: 18, borderWidth: 1, borderColor: Colors.info, backgroundColor: Colors.infoMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 17 },
   actionTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', lineHeight: 20 },

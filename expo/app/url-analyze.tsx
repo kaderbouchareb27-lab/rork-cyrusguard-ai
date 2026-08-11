@@ -9,7 +9,6 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
 import RiskCircle from '@/components/RiskCircle';
 import AppBackdrop from '@/components/AppBackdrop';
@@ -42,7 +41,7 @@ const ANALYSIS_STEPS_EN = [
 
 export default function UrlAnalyzeScreen() {
   const router = useRouter();
-  const { t, language, country, canUseFeature, consumeCredit, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
+  const { t, language, country, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -107,7 +106,6 @@ export default function UrlAnalyzeScreen() {
 
     try {
       const apiResult = await analyzeUrlApi(url.trim(), language, country);
-      consumeCredit();
       console.log('[URL] Analysis complete, score:', apiResult.score);
 
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
@@ -226,10 +224,6 @@ export default function UrlAnalyzeScreen() {
           <View style={styles.backBtn} />
         </View>
 
-        {!canUseFeature ? (
-          <PaywallGate type="url" />
-        ) : (
-        <>
         <AIDisclosureModal visible={showDisclosure} onAccept={handleDisclosureAccept} onDecline={() => setShowDisclosure(false)} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.inputSection}>
@@ -553,8 +547,6 @@ export default function UrlAnalyzeScreen() {
             </Animated.View>
           )}
         </ScrollView>
-        </>
-        )}
       </SafeAreaView>
     </View>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -144,7 +144,7 @@ interface UserProfile {
   email: string;
   name: string;
   isPremium: boolean;
-  plan: 'free' | 'monthly' | 'annual';
+  plan: 'inactive' | 'monthly' | 'annual';
 }
 
 interface AuthState {
@@ -155,15 +155,28 @@ interface AuthState {
   provider: 'apple' | 'guest' | null;
 }
 
-export const FREE_CREDITS = 2;
 const ENTITLEMENT_ID = 'CyrusGuard AI Pro';
+
+interface RcCustomerSnapshot {
+  info: CustomerInfo;
+  ownerKey: string;
+  generation: number;
+}
+
+export interface SubscriptionStatus {
+  isActive: boolean;
+  isTrial: boolean;
+  expiresAt: string | null;
+  willRenew: boolean;
+  productIdentifier: string | null;
+  managementURL: string | null;
+}
 
 const STORAGE_KEYS = {
   language: 'cyrusguard_language',
   country: 'cyrusguard_country',
   scans: 'cyrusguard_scans',
   user: 'cyrusguard_user',
-  creditsUsed: 'cyrusguard_credits_used',
   aiDisclosure: 'cyrusguard_ai_disclosure',
   auth: 'cyrusguard_auth',
 };
@@ -191,6 +204,15 @@ function getRCApiKey(): string {
 }
 
 let rcConfigured = false;
+let rcOperationQueue: Promise<void> = Promise.resolve();
+
+/** Serializes RevenueCat identity and receipt operations. */
+function withRCOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = rcOperationQueue.then(operation, operation);
+  rcOperationQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
 function configureRC() {
   if (rcConfigured) return;
   const apiKey = getRCApiKey();
@@ -215,14 +237,29 @@ function checkPremiumFromCustomerInfo(info: CustomerInfo): boolean {
   return !!entitlement;
 }
 
-function getPlanFromCustomerInfo(info: CustomerInfo): 'free' | 'monthly' | 'annual' {
+function getPlanFromCustomerInfo(info: CustomerInfo): 'inactive' | 'monthly' | 'annual' {
   const entitlement = info.entitlements.active[ENTITLEMENT_ID];
-  if (!entitlement) return 'free';
+  if (!entitlement) return 'inactive';
   const productId = (entitlement.productIdentifier ?? '').toLowerCase();
   if (productId.includes('yearly') || productId.includes('annual') || productId.includes('annee') || productId.includes('année')) return 'annual';
   if (productId.includes('monthly') || productId.includes('mois')) return 'monthly';
-  if (productId.includes('lifetime')) return 'annual';
   return 'monthly';
+}
+
+function getSubscriptionStatus(info: CustomerInfo | null | undefined): SubscriptionStatus {
+  const entitlement = info?.entitlements.active[ENTITLEMENT_ID];
+  if (!entitlement) {
+    return { isActive: false, isTrial: false, expiresAt: null, willRenew: false, productIdentifier: null, managementURL: info?.managementURL ?? null };
+  }
+  const periodType = String(entitlement.periodType ?? '').toUpperCase();
+  return {
+    isActive: true,
+    isTrial: periodType === 'TRIAL',
+    expiresAt: entitlement.expirationDate ?? null,
+    willRenew: entitlement.willRenew,
+    productIdentifier: entitlement.productIdentifier ?? null,
+    managementURL: info?.managementURL ?? null,
+  };
 }
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -234,10 +271,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
     email: '',
     name: '',
     isPremium: false,
-    plan: 'free',
+    plan: 'inactive',
   });
   const [showPaymentSuccess, setShowPaymentSuccess] = useState<boolean>(false);
-  const [creditsUsed, setCreditsUsed] = useState<number>(0);
   const [hasAcceptedAIDisclosure, setHasAcceptedAIDisclosureState] = useState<boolean>(false);
   const [auth, setAuth] = useState<AuthState>({
     isAuthenticated: false,
@@ -247,16 +283,32 @@ export const [AppProvider, useApp] = createContextHook(() => {
     provider: null,
   });
   const [rcLoggedIn, setRcLoggedIn] = useState<boolean>(false);
+  const [rcLoginFailed, setRcLoginFailed] = useState<boolean>(false);
+  const [isRcTransitioning, setIsRcTransitioning] = useState<boolean>(false);
+  const [hasHydratedSettings, setHasHydratedSettings] = useState<boolean>(false);
+  const rcIdentityGenerationRef = useRef<number>(0);
+  const [rcIdentityGeneration, setRcIdentityGeneration] = useState<number>(0);
+  const rcOwnerKey = auth.uid ?? 'anonymous';
+  const rcCustomerQueryKey = useMemo(
+    () => ['rc-customer-info', rcOwnerKey, rcIdentityGeneration] as const,
+    [rcIdentityGeneration, rcOwnerKey]
+  );
+  const beginRcIdentityTransition = useCallback((): number => {
+    const nextGeneration = rcIdentityGenerationRef.current + 1;
+    rcIdentityGenerationRef.current = nextGeneration;
+    setRcIdentityGeneration(nextGeneration);
+    setIsRcTransitioning(true);
+    return nextGeneration;
+  }, []);
 
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
     queryFn: async () => {
       try {
-        const [langStr, countryStr, userStr, creditsStr, disclosureStr, authStr, scansStr] = await Promise.all([
+        const [langStr, countryStr, userStr, disclosureStr, authStr, scansStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.language),
           AsyncStorage.getItem(STORAGE_KEYS.country),
           AsyncStorage.getItem(STORAGE_KEYS.user),
-          AsyncStorage.getItem(STORAGE_KEYS.creditsUsed),
           AsyncStorage.getItem(STORAGE_KEYS.aiDisclosure),
           AsyncStorage.getItem(STORAGE_KEYS.auth),
           AsyncStorage.getItem(STORAGE_KEYS.scans),
@@ -287,7 +339,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
           language: resolvedLanguage,
           country: resolvedCountry,
           user: parsedUser,
-          creditsUsed: creditsStr ? parseInt(creditsStr, 10) : 0,
           hasAcceptedAIDisclosure: disclosureStr === 'true',
           auth: parsedAuth,
           scans: parsedScans,
@@ -298,7 +349,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
           language: 'fr' as Language,
           country: 'CA' as Country,
           user: null,
-          creditsUsed: 0,
           hasAcceptedAIDisclosure: false,
           auth: null,
           scans: [] as ScanResult[],
@@ -312,7 +362,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
       if (settingsQuery.data.language) setLanguageState(settingsQuery.data.language);
       if (settingsQuery.data.country) setCountryState(settingsQuery.data.country);
       if (settingsQuery.data.user) setUser(settingsQuery.data.user);
-      setCreditsUsed(settingsQuery.data.creditsUsed ?? 0);
       setHasAcceptedAIDisclosureState(settingsQuery.data.hasAcceptedAIDisclosure ?? false);
       if (settingsQuery.data.auth) {
         setAuth(settingsQuery.data.auth);
@@ -320,54 +369,80 @@ export const [AppProvider, useApp] = createContextHook(() => {
       if (settingsQuery.data.scans && settingsQuery.data.scans.length > 0) {
         setScans(settingsQuery.data.scans);
       }
+      setHasHydratedSettings(true);
     }
   }, [settingsQuery.data]);
 
   const rcLoginMutation = useMutation({
-    mutationFn: async (uid: string) => {
+    mutationFn: async ({ uid, generation }: { uid: string; generation: number }) => withRCOperation(async () => {
       if (!rcConfigured) {
         console.log('[RC] Not configured, skipping logIn');
         return null;
       }
       console.log('[RC] Logging in with RevenueCat');
       const { customerInfo } = await Purchases.logIn(uid);
-      return customerInfo;
-    },
-    onSuccess: (info) => {
-      if (info) {
+      return { info: customerInfo, ownerKey: uid, generation } satisfies RcCustomerSnapshot;
+    }),
+    onSuccess: (snapshot) => {
+      if (snapshot && snapshot.generation === rcIdentityGenerationRef.current) {
         console.log('[RC] logIn successful');
-        queryClient.setQueryData(['rc-customer-info'], info);
+        queryClient.setQueryData(['rc-customer-info', snapshot.ownerKey, snapshot.generation], snapshot);
+        setRcLoginFailed(false);
         setRcLoggedIn(true);
       }
     },
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
       console.log('[RC] logIn error:', error);
+      if (variables.generation === rcIdentityGenerationRef.current) {
+        queryClient.setQueryData(['rc-customer-info', variables.uid, variables.generation], null);
+        setRcLoggedIn(false);
+        setRcLoginFailed(true);
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      if (variables.generation === rcIdentityGenerationRef.current) {
+        setIsRcTransitioning(false);
+      }
     },
   });
 
   useEffect(() => {
-    if (auth.isAuthenticated && auth.uid && rcConfigured && !rcLoggedIn) {
+    if (auth.isAuthenticated && auth.uid && rcConfigured && !rcLoggedIn && !rcLoginFailed && !isRcTransitioning && !rcLoginMutation.isPending) {
       console.log('[RC] Auto-login for authenticated user');
-      rcLoginMutation.mutate(auth.uid);
+      const generation = beginRcIdentityTransition();
+      void queryClient.cancelQueries({ queryKey: ['rc-customer-info'] }).then(() => {
+        queryClient.setQueryData(['rc-customer-info', auth.uid as string, generation], null);
+        rcLoginMutation.mutate({ uid: auth.uid as string, generation });
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.isAuthenticated, auth.uid, rcLoggedIn]);
+  }, [auth.isAuthenticated, auth.uid, beginRcIdentityTransition, rcLoggedIn, rcLoginFailed, isRcTransitioning, rcLoginMutation.isPending, queryClient]);
+
+  const isRcIdentityTrusted = !isRcTransitioning && !rcLoginFailed && (!auth.isAuthenticated || rcLoggedIn);
 
   const customerInfoQuery = useQuery({
-    queryKey: ['rc-customer-info'],
-    queryFn: async () => {
+    queryKey: rcCustomerQueryKey,
+    queryFn: async () => withRCOperation(async () => {
       if (!rcConfigured) return null;
       try {
+        const expectedUid = auth.uid;
+        const queryGeneration = rcIdentityGeneration;
         const info = await Purchases.getCustomerInfo();
+        const currentAppUserId = await Purchases.getAppUserID();
+        if (queryGeneration !== rcIdentityGenerationRef.current || (expectedUid && currentAppUserId !== expectedUid)) {
+          console.log('[RC] Ignoring CustomerInfo for mismatched app user');
+          return null;
+        }
         console.log('[RC] Customer info fetched');
-        return info;
+        return { info, ownerKey: rcOwnerKey, generation: queryGeneration } satisfies RcCustomerSnapshot;
       } catch (e) {
         console.log('[RC] Error fetching customer info:', e);
         return null;
       }
-    },
+    }),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 60 * 1000,
+    enabled: hasHydratedSettings && !isRcTransitioning && !rcLoginFailed && (!auth.isAuthenticated || rcLoggedIn),
   });
 
   const offeringsQuery = useQuery({
@@ -387,10 +462,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
   });
 
   useEffect(() => {
-    const info = customerInfoQuery.data;
-    if (!info) return;
-    const isPremium = checkPremiumFromCustomerInfo(info);
-    const plan = getPlanFromCustomerInfo(info);
+    const snapshot = customerInfoQuery.data;
+    if (!snapshot || snapshot.ownerKey !== rcOwnerKey || snapshot.generation !== rcIdentityGeneration || !isRcIdentityTrusted) return;
+    const isPremium = checkPremiumFromCustomerInfo(snapshot.info);
+    const plan = getPlanFromCustomerInfo(snapshot.info);
     console.log('[RC] Syncing premium status');
     setUser(prev => {
       if (prev.isPremium === isPremium && prev.plan === plan) return prev;
@@ -398,36 +473,77 @@ export const [AppProvider, useApp] = createContextHook(() => {
       void AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(updated));
       return updated;
     });
-  }, [customerInfoQuery.data]);
+  }, [customerInfoQuery.data, isRcIdentityTrusted, rcIdentityGeneration, rcOwnerKey]);
 
   useEffect(() => {
     if (!rcConfigured) return;
     const listener = (info: CustomerInfo) => {
-      console.log('[RC] CustomerInfo listener triggered');
-      queryClient.setQueryData(['rc-customer-info'], info);
+      if (isRcTransitioning || rcLoginFailed || (auth.isAuthenticated && !rcLoggedIn)) {
+        console.log('[RC] Ignoring CustomerInfo during untrusted identity state');
+        return;
+      }
+      const listenerGeneration = rcIdentityGeneration;
+      void withRCOperation(() => Purchases.getAppUserID()).then((currentAppUserId: string) => {
+        if (listenerGeneration !== rcIdentityGenerationRef.current || (auth.uid && currentAppUserId !== auth.uid)) {
+          console.log('[RC] Ignoring CustomerInfo listener for mismatched app user');
+          return;
+        }
+        console.log('[RC] CustomerInfo listener triggered');
+        void queryClient.invalidateQueries({ queryKey: rcCustomerQueryKey });
+      }).catch((error: unknown) => {
+        console.log('[RC] Unable to verify CustomerInfo listener identity:', error);
+      });
     };
     Purchases.addCustomerInfoUpdateListener(listener);
     return () => {
       Purchases.removeCustomerInfoUpdateListener(listener);
     };
-  }, [queryClient]);
+  }, [auth.isAuthenticated, auth.uid, isRcTransitioning, queryClient, rcCustomerQueryKey, rcIdentityGeneration, rcLoggedIn, rcLoginFailed]);
 
   const purchaseMutation = useMutation({
-    mutationFn: async (pkg: PurchasesPackage) => {
+    mutationFn: async (pkg: PurchasesPackage) => withRCOperation(async () => {
+      let operationGeneration = rcIdentityGeneration;
       if (auth.isAuthenticated && !rcLoggedIn && auth.uid) {
         console.log('[RC] Ensuring logIn before purchase...');
-        const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
-        setRcLoggedIn(true);
-        queryClient.setQueryData(['rc-customer-info'], loginInfo);
+        operationGeneration = beginRcIdentityTransition();
+        await queryClient.cancelQueries({ queryKey: ['rc-customer-info'] });
+        queryClient.setQueryData(['rc-customer-info', auth.uid, operationGeneration], null);
+        try {
+          const { customerInfo: loginInfo } = await Purchases.logIn(auth.uid);
+          setRcLoginFailed(false);
+          setRcLoggedIn(true);
+          queryClient.setQueryData(
+            ['rc-customer-info', auth.uid, operationGeneration],
+            { info: loginInfo, ownerKey: auth.uid, generation: operationGeneration } satisfies RcCustomerSnapshot
+          );
+        } catch (error) {
+          setRcLoginFailed(true);
+          setRcLoggedIn(false);
+          throw error;
+        } finally {
+          if (operationGeneration === rcIdentityGenerationRef.current) {
+            setIsRcTransitioning(false);
+          }
+        }
       }
       console.log('[RC] Purchasing package:', pkg.identifier);
+      const purchaseOwnerKey = auth.uid ?? 'anonymous';
+      const appUserIdBeforePurchase = await Purchases.getAppUserID();
+      if (operationGeneration !== rcIdentityGenerationRef.current || (auth.uid && appUserIdBeforePurchase !== purchaseOwnerKey)) {
+        throw new Error(language === 'fr' ? 'Identité d’abonnement non disponible. Veuillez réessayer.' : 'Subscription identity unavailable. Please try again.');
+      }
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      return customerInfo;
-    },
-    onSuccess: (info) => {
+      const appUserIdAfterPurchase = await Purchases.getAppUserID();
+      if (operationGeneration !== rcIdentityGenerationRef.current || (auth.uid && appUserIdAfterPurchase !== purchaseOwnerKey)) {
+        throw new Error(language === 'fr' ? 'Votre compte a changé pendant l’achat. Veuillez restaurer vos achats.' : 'Your account changed during purchase. Please restore purchases.');
+      }
+      return { info: customerInfo, ownerKey: purchaseOwnerKey, generation: operationGeneration } satisfies RcCustomerSnapshot;
+    }),
+    onSuccess: (snapshot) => {
+      if (snapshot.generation !== rcIdentityGenerationRef.current) return;
       console.log('[RC] Purchase successful');
-      queryClient.setQueryData(['rc-customer-info'], info);
-      const isPremium = checkPremiumFromCustomerInfo(info);
+      queryClient.setQueryData(['rc-customer-info', snapshot.ownerKey, snapshot.generation], snapshot);
+      const isPremium = checkPremiumFromCustomerInfo(snapshot.info);
       if (isPremium) {
         setShowPaymentSuccess(true);
         setTimeout(() => setShowPaymentSuccess(false), 5000);
@@ -444,14 +560,25 @@ export const [AppProvider, useApp] = createContextHook(() => {
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async () => withRCOperation(async () => {
       console.log('[RC] Restoring purchases...');
+      const restoreOwnerKey = auth.uid ?? 'anonymous';
+      const restoreGeneration = rcIdentityGeneration;
+      const appUserIdBeforeRestore = await Purchases.getAppUserID();
+      if (restoreGeneration !== rcIdentityGenerationRef.current || (auth.uid && appUserIdBeforeRestore !== restoreOwnerKey)) {
+        throw new Error(language === 'fr' ? 'Identité d’abonnement non disponible. Veuillez vous reconnecter.' : 'Subscription identity unavailable. Please sign in again.');
+      }
       const info = await Purchases.restorePurchases();
-      return info;
-    },
-    onSuccess: (info) => {
-      queryClient.setQueryData(['rc-customer-info'], info);
-      const isPremium = checkPremiumFromCustomerInfo(info);
+      const appUserIdAfterRestore = await Purchases.getAppUserID();
+      if (restoreGeneration !== rcIdentityGenerationRef.current || (auth.uid && appUserIdAfterRestore !== restoreOwnerKey)) {
+        throw new Error(language === 'fr' ? 'Votre compte a changé pendant la restauration. Veuillez réessayer.' : 'Your account changed during restore. Please try again.');
+      }
+      return { info, ownerKey: restoreOwnerKey, generation: restoreGeneration } satisfies RcCustomerSnapshot;
+    }),
+    onSuccess: (snapshot) => {
+      if (snapshot.generation !== rcIdentityGenerationRef.current) return;
+      queryClient.setQueryData(['rc-customer-info', snapshot.ownerKey, snapshot.generation], snapshot);
+      const isPremium = checkPremiumFromCustomerInfo(snapshot.info);
       if (isPremium) {
         Alert.alert('✅', language === 'fr'
           ? 'Votre abonnement Premium a été restauré !'
@@ -519,45 +646,25 @@ export const [AppProvider, useApp] = createContextHook(() => {
     });
   }, []);
 
-  const remainingCredits = useMemo(() => {
-    if (user.isPremium) return Infinity;
-    return Math.max(0, FREE_CREDITS - creditsUsed);
-  }, [user.isPremium, creditsUsed]);
-
-  const canUseFeature = useMemo(() => {
-    return user.isPremium || creditsUsed < FREE_CREDITS;
-  }, [user.isPremium, creditsUsed]);
-
-  const needsPaywall = useMemo(() => {
-    return !canUseFeature;
-  }, [canUseFeature]);
+  const subscriptionStatus = useMemo<SubscriptionStatus>(
+    () => getSubscriptionStatus(
+      isRcIdentityTrusted && customerInfoQuery.data?.ownerKey === rcOwnerKey && customerInfoQuery.data.generation === rcIdentityGeneration
+        ? customerInfoQuery.data.info
+        : null
+    ),
+    [customerInfoQuery.data, isRcIdentityTrusted, rcIdentityGeneration, rcOwnerKey]
+  );
+  const needsPaywall = !subscriptionStatus.isActive;
 
   const needsAccountCreation = useMemo(() => {
-    return user.isPremium && !auth.isAuthenticated;
-  }, [user.isPremium, auth.isAuthenticated]);
-
-  const canScan = canUseFeature;
+    return subscriptionStatus.isActive && !auth.isAuthenticated;
+  }, [subscriptionStatus.isActive, auth.isAuthenticated]);
 
   const acceptAIDisclosure = useCallback(async () => {
     setHasAcceptedAIDisclosureState(true);
     await AsyncStorage.setItem(STORAGE_KEYS.aiDisclosure, 'true');
     console.log('[AppContext] AI disclosure accepted');
   }, []);
-
-  const resetFreeCredits = useCallback(async () => {
-    setCreditsUsed(0);
-    await AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, '0');
-    console.log('[AppContext] Free credits reset');
-  }, []);
-
-  const consumeCredit = useCallback(() => {
-    if (user.isPremium) return;
-    setCreditsUsed(prev => {
-      const next = prev + 1;
-      void AsyncStorage.setItem(STORAGE_KEYS.creditsUsed, String(next));
-      return next;
-    });
-  }, [user.isPremium]);
 
   const loginUser = useCallback(async (params: {
     uid: string;
@@ -566,6 +673,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     provider: 'apple' | 'guest';
   }) => {
     console.log('[Auth] Logging in user:', params.provider);
+    const loginGeneration = beginRcIdentityTransition();
+    await queryClient.cancelQueries({ queryKey: ['rc-customer-info'] });
     const newAuth: AuthState = {
       isAuthenticated: true,
       uid: params.uid,
@@ -573,14 +682,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
       fullName: params.fullName,
       provider: params.provider,
     };
+    setRcLoggedIn(false);
+    setRcLoginFailed(false);
     setAuth(newAuth);
+    queryClient.setQueryData(['rc-customer-info', params.uid, loginGeneration], null);
     await AsyncStorage.setItem(STORAGE_KEYS.auth, JSON.stringify(newAuth));
 
     let updatedUser: UserProfile = {
       email: '',
       name: '',
       isPremium: false,
-      plan: 'free',
+      plan: 'inactive',
     };
     setUser(prev => {
       updatedUser = {
@@ -595,9 +707,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     if (rcConfigured && params.uid) {
       try {
         console.log('[RC] Calling Purchases.logIn after auth...');
-        const { customerInfo } = await Purchases.logIn(params.uid);
+        const { customerInfo } = await withRCOperation(() => Purchases.logIn(params.uid));
+        if (loginGeneration !== rcIdentityGenerationRef.current) return;
+        setRcLoginFailed(false);
         setRcLoggedIn(true);
-        queryClient.setQueryData(['rc-customer-info'], customerInfo);
+        queryClient.setQueryData(
+          ['rc-customer-info', params.uid, loginGeneration],
+          { info: customerInfo, ownerKey: params.uid, generation: loginGeneration } satisfies RcCustomerSnapshot
+        );
         console.log('[RC] logIn after auth successful');
 
         const isPremium = checkPremiumFromCustomerInfo(customerInfo);
@@ -609,12 +726,24 @@ export const [AppProvider, useApp] = createContextHook(() => {
         }
       } catch (e) {
         console.log('[RC] logIn after auth error:', e);
+        if (loginGeneration === rcIdentityGenerationRef.current) {
+          queryClient.setQueryData(['rc-customer-info', params.uid, loginGeneration], null);
+          setRcLoggedIn(false);
+          setRcLoginFailed(true);
+        }
       }
+    } else {
+      setRcLoginFailed(true);
     }
-  }, [queryClient]);
+    if (loginGeneration === rcIdentityGenerationRef.current) {
+      setIsRcTransitioning(false);
+    }
+  }, [beginRcIdentityTransition, queryClient]);
 
   const logoutUser = useCallback(async () => {
     console.log('[Auth] Logging out user');
+    const logoutGeneration = beginRcIdentityTransition();
+    await queryClient.cancelQueries({ queryKey: ['rc-customer-info'] });
     setAuth({
       isAuthenticated: false,
       uid: null,
@@ -623,20 +752,26 @@ export const [AppProvider, useApp] = createContextHook(() => {
       provider: null,
     });
     await AsyncStorage.removeItem(STORAGE_KEYS.auth);
+    queryClient.setQueryData(['rc-customer-info', 'anonymous', logoutGeneration], null);
     setRcLoggedIn(false);
+    setRcLoginFailed(false);
 
     if (rcConfigured) {
       try {
-        await Purchases.logOut();
+        await withRCOperation(() => Purchases.logOut());
         console.log('[RC] Logged out from RevenueCat');
       } catch (e) {
         console.log('[RC] logOut error:', e);
+        setRcLoginFailed(true);
       }
     }
+    if (logoutGeneration === rcIdentityGenerationRef.current) {
+      setIsRcTransitioning(false);
+    }
 
-    setUser({ email: '', name: '', isPremium: false, plan: 'free' });
-    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ email: '', name: '', isPremium: false, plan: 'free' }));
-  }, []);
+    setUser({ email: '', name: '', isPremium: false, plan: 'inactive' });
+    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ email: '', name: '', isPremium: false, plan: 'inactive' }));
+  }, [beginRcIdentityTransition, queryClient]);
 
   const upgradeToPremium = useCallback(async (plan: 'monthly' | 'annual') => {
     if (!currentOffering) {
@@ -672,16 +807,22 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [restoreMutation]);
 
   const deleteAllData = useCallback(async () => {
+    const deletionGeneration = beginRcIdentityTransition();
+    await queryClient.cancelQueries({ queryKey: ['rc-customer-info'] });
     setScans([]);
-    setCreditsUsed(0);
     setAuth({ isAuthenticated: false, uid: null, email: null, fullName: null, provider: null });
-    setUser({ email: '', name: '', isPremium: false, plan: 'free' });
+    setUser({ email: '', name: '', isPremium: false, plan: 'inactive' });
+    queryClient.setQueryData(['rc-customer-info', 'anonymous', deletionGeneration], null);
     setRcLoggedIn(false);
+    setRcLoginFailed(false);
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
     if (rcConfigured) {
-      try { await Purchases.logOut(); } catch (e) { console.log('[RC] logOut error:', e); }
+      try { await withRCOperation(() => Purchases.logOut()); } catch (e) { console.log('[RC] logOut error:', e); }
     }
-  }, []);
+    if (deletionGeneration === rcIdentityGenerationRef.current) {
+      setIsRcTransitioning(false);
+    }
+  }, [beginRcIdentityTransition, queryClient]);
 
   return useMemo(() => ({
     language,
@@ -691,16 +832,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     availableLanguages,
     user,
     scans,
-    canScan,
-    remainingCredits,
-    creditsUsed,
-    consumeCredit,
-    resetFreeCredits,
     isExpoGo,
-    canUseFeature,
-    freeCredits: FREE_CREDITS,
     countryConfig,
     needsPaywall,
+    subscriptionStatus,
     needsAccountCreation,
     showPaymentSuccess,
     hasAcceptedAIDisclosure,
@@ -717,22 +852,22 @@ export const [AppProvider, useApp] = createContextHook(() => {
     restorePurchases,
     deleteAllData,
     setShowPaymentSuccess,
-    isLoading: settingsQuery.isLoading,
+    isLoading: settingsQuery.isLoading || !hasHydratedSettings,
+    isSubscriptionLoading: customerInfoQuery.isLoading || isRcTransitioning || rcLoginMutation.isPending || (rcConfigured && auth.isAuthenticated && !rcLoggedIn && !rcLoginFailed),
     isPurchasing: purchaseMutation.isPending,
     isRestoring: restoreMutation.isPending,
     currentOffering,
     isOfferingsLoading: offeringsQuery.isLoading,
   }), [
     language, country, currency, currencySymbol, availableLanguages, countryConfig,
-    user, scans, canScan,
-    remainingCredits, creditsUsed, consumeCredit, resetFreeCredits,
-    canUseFeature, needsPaywall, needsAccountCreation, showPaymentSuccess,
+    user, scans,
+    needsPaywall, subscriptionStatus, needsAccountCreation, showPaymentSuccess,
     hasAcceptedAIDisclosure, acceptAIDisclosure,
     auth, loginUser, logoutUser,
     t, setLanguage, setLanguageSafe,
     setCountry, addScan, upgradeToPremium, restorePurchases,
-    deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading,
-    purchaseMutation.isPending, restoreMutation.isPending,
+    deleteAllData, setShowPaymentSuccess, settingsQuery.isLoading, hasHydratedSettings,
+    customerInfoQuery.isLoading, isRcTransitioning, rcLoginMutation.isPending, rcLoggedIn, rcLoginFailed, purchaseMutation.isPending, restoreMutation.isPending,
     currentOffering, offeringsQuery.isLoading,
   ]);
 });

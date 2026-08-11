@@ -14,7 +14,6 @@ import * as ImagePicker from 'expo-image-picker';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import type { ScanResult } from '@/mocks/scans';
-import PaywallGate from '@/components/PaywallGate';
 import AIDisclosureModal from '@/components/AIDisclosureModal';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianHero from '@/components/GuardianHero';
@@ -46,7 +45,7 @@ const PLATFORM_KEYS: Record<string, string> = {
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { t, addScan, language, country, canScan, consumeCredit, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
+  const { t, addScan, language, country, hasAcceptedAIDisclosure, acceptAIDisclosure } = useApp();
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [selectedType, setSelectedType] = useState<ContentType>('sms');
@@ -190,7 +189,6 @@ export default function ScanScreen() {
       imageUri,
     };
     addScan(newScan);
-    consumeCredit();
     setIsAnalyzing(false);
     stopLoadingAnimation();
     router.replace({ pathname: '/result' as any, params: { scanId: newScan.id } });
@@ -283,25 +281,6 @@ export default function ScanScreen() {
     };
     return labels[selectedType]?.[language === 'fr' ? 'fr' : 'en'] ?? t('analyzing');
   }, [selectedType, language, t]);
-
-  if (!canScan) {
-    return (
-      <View style={styles.root}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <AppBackdrop />
-        <SafeAreaView style={styles.safe}>
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-              <X size={22} color={Colors.textPrimary} />
-            </TouchableOpacity>
-            <Text style={styles.topTitle}>{t('scanTitle')}</Text>
-            <View style={styles.closeBtn} />
-          </View>
-          <PaywallGate type="scan" />
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   if (isAnalyzing) {
     return (
