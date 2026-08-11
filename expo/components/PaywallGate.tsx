@@ -44,8 +44,7 @@ export default function PaywallGate({ type: _type }: PaywallGateProps) {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
       <View style={styles.brandIconFrame}>
-        <GuardianMark size={112} glow />
-        <View style={styles.brandScanBeam} />
+        <GuardianMark size={112} glow scanning />
       </View>
 
       <Text style={styles.title}>{t('paywallTitle')}</Text>
@@ -95,7 +94,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   brandIconFrame: { width: 122, height: 122, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  brandScanBeam: { position: 'absolute' as const, left: 0, right: 0, top: 60, height: 2, backgroundColor: Colors.accentLight, shadowColor: Colors.accent, shadowOpacity: 0.9, shadowRadius: 9, elevation: 9 },
   title: {
     fontSize: 22,
     fontWeight: '800' as const,

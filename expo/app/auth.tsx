@@ -122,7 +122,7 @@ export default function AuthScreen() {
                 style={styles.shieldGradient}
               >
                 <Image
-                  source={require('@/assets/images/icon.png')}
+                  source={require('@/assets/images/logo-mark.png')}
                   style={styles.shieldLogo}
                   resizeMode="cover"
                 />

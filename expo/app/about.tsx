@@ -27,13 +27,13 @@ export default function AboutScreen() {
           <View style={styles.logoSection}>
             <View style={styles.logoCircle}>
               <Image
-                source={require('@/assets/images/icon.png')}
+                source={require('@/assets/images/logo-mark.png')}
                 style={styles.logoImage}
                 resizeMode="cover"
               />
             </View>
             <Text style={styles.appName}>CyrusGuard AI</Text>
-            <Text style={styles.version}>AI Fraud Scanner · v2.0.0</Text>
+            <Text style={styles.version}>AI Fraud Scanner · v4.0.5</Text>
           </View>
 
           <Text style={styles.description}>

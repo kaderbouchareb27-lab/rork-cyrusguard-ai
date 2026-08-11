@@ -48,7 +48,7 @@ export default function GuardianMark({
         ]}
       >
         <Image
-          source={require('@/assets/images/icon.png')}
+          source={require('@/assets/images/logo-mark.png')}
           style={{ width: '100%', height: '100%', borderRadius: Math.max(2, radius - 2) }}
           resizeMode="cover"
         />
