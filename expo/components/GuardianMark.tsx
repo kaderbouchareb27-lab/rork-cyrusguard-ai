@@ -41,29 +41,29 @@ export default function GuardianMark({
     inputRange: [0, 1],
     outputRange: [size * 0.16, size * 0.82],
   });
+  const isHero = presentation === 'hero';
 
   return (
     <View style={[glow && styles.halo, { width: size, height: size, borderRadius: radius }]}>
       <View
         style={[
           styles.frame,
-          presentation === 'hero' && styles.heroFrame,
+          isHero && styles.heroFrame,
           {
             width: size,
             height: size,
-            borderRadius: presentation === 'hero' ? size / 2 : radius,
-            borderWidth: presentation === 'hero' ? 0 : Math.max(1, size * 0.018),
+            borderRadius: isHero ? 0 : radius,
+            borderWidth: isHero ? 0 : Math.max(1, size * 0.018),
           },
         ]}
       >
         <Image
           source={require('@/assets/images/logo-mark.png')}
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: presentation === 'hero' ? size / 2 : Math.max(2, radius - 2),
-          }}
-          resizeMode="cover"
+          style={[
+            styles.image,
+            isHero ? styles.heroImage : { borderRadius: Math.max(2, radius - 2) },
+          ]}
+          resizeMode="contain"
         />
         {scanning && (
           <Animated.View
@@ -92,7 +92,15 @@ const styles = StyleSheet.create({
     borderColor: Colors.chromeEdge,
   },
   heroFrame: {
+    overflow: 'visible' as const,
     backgroundColor: 'transparent',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  heroImage: {
+    transform: [{ scale: 1.08 }],
   },
   beam: {
     position: 'absolute' as const,

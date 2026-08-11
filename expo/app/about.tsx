@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
+import GuardianMark from '@/components/GuardianMark';
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -25,13 +26,7 @@ export default function AboutScreen() {
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.logoSection}>
-            <View style={styles.logoCircle}>
-              <Image
-                source={require('@/assets/images/logo-mark.png')}
-                style={styles.logoImage}
-                resizeMode="cover"
-              />
-            </View>
+            <GuardianMark size={108} glow scanning presentation="hero" />
             <Text style={styles.appName}>CyrusGuard AI</Text>
             <Text style={styles.version}>AI Fraud Scanner · v4.0.5</Text>
           </View>
@@ -88,13 +83,6 @@ const styles = StyleSheet.create({
   topTitle: { fontSize: 17, fontWeight: '700' as const, color: Colors.textPrimary },
   content: { paddingHorizontal: 20, paddingTop: 8 },
   logoSection: { alignItems: 'center', paddingVertical: 30, gap: 8 },
-  logoCircle: {
-    width: 90, height: 90, borderRadius: 28,
-    backgroundColor: Colors.accentMuted, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.accentGlow,
-    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.24, shadowRadius: 18, elevation: 6,
-  },
-  logoImage: { width: 82, height: 82, borderRadius: 24 },
   appName: { fontSize: 24, fontWeight: '800' as const, color: Colors.textPrimary },
   version: { fontSize: 13, color: Colors.textMuted },
   description: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: 24 },
