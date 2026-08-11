@@ -19,7 +19,7 @@ try {
 const queryClient = new QueryClient();
 
 function AccessGuard({ children }: { children: React.ReactNode }) {
-  const { auth, needsPaywall, isLoading, isSubscriptionLoading } = useApp();
+  const { needsPaywall, isLoading, isSubscriptionLoading } = useApp();
   const pathname = usePathname();
   const router = useRouter();
   const isReady = !isLoading && !isSubscriptionLoading;
@@ -32,15 +32,10 @@ function AccessGuard({ children }: { children: React.ReactNode }) {
       router.replace('/subscribe' as any);
       return;
     }
-    if (!needsPaywall && !auth.isAuthenticated && pathname !== '/create-account') {
-      console.log('[Layout] Subscription active — requesting account creation');
-      router.replace('/create-account' as any);
-      return;
-    }
-    if (!needsPaywall && auth.isAuthenticated && (pathname === '/subscribe' || pathname === '/create-account')) {
+    if (!needsPaywall && pathname === '/subscribe') {
       router.replace('/(tabs)/(home)' as any);
     }
-  }, [auth.isAuthenticated, isReady, needsPaywall, pathname, publicSubscriptionPaths, router]);
+  }, [isReady, needsPaywall, pathname, publicSubscriptionPaths, router]);
 
   if (!isReady || (needsPaywall && !publicSubscriptionPaths)) {
     return (
@@ -78,7 +73,6 @@ function RootLayoutNav() {
       <Stack.Screen name="manage-subscription" />
       <Stack.Screen name="quiz" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="create-account" options={{ presentation: 'modal', animation: 'slide_from_bottom', gestureEnabled: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

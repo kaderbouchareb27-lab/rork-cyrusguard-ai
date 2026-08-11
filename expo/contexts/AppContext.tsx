@@ -656,10 +656,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
   );
   const needsPaywall = !subscriptionStatus.isActive;
 
-  const needsAccountCreation = useMemo(() => {
-    return subscriptionStatus.isActive && !auth.isAuthenticated;
-  }, [subscriptionStatus.isActive, auth.isAuthenticated]);
-
   const acceptAIDisclosure = useCallback(async () => {
     setHasAcceptedAIDisclosureState(true);
     await AsyncStorage.setItem(STORAGE_KEYS.aiDisclosure, 'true');
@@ -836,7 +832,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     countryConfig,
     needsPaywall,
     subscriptionStatus,
-    needsAccountCreation,
     showPaymentSuccess,
     hasAcceptedAIDisclosure,
     acceptAIDisclosure,
@@ -861,7 +856,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }), [
     language, country, currency, currencySymbol, availableLanguages, countryConfig,
     user, scans,
-    needsPaywall, subscriptionStatus, needsAccountCreation, showPaymentSuccess,
+    needsPaywall, subscriptionStatus, showPaymentSuccess,
     hasAcceptedAIDisclosure, acceptAIDisclosure,
     auth, loginUser, logoutUser,
     t, setLanguage, setLanguageSafe,
