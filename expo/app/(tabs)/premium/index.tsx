@@ -15,7 +15,6 @@ export default function PremiumScreen() {
   const {
     t, language, country, upgradeToPremium, subscriptionStatus,
     restorePurchases, isPurchasing, isRestoring, currentOffering, isOfferingsLoading,
-    isExpoGo,
   } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -118,19 +117,6 @@ export default function PremiumScreen() {
                     : t('trialFullAccess')}
                 </Text>
               </View>
-            </View>
-          )}
-
-          {isExpoGo && (
-            <View style={styles.devNotice}>
-              <Text style={styles.devNoticeTitle}>
-                {language === 'fr' ? 'Mode test (Expo Go)' : 'Test mode (Expo Go)'}
-              </Text>
-              <Text style={styles.devNoticeText}>
-                {language === 'fr'
-                  ? 'Les achats reels App Store ne fonctionnent pas dans Expo Go. Le Test Store RevenueCat est utilise pour les essais.'
-                  : 'Real App Store purchases do not work inside Expo Go. The RevenueCat Test Store is used for trials.'}
-              </Text>
             </View>
           )}
 
@@ -649,26 +635,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  devNotice: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.accentGlow,
-    backgroundColor: Colors.accentMuted,
-    padding: 14,
-    marginBottom: 16,
-    gap: 8,
-  },
-  devNoticeTitle: {
-    color: Colors.accent,
-    fontSize: 13,
-    fontWeight: '700' as const,
-    letterSpacing: 0.4,
-  },
-  devNoticeText: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
   },
   restoreBtnDisabled: {
     opacity: 0.6,
