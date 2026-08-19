@@ -8,6 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import AppBackdrop from '@/components/AppBackdrop';
 import GuardianMark from '@/components/GuardianMark';
 import { useSafeBack } from '@/lib/navigation';
+import { SUPPORT_URL } from '@/constants/legal';
 
 export default function ContactScreen() {
   const goBack = useSafeBack();
@@ -52,7 +53,7 @@ export default function ContactScreen() {
 
           <TouchableOpacity
             style={styles.contactCard}
-            onPress={() => Linking.openURL('https://www.cyrusguard.ai')}
+            onPress={() => Linking.openURL(SUPPORT_URL)}
             activeOpacity={0.7}
           >
             <View style={[styles.iconBg, { backgroundColor: Colors.infoMuted }]}>
@@ -60,7 +61,9 @@ export default function ContactScreen() {
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>{language === 'fr' ? 'Site web' : 'Website'}</Text>
-              <Text style={[styles.contactValue, styles.contactLink]}>www.cyrusguard.ai</Text>
+              <Text style={[styles.contactValue, styles.contactLink]}>
+                {language === 'fr' ? 'Centre d\'aide en ligne' : 'Online help center'}
+              </Text>
             </View>
           </TouchableOpacity>
 

@@ -1,14 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Check, ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
 import AppBackdrop from '@/components/AppBackdrop';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { countryConfigs } from '@/constants/countries';
 import GuardianHero from '@/components/GuardianHero';
+import { APPLE_EULA_URL } from '@/constants/legal';
 
 export default function PremiumScreen() {
   const router = useRouter();
@@ -43,6 +45,14 @@ export default function PremiumScreen() {
       pulseLoop.stop();
     };
   }, [shineAnim, badgePulse]);
+
+  const openEula = useCallback(async () => {
+    try {
+      await WebBrowser.openBrowserAsync(APPLE_EULA_URL);
+    } catch (e) {
+      console.log('[Premium] Unable to open EULA:', e);
+    }
+  }, []);
 
   const config = countryConfigs[country] ?? countryConfigs.INTL;
   const currencySymbol = config.currencySymbol;
@@ -290,12 +300,16 @@ export default function PremiumScreen() {
               {t('subscriptionLegalApple')}
             </Text>
             <View style={styles.legalLinksRow}>
-              <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7} testID="premium-terms-link">
                 <Text style={styles.legalLinkText}>{t('terms')}</Text>
               </TouchableOpacity>
               <Text style={styles.legalSeparator}>·</Text>
-              <TouchableOpacity onPress={() => router.push('/privacy' as any)} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => router.push('/privacy' as any)} activeOpacity={0.7} testID="premium-privacy-link">
                 <Text style={styles.legalLinkText}>{t('privacy')}</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalSeparator}>·</Text>
+              <TouchableOpacity onPress={openEula} activeOpacity={0.7} testID="premium-eula-link">
+                <Text style={styles.legalLinkText}>{t('eulaLink')}</Text>
               </TouchableOpacity>
             </View>
           </View>

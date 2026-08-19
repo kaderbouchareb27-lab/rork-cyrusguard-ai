@@ -16,10 +16,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.rork.cyrusguard-ai",
-      "buildNumber": "19",
+      "buildNumber": "20",
       "infoPlist": {
-        "NSCameraUsageDescription": "CyrusGuard AI utilise votre caméra pour scanner et analyser des QR codes, des liens ou des textes suspects en temps réel afin de vous protéger contre les menaces de sécurité et le phishing.",
-        "NSPhotoLibraryUsageDescription": "CyrusGuard AI accède à votre galerie photo pour vous permettre de sélectionner des captures d'écran de messages, emails ou sites web suspects à analyser pour détecter des fraudes potentielles."
+        "NSCameraUsageDescription": "CyrusGuard AI uses your camera to scan suspicious messages, links or QR codes so it can analyze them for fraud. / CyrusGuard AI utilise votre caméra pour scanner les messages, liens ou QR codes suspects afin de les analyser.",
+        "NSPhotoLibraryUsageDescription": "CyrusGuard AI needs access to your photos so you can pick a screenshot of a suspicious message, email or website to analyze. / CyrusGuard AI accède à vos photos pour vous permettre de choisir une capture d'écran suspecte à analyser."
       }
     },
     "android": {

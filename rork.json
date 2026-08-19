@@ -4,6 +4,12 @@
       "name": "Expo",
       "path": "expo",
       "framework": "react-native"
+    },
+    {
+      "name": "CyrusGuard AI Legal",
+      "path": "web",
+      "framework": "web"
     }
-  ]
+  ],
+  "$schema": "https://rork.com/schema/rork.json"
 }

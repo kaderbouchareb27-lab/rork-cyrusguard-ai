@@ -203,6 +203,22 @@ function getRCApiKey(): string {
   return platformKey || testKey;
 }
 
+/**
+ * Deletes the Sign in with Apple identity the app created for this account.
+ * Signs the credential out of the app and drops the local identifier so the
+ * account cannot be recovered after a deletion request.
+ */
+async function revokeAppleIdentity(uid: string | null, provider: string | null): Promise<void> {
+  if (Platform.OS !== 'ios' || provider !== 'apple' || !uid) return;
+  try {
+    const AppleAuthentication = require('expo-apple-authentication') as typeof import('expo-apple-authentication');
+    await AppleAuthentication.signOutAsync({ user: uid });
+    console.log('[Auth] Apple identity revoked for deleted account');
+  } catch (e) {
+    console.log('[Auth] Apple identity revocation skipped:', e);
+  }
+}
+
 let rcConfigured = false;
 let rcOperationQueue: Promise<void> = Promise.resolve();
 
@@ -802,9 +818,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
     restoreMutation.mutate();
   }, [restoreMutation]);
 
+  /**
+   * Permanently deletes the account and every piece of data tied to it:
+   * the Sign in with Apple identity created by the app, the RevenueCat alias,
+   * all locally stored scans, settings and profile data.
+   */
   const deleteAllData = useCallback(async () => {
     const deletionGeneration = beginRcIdentityTransition();
     await queryClient.cancelQueries({ queryKey: ['rc-customer-info'] });
+
+    await revokeAppleIdentity(auth.uid, auth.provider);
+
     setScans([]);
     setAuth({ isAuthenticated: false, uid: null, email: null, fullName: null, provider: null });
     setUser({ email: '', name: '', isPremium: false, plan: 'inactive' });
@@ -815,10 +839,11 @@ export const [AppProvider, useApp] = createContextHook(() => {
     if (rcConfigured) {
       try { await withRCOperation(() => Purchases.logOut()); } catch (e) { console.log('[RC] logOut error:', e); }
     }
+    queryClient.removeQueries({ queryKey: ['rc-customer-info'] });
     if (deletionGeneration === rcIdentityGenerationRef.current) {
       setIsRcTransitioning(false);
     }
-  }, [beginRcIdentityTransition, queryClient]);
+  }, [beginRcIdentityTransition, queryClient, auth.uid, auth.provider]);
 
   return useMemo(() => ({
     language,
